@@ -1,5 +1,5 @@
 # Usamos la imagen dev de Debian 13 que ya tienes en Docker Desktop
-FROM node:25-debian13-dev
+FROM dhi.io/node:25-debian13-dev
 
 # Directorio de trabajo
 WORKDIR /app

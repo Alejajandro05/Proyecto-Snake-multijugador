@@ -1,5 +1,5 @@
 # 1. Usamos la imagen que ya tienes (basada en las capas de Debian 13)
-FROM node:25-debian13-dev
+FROM dhi.io/node:25-debian13-dev
 
 # 2. Establecemos el directorio de trabajo (la capa 6 ya lo creó, aquí lo usamos)
 WORKDIR /app

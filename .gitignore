@@ -1,0 +1,28 @@
+# --- Dependencias de Node ---
+# Ignora las carpetas de librerías instaladas por npm en cada servicio
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# --- Compilación y Salida ---
+# Ignora las carpetas generadas al construir el proyecto (build)
+dist/
+build/
+.tscache/
+
+# --- Configuración y Secretos ---
+# Ignora archivos de variables de entorno que puedan contener contraseñas
+.env
+.env.local
+.env.*.local
+
+# --- Docker ---
+# Ignora archivos temporales y logs de los contenedores
+*.log
+docker-compose.override.yml
+
+# --- Sistema Operativo / Editores ---
+# Ignora archivos basura del sistema y configuraciones locales de VS Code
+.DS_Store
+.vscode/
+Thumbs.db
