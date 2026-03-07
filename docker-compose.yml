@@ -1,0 +1,20 @@
+services:
+  backend:
+    build: ./backend
+    volumes:
+      - ./backend:/app          # Sincroniza tu código en tiempo real
+      - /app/node_modules       # Protege las librerías internas
+    ports:
+      - "2567:2567"             # Puerto de Colyseus
+    environment:
+      - NODE_ENV=development
+
+  frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"             # Puerto de Vite/Phaser
+    depends_on:
+      - backend
