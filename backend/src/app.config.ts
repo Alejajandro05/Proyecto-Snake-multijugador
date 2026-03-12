@@ -11,13 +11,15 @@ import {
  * Import your Room files
  */
 import { MyRoom } from "./rooms/MyRoom.js";
+import { SnakeRoom } from "./rooms/SnakeRoom.js";
 
 const server = defineServer({
     /**
      * Define your room handlers:
      */
     rooms: {
-        my_room: defineRoom(MyRoom)
+        my_room: defineRoom(MyRoom),
+        snake_room: defineRoom(SnakeRoom)
     },
 
     /**
