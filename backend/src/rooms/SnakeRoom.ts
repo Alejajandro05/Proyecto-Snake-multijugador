@@ -196,8 +196,9 @@ export class SnakeRoom extends Room {
     }
 
     // Check collision with other snakes
-    this.state.players.forEach((otherPlayer, otherSessionId) => {
-      if (otherSessionId === sessionId || !otherPlayer.alive) return;
+    const playerEntries = Array.from(this.state.players.entries());
+    for (const [otherSessionId, otherPlayer] of playerEntries) {
+      if (otherSessionId === sessionId || !otherPlayer.alive) continue;
       for (let i = 0; i < otherPlayer.segments.length; i++) {
         const seg = otherPlayer.segments[i];
         if (newX === seg.x && newY === seg.y) {
@@ -206,9 +207,7 @@ export class SnakeRoom extends Room {
           return;
         }
       }
-    });
-
-    if (!player.alive) return;
+    }
 
     // Check food collision
     const eating = newX === this.state.food.x && newY === this.state.food.y;
