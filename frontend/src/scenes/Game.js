@@ -4,7 +4,6 @@ export class Game extends Phaser.Scene {
         this.room = null;
         this.mySessionId = null;
         this.gridSize = 32;
-        this.lastDirection = 'right';
     }
 
     init(data) {
@@ -29,7 +28,7 @@ export class Game extends Phaser.Scene {
         }
         gridGfx.strokePath();
 
-        // Persistent graphics objects (cleared and redrawn each state update)
+        // Persistent graphics objects (cleared and redrawn each frame)
         this.snakeGfx = this.add.graphics();
         this.foodGfx = this.add.graphics();
 
@@ -58,14 +57,16 @@ export class Game extends Phaser.Scene {
             align: 'center'
         }).setOrigin(0.5).setAlpha(0).setDepth(10);
 
-        // Keyboard controls (arrow keys + WASD)
-        this.cursors = this.input.keyboard.createCursorKeys();
-        this.wasd = this.input.keyboard.addKeys({
-            up: Phaser.Input.Keyboard.KeyCodes.W,
-            down: Phaser.Input.Keyboard.KeyCodes.S,
-            left: Phaser.Input.Keyboard.KeyCodes.A,
-            right: Phaser.Input.Keyboard.KeyCodes.D
-        });
+        // Keyboard controls: send direction on key press (keydown fires once per press,
+        // avoiding the lastDirection desync problem with isDown polling).
+        this.input.keyboard.on('keydown-LEFT',  () => this.sendDirection('left'));
+        this.input.keyboard.on('keydown-RIGHT', () => this.sendDirection('right'));
+        this.input.keyboard.on('keydown-UP',    () => this.sendDirection('up'));
+        this.input.keyboard.on('keydown-DOWN',  () => this.sendDirection('down'));
+        this.input.keyboard.on('keydown-A', () => this.sendDirection('left'));
+        this.input.keyboard.on('keydown-D', () => this.sendDirection('right'));
+        this.input.keyboard.on('keydown-W', () => this.sendDirection('up'));
+        this.input.keyboard.on('keydown-S', () => this.sendDirection('down'));
 
         if (!this.room) {
             this.overlayText.setText('Sin conexión al servidor.\nVuelve al menú.').setAlpha(1);
@@ -73,30 +74,25 @@ export class Game extends Phaser.Scene {
             return;
         }
 
-        // Listen to state changes broadcast by the server every tick
-        this.room.onStateChange((state) => {
-            this.renderState(state);
-        });
-
         // Return to MainMenu if disconnected
         this.room.onLeave(() => {
+            this.room = null;
             this.scene.start('MainMenu');
         });
     }
 
-    update() {
-        if (!this.room) return;
-
-        let dir = null;
-        if (this.cursors.left.isDown || this.wasd.left.isDown) dir = 'left';
-        else if (this.cursors.right.isDown || this.wasd.right.isDown) dir = 'right';
-        else if (this.cursors.up.isDown || this.wasd.up.isDown) dir = 'up';
-        else if (this.cursors.down.isDown || this.wasd.down.isDown) dir = 'down';
-
-        if (dir && dir !== this.lastDirection) {
+    sendDirection(dir) {
+        if (this.room) {
             this.room.send('changeDirection', dir);
-            this.lastDirection = dir;
         }
+    }
+
+    // Rendering is driven by Phaser's update loop every frame so that
+    // it always reflects the latest room.state regardless of when
+    // onStateChange fires.
+    update() {
+        if (!this.room || !this.room.state) return;
+        this.renderState(this.room.state);
     }
 
     renderState(state) {
