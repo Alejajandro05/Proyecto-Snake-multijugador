@@ -1,172 +1,156 @@
 export class Game extends Phaser.Scene {
     constructor() {
         super('Game');
-
-        this.snake = [];
-        this.food = {};
-        this.direction = 'right';
-        this.nextDirection = 'right';
+        this.room = null;
+        this.mySessionId = null;
         this.gridSize = 32;
-        this.snakeSpeed = 150;
-        this.lastMoveTime = 0;
-        this.isGameOver = false;
+        this.lastDirection = 'right';
+    }
+
+    init(data) {
+        this.room = data.room;
+        this.mySessionId = this.room ? this.room.sessionId : null;
     }
 
     create() {
-        this.isGameOver = false;
-        this.direction = 'right';
-        this.nextDirection = 'right';
-        this.cameras.main.setBackgroundColor(0x00ff00);
-        this.add.image(512, 384, 'background').setAlpha(0.5);
+        this.cameras.main.setBackgroundColor(0x1a1a2e);
+        this.add.image(512, 384, 'background').setAlpha(0.3);
 
-        // Create tutorial text 
-        this.tutorialText = this.add.text(512, 100, 'Use arrow keys to move the snake', {
-            fontFamily: 'Arial Black', fontSize: 28, color: '#ffffff',
-            stroke: '#000000', strokeThickness: 8,
-            align: 'center'
-        }).setOrigin(0.5);
-
-        // Initialize snake
-        this.snake = [];
-        const startX = 5;
-        const startY = 5;
-
-        // Create initial snake body (3 segments), feel free to play with it
-        for (let i = 0; i < 3; i++) {
-            const segment = this.add.rectangle(
-                (startX - i) * this.gridSize,
-                startY * this.gridSize,
-                this.gridSize - 2,
-                this.gridSize - 2,
-                0x000000
-            );
-            this.snake.push(segment);
+        // Draw grid lines for visual reference
+        const gridGfx = this.add.graphics();
+        gridGfx.lineStyle(1, 0x222244, 0.4);
+        for (let x = 0; x <= 1024; x += this.gridSize) {
+            gridGfx.moveTo(x, 0);
+            gridGfx.lineTo(x, 768);
         }
+        for (let y = 0; y <= 768; y += this.gridSize) {
+            gridGfx.moveTo(0, y);
+            gridGfx.lineTo(1024, y);
+        }
+        gridGfx.strokePath();
 
-        // Spawn initial food
-        this.spawnFood();
+        // Persistent graphics objects (cleared and redrawn each state update)
+        this.snakeGfx = this.add.graphics();
+        this.foodGfx = this.add.graphics();
 
-        // Setup keyboard controls
-        this.cursors = this.input.keyboard.createCursorKeys();
-
-        // Add listener for any key press to hide tutorial
-        this.input.keyboard.on('keydown', () => {
-            if (this.tutorialText.visible) {
-                this.tutorialText.setVisible(false);
-            }
+        // HUD
+        this.scoreText = this.add.text(10, 10, 'Puntos: 0', {
+            fontFamily: 'Arial',
+            fontSize: 20,
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 3
         });
-    }
 
-    update(time) {
-        if (this.isGameOver) return;
+        this.playersText = this.add.text(10, 36, 'Jugadores: 1', {
+            fontFamily: 'Arial',
+            fontSize: 16,
+            color: '#aaaaaa'
+        });
 
-        // Handle input
-        if (this.cursors.left.isDown && this.direction !== 'right') {
-            this.nextDirection = 'left';
-        } else if (this.cursors.right.isDown && this.direction !== 'left') {
-            this.nextDirection = 'right';
-        } else if (this.cursors.up.isDown && this.direction !== 'down') {
-            this.nextDirection = 'up';
-        } else if (this.cursors.down.isDown && this.direction !== 'up') {
-            this.nextDirection = 'down';
-        }
+        // Overlay text (death / connecting)
+        this.overlayText = this.add.text(512, 384, '', {
+            fontFamily: 'Arial Black',
+            fontSize: 40,
+            color: '#ffffff',
+            stroke: '#000000',
+            strokeThickness: 6,
+            align: 'center'
+        }).setOrigin(0.5).setAlpha(0).setDepth(10);
 
-        // Move snake at fixed intervals
-        if (time >= this.lastMoveTime + this.snakeSpeed) {
-            this.moveSnake();
-            this.lastMoveTime = time;
-        }
-    }
+        // Keyboard controls (arrow keys + WASD)
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.wasd = this.input.keyboard.addKeys({
+            up: Phaser.Input.Keyboard.KeyCodes.W,
+            down: Phaser.Input.Keyboard.KeyCodes.S,
+            left: Phaser.Input.Keyboard.KeyCodes.A,
+            right: Phaser.Input.Keyboard.KeyCodes.D
+        });
 
-    moveSnake() {
-        // Update current direction
-        this.direction = this.nextDirection;
-
-        // Calculate new head position
-        const head = this.snake[0];
-        let newX = head.x;
-        let newY = head.y;
-
-        switch (this.direction) {
-            case 'left':
-                newX -= this.gridSize;
-                break;
-            case 'right':
-                newX += this.gridSize;
-                break;
-            case 'up':
-                newY -= this.gridSize;
-                break;
-            case 'down':
-                newY += this.gridSize;
-                break;
-        }
-
-        // Check for collisions with walls
-        if (newX < 0 || newX >= 1024 || newY < 0 || newY >= 768) {
-            this.gameOver();
+        if (!this.room) {
+            this.overlayText.setText('Sin conexión al servidor.\nVuelve al menú.').setAlpha(1);
+            this.time.delayedCall(3000, () => this.scene.start('MainMenu'));
             return;
         }
 
-        // Check for collision with self
-        for (let segment of this.snake) {
-            if (newX === segment.x && newY === segment.y) {
-                this.gameOver();
-                return;
-            }
-        }
-
-        // Check for food collision
-        const eating = newX === this.food.x && newY === this.food.y;
-
-        // Move snake
-        const newHead = this.add.rectangle(newX, newY, this.gridSize - 2, this.gridSize - 2, 0x000000);
-        this.snake.unshift(newHead);
-
-        if (!eating) {
-            // Remove tail if not eating
-            const tail = this.snake.pop();
-            tail.destroy();
-        } else {
-            // Spawn new food if eating
-            this.food.destroy();
-            this.spawnFood();
-        }
-    }
-
-    spawnFood() {
-        const x = Math.floor(Math.random() * (1024 / this.gridSize)) * this.gridSize;
-        const y = Math.floor(Math.random() * (768 / this.gridSize)) * this.gridSize;
-        this.food = this.add.rectangle(x, y, this.gridSize - 2, this.gridSize - 2, 0xff0000);
-    }
-
-    gameOver() {
-        if (this.isGameOver) return;
-        this.isGameOver = true;
-
-        // Reset directions
-        this.direction = 'right';
-        this.nextDirection = 'right';
-
-        // Destroy all existing game objects
-        this.snake.forEach(segment => segment.destroy());
-        this.snake = [];
-        if (this.food) {
-            this.food.destroy();
-        }
-
-        this.add.text(512, 384, 'GAME OVER', {
-            fontFamily: 'Arial Black',
-            fontSize: 64,
-            color: '#ffffff',
-            stroke: '#000000',
-            strokeThickness: 8,
-            align: 'center'
-        }).setOrigin(0.5);
-
-        // Restart the scene after a delay
-        this.time.delayedCall(1000, () => {
-            this.scene.restart();
+        // Listen to state changes broadcast by the server every tick
+        this.room.onStateChange((state) => {
+            this.renderState(state);
         });
+
+        // Return to MainMenu if disconnected
+        this.room.onLeave(() => {
+            this.scene.start('MainMenu');
+        });
+    }
+
+    update() {
+        if (!this.room) return;
+
+        let dir = null;
+        if (this.cursors.left.isDown || this.wasd.left.isDown) dir = 'left';
+        else if (this.cursors.right.isDown || this.wasd.right.isDown) dir = 'right';
+        else if (this.cursors.up.isDown || this.wasd.up.isDown) dir = 'up';
+        else if (this.cursors.down.isDown || this.wasd.down.isDown) dir = 'down';
+
+        if (dir && dir !== this.lastDirection) {
+            this.room.send('changeDirection', dir);
+            this.lastDirection = dir;
+        }
+    }
+
+    renderState(state) {
+        const gs = this.gridSize;
+
+        // --- Food ---
+        this.foodGfx.clear();
+        this.foodGfx.fillStyle(0xff4444, 1);
+        state.food.forEach((f) => {
+            this.foodGfx.fillRect(f.x + 3, f.y + 3, gs - 6, gs - 6);
+        });
+
+        // --- Snakes ---
+        this.snakeGfx.clear();
+        let myScore = 0;
+        let playerCount = 0;
+
+        state.players.forEach((player, sessionId) => {
+            const isMe = sessionId === this.mySessionId;
+            playerCount++;
+
+            if (isMe) {
+                myScore = player.score;
+                if (!player.alive) {
+                    this.overlayText.setText('💀 Muerto... reapareciendo').setAlpha(1);
+                } else {
+                    this.overlayText.setAlpha(0);
+                }
+            }
+
+            if (!player.alive) return;
+
+            const color = player.color;
+            player.segments.forEach((seg, idx) => {
+                if (idx === 0) {
+                    // Head: full grid cell
+                    this.snakeGfx.fillStyle(color, 1);
+                    this.snakeGfx.fillRect(seg.x + 1, seg.y + 1, gs - 2, gs - 2);
+                } else {
+                    // Body: slightly smaller, slightly transparent for other players
+                    this.snakeGfx.fillStyle(color, isMe ? 1 : 0.85);
+                    this.snakeGfx.fillRect(seg.x + 3, seg.y + 3, gs - 6, gs - 6);
+                }
+            });
+        });
+
+        this.scoreText.setText(`Puntos: ${myScore}`);
+        this.playersText.setText(`Jugadores: ${playerCount}`);
+    }
+
+    shutdown() {
+        if (this.room) {
+            this.room.leave();
+            this.room = null;
+        }
     }
 }

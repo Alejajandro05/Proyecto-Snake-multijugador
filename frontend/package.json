@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "phaser": "^3.80.0",
-    "colyseus.js": "^0.15.0"
+    "@colyseus/sdk": "^0.17.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
