@@ -69,6 +69,14 @@ export class Game extends Phaser.Scene {
 
         // Connect to the Colyseus server
         this.connectToServer();
+
+        // Clean up the Colyseus connection when the scene shuts down
+        this.events.on('shutdown', () => {
+            if (this.room) {
+                this.room.leave();
+                this.room = null;
+            }
+        });
     }
 
     async connectToServer() {
@@ -110,7 +118,7 @@ export class Game extends Phaser.Scene {
         } catch (err) {
             console.error('Colyseus connection error:', err);
             this.statusText.setText(
-                'Could not connect to server!\nMake sure the backend is running on port 2567'
+                'Could not connect to server!\n' + (err.message || 'Unknown error')
             );
         }
     }
@@ -208,13 +216,5 @@ export class Game extends Phaser.Scene {
             text += marker + label + ': ' + player.score + status + '\n';
         });
         this.scoreText.setText(text);
-    }
-
-    // Clean up the Colyseus connection when the scene shuts down
-    shutdown() {
-        if (this.room) {
-            this.room.leave();
-            this.room = null;
-        }
     }
 }
