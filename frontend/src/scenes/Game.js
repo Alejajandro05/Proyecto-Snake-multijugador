@@ -1,172 +1,220 @@
+import colyseusClient from '../services/ColyseusClient.js';
+
 export class Game extends Phaser.Scene {
     constructor() {
         super('Game');
-
-        this.snake = [];
-        this.food = {};
-        this.direction = 'right';
-        this.nextDirection = 'right';
-        this.gridSize = 32;
-        this.snakeSpeed = 150;
-        this.lastMoveTime = 0;
-        this.isGameOver = false;
     }
 
     create() {
-        this.isGameOver = false;
-        this.direction = 'right';
-        this.nextDirection = 'right';
-        this.cameras.main.setBackgroundColor(0x00ff00);
-        this.add.image(512, 384, 'background').setAlpha(0.5);
+        this.gridSize = 32;
 
-        // Create tutorial text 
-        this.tutorialText = this.add.text(512, 100, 'Use arrow keys to move the snake', {
-            fontFamily: 'Arial Black', fontSize: 28, color: '#ffffff',
-            stroke: '#000000', strokeThickness: 8,
-            align: 'center'
-        }).setOrigin(0.5);
+        // Connection state
+        this.room = null;
+        this.mySessionId = null;
+        this.connected = false;
+        this.lastSentDirection = null;
 
-        // Initialize snake
-        this.snake = [];
-        const startX = 5;
-        const startY = 5;
+        // Graphics objects keyed by player sessionId
+        this.playerGraphics = new Map();
+        // Single graphics layer for food
+        this.foodGraphics = this.add.graphics();
 
-        // Create initial snake body (3 segments), feel free to play with it
-        for (let i = 0; i < 3; i++) {
-            const segment = this.add.rectangle(
-                (startX - i) * this.gridSize,
-                startY * this.gridSize,
-                this.gridSize - 2,
-                this.gridSize - 2,
-                0x000000
-            );
-            this.snake.push(segment);
+        // Background
+        this.cameras.main.setBackgroundColor(0x1a1a2e);
+        this.add.image(512, 384, 'background').setAlpha(0.3);
+
+        // Draw grid lines for visual clarity
+        const gridLines = this.add.graphics();
+        gridLines.lineStyle(1, 0xffffff, 0.05);
+        for (let x = 0; x <= 1024; x += this.gridSize) {
+            gridLines.moveTo(x, 0);
+            gridLines.lineTo(x, 768);
         }
+        for (let y = 0; y <= 768; y += this.gridSize) {
+            gridLines.moveTo(0, y);
+            gridLines.lineTo(1024, y);
+        }
+        gridLines.strokePath();
 
-        // Spawn initial food
-        this.spawnFood();
+        // UI texts
+        this.statusText = this.add.text(512, 384, 'Connecting to server...', {
+            fontFamily: 'Arial Black', fontSize: 28, color: '#ffffff',
+            stroke: '#000000', strokeThickness: 6, align: 'center'
+        }).setOrigin(0.5).setDepth(10);
 
-        // Setup keyboard controls
+        this.scoreText = this.add.text(10, 10, '', {
+            fontFamily: 'Arial', fontSize: 16, color: '#ffffff',
+            stroke: '#000000', strokeThickness: 3
+        }).setDepth(10);
+
+        this.deathText = this.add.text(512, 384, '', {
+            fontFamily: 'Arial Black', fontSize: 40, color: '#ff4444',
+            stroke: '#000000', strokeThickness: 8, align: 'center'
+        }).setOrigin(0.5).setDepth(20).setVisible(false);
+
+        this.tutorialText = this.add.text(512, 50, 'Use arrow keys to move your snake', {
+            fontFamily: 'Arial Black', fontSize: 22, color: '#ffffff',
+            stroke: '#000000', strokeThickness: 6, align: 'center'
+        }).setOrigin(0.5).setDepth(10);
+
+        // Setup keyboard input
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        // Add listener for any key press to hide tutorial
+        // Hide tutorial on first key press
         this.input.keyboard.on('keydown', () => {
             if (this.tutorialText.visible) {
                 this.tutorialText.setVisible(false);
             }
         });
+
+        // Connect to the Colyseus server
+        this.connectToServer();
     }
 
-    update(time) {
-        if (this.isGameOver) return;
+    async connectToServer() {
+        try {
+            this.room = await colyseusClient.joinOrCreate('snake_room');
+            this.mySessionId = this.room.sessionId;
+            this.connected = true;
+            this.statusText.setVisible(false);
 
-        // Handle input
-        if (this.cursors.left.isDown && this.direction !== 'right') {
-            this.nextDirection = 'left';
-        } else if (this.cursors.right.isDown && this.direction !== 'left') {
-            this.nextDirection = 'right';
-        } else if (this.cursors.up.isDown && this.direction !== 'down') {
-            this.nextDirection = 'up';
-        } else if (this.cursors.down.isDown && this.direction !== 'up') {
-            this.nextDirection = 'down';
-        }
+            // --- State listeners ---------------------------------------------------
 
-        // Move snake at fixed intervals
-        if (time >= this.lastMoveTime + this.snakeSpeed) {
-            this.moveSnake();
-            this.lastMoveTime = time;
+            // When a new player joins: create a Graphics object for their snake
+            this.room.state.players.onAdd((player, sessionId) => {
+                const gfx = this.add.graphics();
+                this.playerGraphics.set(sessionId, gfx);
+            });
+
+            // When a player leaves: destroy their Graphics object
+            this.room.state.players.onRemove((player, sessionId) => {
+                const gfx = this.playerGraphics.get(sessionId);
+                if (gfx) {
+                    gfx.destroy();
+                    this.playerGraphics.delete(sessionId);
+                }
+            });
+
+            // Re-render the whole game every time we receive a state patch
+            this.room.onStateChange(() => {
+                this.renderGame();
+            });
+
+            // Handle disconnection
+            this.room.onLeave((code) => {
+                this.connected = false;
+                this.statusText.setText('Disconnected from server (code ' + code + ')')
+                    .setVisible(true);
+            });
+
+        } catch (err) {
+            console.error('Colyseus connection error:', err);
+            this.statusText.setText(
+                'Could not connect to server!\nMake sure the backend is running on port 2567'
+            );
         }
     }
 
-    moveSnake() {
-        // Update current direction
-        this.direction = this.nextDirection;
+    update() {
+        if (!this.room || !this.connected) return;
 
-        // Calculate new head position
-        const head = this.snake[0];
-        let newX = head.x;
-        let newY = head.y;
+        // Read arrow keys and send direction to the server (deduplicated)
+        let dir = null;
+        if (this.cursors.left.isDown) dir = 'left';
+        else if (this.cursors.right.isDown) dir = 'right';
+        else if (this.cursors.up.isDown) dir = 'up';
+        else if (this.cursors.down.isDown) dir = 'down';
 
-        switch (this.direction) {
-            case 'left':
-                newX -= this.gridSize;
-                break;
-            case 'right':
-                newX += this.gridSize;
-                break;
-            case 'up':
-                newY -= this.gridSize;
-                break;
-            case 'down':
-                newY += this.gridSize;
-                break;
+        if (dir) {
+            if (dir !== this.lastSentDirection) {
+                this.room.send('changeDirection', dir);
+                this.lastSentDirection = dir;
+            }
+        } else {
+            // Reset when no arrow key is held so the same key can be re-sent
+            this.lastSentDirection = null;
         }
+    }
 
-        // Check for collisions with walls
-        if (newX < 0 || newX >= 1024 || newY < 0 || newY >= 768) {
-            this.gameOver();
-            return;
-        }
+    // ─── Rendering ──────────────────────────────────────────────────────────────
 
-        // Check for collision with self
-        for (let segment of this.snake) {
-            if (newX === segment.x && newY === segment.y) {
-                this.gameOver();
+    renderGame() {
+        const state = this.room.state;
+
+        // --- Draw each player's snake -------------------------------------------
+        state.players.forEach((player, sessionId) => {
+            const gfx = this.playerGraphics.get(sessionId);
+            if (!gfx) return;
+
+            gfx.clear();
+
+            if (!player.alive) {
+                // Show death overlay for the local player
+                if (sessionId === this.mySessionId) {
+                    this.deathText.setText('YOU DIED!\nRespawning...').setVisible(true);
+                }
                 return;
             }
-        }
 
-        // Check for food collision
-        const eating = newX === this.food.x && newY === this.food.y;
+            // Hide death text when local player is alive again
+            if (sessionId === this.mySessionId) {
+                this.deathText.setVisible(false);
+            }
 
-        // Move snake
-        const newHead = this.add.rectangle(newX, newY, this.gridSize - 2, this.gridSize - 2, 0x000000);
-        this.snake.unshift(newHead);
+            const color = player.color;
 
-        if (!eating) {
-            // Remove tail if not eating
-            const tail = this.snake.pop();
-            tail.destroy();
-        } else {
-            // Spawn new food if eating
-            this.food.destroy();
-            this.spawnFood();
-        }
-    }
-
-    spawnFood() {
-        const x = Math.floor(Math.random() * (1024 / this.gridSize)) * this.gridSize;
-        const y = Math.floor(Math.random() * (768 / this.gridSize)) * this.gridSize;
-        this.food = this.add.rectangle(x, y, this.gridSize - 2, this.gridSize - 2, 0xff0000);
-    }
-
-    gameOver() {
-        if (this.isGameOver) return;
-        this.isGameOver = true;
-
-        // Reset directions
-        this.direction = 'right';
-        this.nextDirection = 'right';
-
-        // Destroy all existing game objects
-        this.snake.forEach(segment => segment.destroy());
-        this.snake = [];
-        if (this.food) {
-            this.food.destroy();
-        }
-
-        this.add.text(512, 384, 'GAME OVER', {
-            fontFamily: 'Arial Black',
-            fontSize: 64,
-            color: '#ffffff',
-            stroke: '#000000',
-            strokeThickness: 8,
-            align: 'center'
-        }).setOrigin(0.5);
-
-        // Restart the scene after a delay
-        this.time.delayedCall(1000, () => {
-            this.scene.restart();
+            player.segments.forEach((seg, i) => {
+                if (i === 0) {
+                    // Head: white border + colored fill
+                    gfx.fillStyle(0xffffff, 1);
+                    gfx.fillRect(seg.x + 1, seg.y + 1, this.gridSize - 2, this.gridSize - 2);
+                    gfx.fillStyle(color, 1);
+                    gfx.fillRect(seg.x + 3, seg.y + 3, this.gridSize - 6, this.gridSize - 6);
+                } else {
+                    // Body
+                    gfx.fillStyle(color, 0.85);
+                    gfx.fillRect(seg.x + 2, seg.y + 2, this.gridSize - 4, this.gridSize - 4);
+                }
+            });
         });
+
+        // --- Draw food ----------------------------------------------------------
+        this.foodGraphics.clear();
+        state.food.forEach((food) => {
+            this.foodGraphics.fillStyle(0xff6347, 1);
+            this.foodGraphics.fillRect(
+                food.x + 4, food.y + 4,
+                this.gridSize - 8, this.gridSize - 8
+            );
+            // Small highlight to make it pop
+            this.foodGraphics.fillStyle(0xffa07a, 1);
+            this.foodGraphics.fillRect(
+                food.x + 8, food.y + 8,
+                this.gridSize - 20, this.gridSize - 20
+            );
+        });
+
+        // --- Scoreboard ---------------------------------------------------------
+        this.updateScoreboard();
+    }
+
+    updateScoreboard() {
+        let text = '';
+        this.room.state.players.forEach((player, sessionId) => {
+            const isMe = sessionId === this.mySessionId;
+            const marker = isMe ? '► ' : '  ';
+            const status = player.alive ? '' : ' ✖';
+            const label = isMe ? 'You' : sessionId.substring(0, 4);
+            text += marker + label + ': ' + player.score + status + '\n';
+        });
+        this.scoreText.setText(text);
+    }
+
+    // Clean up the Colyseus connection when the scene shuts down
+    shutdown() {
+        if (this.room) {
+            this.room.leave();
+            this.room = null;
+        }
     }
 }
