@@ -1,28 +1,38 @@
-# --- Dependencias de Node ---
-# Ignora las carpetas de librerías instaladas por npm en cada servicio
+# --- Node / JS ---
 node_modules/
-backend/node_modules/
-frontend/node_modules/
+**/node_modules/
 
-# --- Compilación y Salida ---
-# Ignora las carpetas generadas al construir el proyecto (build)
+# --- Build outputs ---
 dist/
 build/
+**/dist/
+**/build/
 .tscache/
+**/.tscache/
+*.tsbuildinfo
 
-# --- Configuración y Secretos ---
-# Ignora archivos de variables de entorno que puedan contener contraseñas
+# --- Env files (do NOT commit secrets) ---
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.*.example
+
+# --- Logs ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Vite ---
+.vite/
+**/.vite/
 
 # --- Docker ---
-# Ignora archivos temporales y logs de los contenedores
-*.log
 docker-compose.override.yml
 
-# --- Sistema Operativo / Editores ---
-# Ignora archivos basura del sistema y configuraciones locales de VS Code
+# --- OS / Editor ---
 .DS_Store
-.vscode/
 Thumbs.db
+.vscode/
+.idea/

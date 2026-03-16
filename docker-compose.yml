@@ -4,11 +4,13 @@ services:
     container_name: snake_backend
     volumes:
       - ./backend:/app
-      - /app/node_modules # No borres esto, protege las librerías del contenedor
+      - /app/node_modules
     ports:
       - "2567:2567"
     environment:
       - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=250
 
   frontend:
     build: ./frontend
@@ -18,5 +20,9 @@ services:
       - /app/node_modules
     ports:
       - "5173:5173"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=250
+      - WATCHPACK_POLLING=true
     depends_on:
       - backend
