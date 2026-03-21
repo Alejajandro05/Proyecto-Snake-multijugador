@@ -1,0 +1,163 @@
+\documentclass[12pt,a4paper]{article}
+
+% ----------------------------
+% PAQUETES
+% ----------------------------
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage[dvipsnames,table]{xcolor}
+\usepackage[most]{tcolorbox}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+
+% ----------------------------
+% COLORES Y ESTILOS
+% ----------------------------
+\definecolor{mainblue}{RGB}{41,128,185}
+\definecolor{softblue}{RGB}{235,245,251}
+\definecolor{techheader}{RGB}{52,73,94}
+
+\titleformat{\section}{\Large\bfseries\color{techheader}}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{1em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Sincro-Snake 1vs1}
+\fancyhead[R]{Producción de Software}
+\fancyfoot[C]{\thepage}
+
+\tcbset{colback=softblue, colframe=mainblue, arc=6pt, boxrule=1pt}
+
+\begin{document}
+
+% --- PORTADA ---
+% --- PORTADA ---
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+    
+    % Añadir la imagen aquí. El parámetro width ajusta el tamaño al 80% del ancho del texto.
+    
+    {\Huge \textbf{Sincro-Snake: Multijugador Real-Time}}\\[0.5cm]
+    {\Large \textbf{Grupo 3}}\\[2cm]
+
+    \includegraphics[width=0.8\textwidth]{portada_snake.jpg}\\[1cm] 
+    
+    \textbf{Miembros del Grupo:} \\
+    Benjamin Klett \\ Sergio Damaso Guerra \\ Alejandro Mentado García \\
+    Joel Morera Apaza \\ Raúl Reguera Bravo \\ Francisco Malillos Castellano \\[1.5cm]
+    
+    \textbf{Asignatura:} Producción de Software (40979)\\
+    \vfill
+    {\large 21 de marzo de 2026}
+\end{titlepage}
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Introducción y Descripción del Proyecto}
+El proyecto \textbf{Sincro-Snake} es una evolución competitiva del clásico Snake, diseñada para la era de la "empresa del conocimiento" bajo principios de gestión evolutiva. Utilizando el motor \textbf{Phaser} y el servidor \textbf{Colyseus}, el sistema permite una sincronización de alta fidelidad para duelos 1vs1.
+
+Se prioriza el \textbf{valor entregado al usuario} mediante ciclos cortos de retroalimentación, permitiendo que el producto crezca desde una mecánica básica local hasta un ecosistema online con IA, \textit{power-ups} y sistemas de clasificación global.
+
+\section{Plan de Trabajo (Cronograma Lectivo)}
+Siguiendo el calendario oficial 2026, el plan de trabajo se divide en los hitos académicos establecidos:
+
+\begin{table}[h]
+\centering
+\renewcommand{\arraystretch}{1.5}
+\begin{tabularx}{\textwidth}{|l|c|X|}
+\hline
+\rowcolor{gray!20} \textbf{Fases} & \textbf{Duración} & \textbf{Hitos de Usuario} \\ \hline
+\textbf{Sprint Zero} & 200h & Definición de visión, arquitectura base y validación del modo local (MVP). \\ \hline
+\textbf{Sprint Uno} & 150h & Implementación del Matchmaking online y sincronización de red (Anti-lag). \\ \hline
+\textbf{Sprint Dos} & 132h & Despliegue de IA, Power-ups, Leaderboard y pulido final de interfaz. \\ \hline
+\end{tabularx}
+\caption{Cronograma adaptado al calendario escolar 2026.}
+\end{table}
+
+\newpage
+
+\section{Pila de Producto (Product Backlog)}
+Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han purgado de componentes técnicos para centrarse en la experiencia del usuario. Se utiliza la prioridad \textbf{MoSCoW} y estimación en \textbf{Tiempo Ideal}.
+
+\subsection{Historias de Usuario (Funcionalidades)}
+
+% HU 1 - MUST
+\begin{tcolorbox}[title=HU-001: Duelo Local 1vs1]
+\textbf{Descripción:} Como usuario, quiero jugar con un amigo en el mismo teclado (WASD vs Flechas) para competir sin depender de la conexión a internet. \\
+\textbf{Criterios de Validación:} Dos serpientes independientes, colisión de cuerpos detectada y fin de partida con ganador. \\
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
+\end{tcolorbox}
+
+% HU 2 - MUST
+\begin{tcolorbox}[title=HU-002: Arena Online Automática]
+\textbf{Descripción:} Como jugador, quiero entrar en una cola de emparejamiento para ser conectado con un oponente remoto de forma rápida. \\
+\textbf{Criterios de Validación:} Entrada en sala de espera y transición automática al juego al detectar rival. \\
+\textbf{Estimación:} 12h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
+\end{tcolorbox}
+
+% HU 3 - SHOULD
+\begin{tcolorbox}[title=HU-003: Movimiento Fluido (Anti-Lag)]
+\textbf{Descripción:} Como jugador online, quiero que los movimientos del rival se vean fluidos para que la partida sea justa y no haya saltos visuales. \\
+\textbf{Criterios de Validación:} Implementación de interpolación visible en el cliente Phaser. \\
+\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+% HU 4 - SHOULD
+\begin{tcolorbox}[title=HU-004: Power-ups de Ventaja/Desventaja]
+\textbf{Descripción:} Como jugador, quiero recoger ítems especiales (escudo, turbo) para obtener ventajas tácticas sobre mi oponente. \\
+\textbf{Criterios de Validación:} Aparición aleatoria en mapa y aplicación de efectos temporales (velocidad/tamaño). \\
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+% HU 5 - COULD
+\begin{tcolorbox}[title=HU-005: Registro LAN y Leaderboard]
+\textbf{Descripción:} Como jugador competitivo, quiero registrar mi nombre para que mi puntuación sea guardada en el ranking histórico de la comunidad. \\
+\textbf{Criterios de Validación:} Pantalla de registro de nombre y visualización del Top 10 global. \\
+\textbf{Estimación:} 6h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\end{tcolorbox}
+
+% HU 6 - COULD
+\begin{tcolorbox}[title=HU-006: Entrenamiento vs IA]
+\textbf{Descripción:} Como usuario solitario, quiero poder practicar contra un bot para mejorar mis reflejos antes de jugar online. \\
+\textbf{Criterios de Validación:} La IA evita bordes y persigue manzanas de forma autónoma. \\
+\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\end{tcolorbox}
+
+\newpage
+
+\section{Organización del Sprint Zero}
+El Sprint Zero (marzo 2026) se centra en eliminar riesgos de conocimiento.
+
+\subsection{Pila del Sprint (Selección de HUs)}
+De acuerdo con el manual, seleccionamos historias de valor de usuario para validar el stack tecnológico:
+
+\begin{table}[h!]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|c|}
+\hline
+\rowcolor[HTML]{EFEFEF} 
+\textbf{ID} & \textbf{Historia de Usuario} & \textbf{Tiempo Ideal} \\ \hline
+HU-001 & Duelo Local 1vs1 (Validación motor gráfico) & 8h \\ \hline
+HU-005 & Registro básico y Menú Principal & 4h \\ \hline
+\rowcolor[HTML]{F2F2F2}
+\textbf{TOTAL} & & \textbf{12h} \\ \hline
+\end{tabularx}
+\end{table}
+
+\subsection{Razonamiento de Selección}
+Siguiendo la \textbf{Ingeniería Concurrente} de Scrum Manager, seleccionamos HU-001 porque permite validar simultáneamente el renderizado en Phaser y el diseño de colisiones. HU-005 permite establecer la estructura de navegación y persistencia mínima necesaria para futuras iteraciones online.
+
+\end{document}
