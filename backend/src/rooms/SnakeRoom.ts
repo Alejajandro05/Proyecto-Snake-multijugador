@@ -3,68 +3,47 @@ import { SnakeRoomState } from "./schema/SnakeRoomState.js";
 import { Player } from "./schema/Player.js";
 import { SnakeSegment } from "./schema/SnakeSegment.js";
 import { Food } from "./schema/Food.js";
-
-const GRID_COLS   = 32;   // 1024 / 32
-const GRID_ROWS   = 24;   // 768  / 32
-const GRID_SIZE   = 32;
-const TICK_MS     = 150;
-const FOOD_COUNT  = 3;
-
-const PLAYER_COLORS = [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71];
-
-const OPPOSITE: Record<string, string> = {
-  up: "down", down: "up", left: "right", right: "left",
-};
-
-function randomCell(): { x: number; y: number } {
-  return {
-    x: Math.floor(Math.random() * GRID_COLS) * GRID_SIZE,
-    y: Math.floor(Math.random() * GRID_ROWS) * GRID_SIZE,
-  };
-}
+import { SnakeEngine } from "../../../shared/src/domain/SnakeEngine.js";
+import type { GameState } from "../../../shared/src/domain/types.js";
+import { TICK_MS, PLAYER_COLORS } from "../../../shared/src/domain/GameConfig.js";
 
 export class SnakeRoom extends Room<SnakeRoomState> {
   maxClients = 4;
+  private engine!: SnakeEngine;
 
   onCreate(_options: any) {
     this.setState(new SnakeRoomState());
+    this.engine = new SnakeEngine();
 
-    // Spawn initial food
-    for (let i = 0; i < FOOD_COUNT; i++) {
-      this.spawnFood();
-    }
-
-    // Handle direction changes from clients
     this.onMessage("changeDirection", (client, direction: string) => {
-      const player = this.state.players.get(client.sessionId);
-      if (!player || !player.alive) return;
-      if (OPPOSITE[player.direction] !== direction) {
-        player.nextDirection = direction;
-      }
+      this.engine.setNextDirection(client.sessionId, direction as any);
     });
 
-    // Game loop
-    this.setSimulationInterval(() => this.gameLoop(), TICK_MS);
+    this.setSimulationInterval(() => {
+      const state = this.engine.tick();
+      this.syncToSchema(state);
+    }, TICK_MS);
   }
 
   onJoin(client: Client, _options: any) {
     const colorIndex = this.state.players.size % PLAYER_COLORS.length;
+    const playerState = this.engine.addPlayer(client.sessionId, {
+      color: PLAYER_COLORS[colorIndex],
+    });
+
     const player = new Player();
     player.sessionId = client.sessionId;
-    player.color     = PLAYER_COLORS[colorIndex];
-    player.alive     = true;
-    player.score     = 0;
-    player.direction     = "right";
-    player.nextDirection = "right";
+    player.color = playerState.color;
+    player.alive = playerState.alive;
+    player.score = playerState.score;
+    player.direction = playerState.direction;
+    player.nextDirection = playerState.nextDirection;
 
-    // Spawn snake in a safe starting position spread across the grid
-    const startX = (colorIndex * 6 + 5) % GRID_COLS;
-    const startY = Math.floor(GRID_ROWS / 2);
-    for (let i = 0; i < 3; i++) {
-      const seg = new SnakeSegment();
-      seg.x = (startX - i) * GRID_SIZE;
-      seg.y = startY * GRID_SIZE;
-      player.segments.push(seg);
+    for (const seg of playerState.segments) {
+      const s = new SnakeSegment();
+      s.x = seg.x;
+      s.y = seg.y;
+      player.segments.push(s);
     }
 
     this.state.players.set(client.sessionId, player);
@@ -72,6 +51,7 @@ export class SnakeRoom extends Room<SnakeRoomState> {
   }
 
   onLeave(client: Client, _code: CloseCode) {
+    this.engine.removePlayer(client.sessionId);
     this.state.players.delete(client.sessionId);
     console.log(client.sessionId, "left. Players:", this.state.players.size);
   }
@@ -80,105 +60,47 @@ export class SnakeRoom extends Room<SnakeRoomState> {
     console.log("SnakeRoom", this.roomId, "disposing...");
   }
 
-  // ─── Game Loop ────────────────────────────────────────────────────────────
+  // ─── Schema sync ──────────────────────────────────────────────────────────
 
-  private gameLoop() {
-    this.state.players.forEach((player) => {
-      if (!player.alive) return;
-      this.movePlayer(player);
+  private syncToSchema(gameState: GameState): void {
+    gameState.players.forEach((playerState, id) => {
+      const player = this.state.players.get(id);
+      if (!player) return;
+
+      player.direction = playerState.direction;
+      player.nextDirection = playerState.nextDirection;
+      player.alive = playerState.alive;
+      player.score = playerState.score;
+
+      this.syncSegments(player, playerState.segments);
     });
+
+    this.syncFood(gameState.food);
   }
 
-  private movePlayer(player: Player) {
-    player.direction = player.nextDirection;
-
-    const head = player.segments[0];
-    let newX = head.x;
-    let newY = head.y;
-
-    switch (player.direction) {
-      case "left":  newX -= GRID_SIZE; break;
-      case "right": newX += GRID_SIZE; break;
-      case "up":    newY -= GRID_SIZE; break;
-      case "down":  newY += GRID_SIZE; break;
+  private syncSegments(player: Player, segments: { x: number; y: number }[]): void {
+    while (player.segments.length < segments.length) {
+      player.segments.push(new SnakeSegment());
     }
-
-    // Wall collision → wrap around
-    if (newX < 0)                  newX = (GRID_COLS - 1) * GRID_SIZE;
-    else if (newX >= GRID_COLS * GRID_SIZE) newX = 0;
-    if (newY < 0)                  newY = (GRID_ROWS - 1) * GRID_SIZE;
-    else if (newY >= GRID_ROWS * GRID_SIZE) newY = 0;
-
-    // Self collision
-    for (const seg of player.segments) {
-      if (seg.x === newX && seg.y === newY) {
-        this.killPlayer(player);
-        return;
-      }
-    }
-
-    // Collision with other snakes
-    this.state.players.forEach((other) => {
-      if (other.sessionId === player.sessionId || !other.alive) return;
-      for (const seg of other.segments) {
-        if (seg.x === newX && seg.y === newY) {
-          this.killPlayer(player);
-          return;
-        }
-      }
-    });
-    if (!player.alive) return;
-
-    // Check food
-    let ate = false;
-    for (let i = 0; i < this.state.food.length; i++) {
-      const f = this.state.food[i];
-      if (f.x === newX && f.y === newY) {
-        this.state.food.splice(i, 1);
-        this.spawnFood();
-        player.score += 1;
-        ate = true;
-        break;
-      }
-    }
-
-    // Move: prepend new head
-    const newHead = new SnakeSegment();
-    newHead.x = newX;
-    newHead.y = newY;
-    player.segments.unshift(newHead);
-
-    // Remove tail if not eating
-    if (!ate) {
+    while (player.segments.length > segments.length) {
       player.segments.pop();
     }
+    for (let i = 0; i < segments.length; i++) {
+      player.segments[i].x = segments[i].x;
+      player.segments[i].y = segments[i].y;
+    }
   }
 
-  private killPlayer(player: Player) {
-    player.alive = false;
-    // Respawn after 3 seconds
-    this.clock.setTimeout(() => {
-      if (!this.state.players.has(player.sessionId)) return;
-      player.segments.splice(0, player.segments.length);
-      const startX = Math.floor(Math.random() * (GRID_COLS - 4) + 2);
-      const startY = Math.floor(Math.random() * (GRID_ROWS - 4) + 2);
-      for (let i = 0; i < 3; i++) {
-        const seg = new SnakeSegment();
-        seg.x = (startX - i) * GRID_SIZE;
-        seg.y = startY * GRID_SIZE;
-        player.segments.push(seg);
-      }
-      player.direction     = "right";
-      player.nextDirection = "right";
-      player.alive         = true;
-    }, 3000);
-  }
-
-  private spawnFood() {
-    const cell = randomCell();
-    const food = new Food();
-    food.x = cell.x;
-    food.y = cell.y;
-    this.state.food.push(food);
+  private syncFood(food: { x: number; y: number }[]): void {
+    while (this.state.food.length < food.length) {
+      this.state.food.push(new Food());
+    }
+    while (this.state.food.length > food.length) {
+      this.state.food.pop();
+    }
+    for (let i = 0; i < food.length; i++) {
+      this.state.food[i].x = food[i].x;
+      this.state.food[i].y = food[i].y;
+    }
   }
 }
