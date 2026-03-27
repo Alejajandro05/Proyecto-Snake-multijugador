@@ -1,4 +1,3 @@
-
 \documentclass[12pt,a4paper]{article}
 
 % ----------------------------
@@ -42,12 +41,9 @@
 \begin{document}
 
 % --- PORTADA ---
-% --- PORTADA ---
 \begin{titlepage}
     \centering
     \vspace*{1cm}
-    
-    % Añadir la imagen aquí. El parámetro width ajusta el tamaño al 80% del ancho del texto.
     
     {\Huge \textbf{Sincro-Snake: Multijugador Real-Time}}\\[0.5cm]
     {\Large \textbf{Grupo 3}}\\[2cm]
@@ -94,8 +90,6 @@ Siguiendo el calendario oficial 2026, el plan de trabajo se divide en los hitos 
 Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han purgado de componentes técnicos para centrarse en la experiencia del usuario. Se utiliza la prioridad \textbf{MoSCoW} y estimación en \textbf{Tiempo Ideal}.
 
 \subsection{Historias de Usuario (Funcionalidades)}
-
-
 
 % --- Epic Lógica básica del juego
 \begin{tcolorbox}[title=HU-001: Movimiento de la serpiente]
@@ -194,8 +188,6 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
-
-
 % --- Epic Sistema de obstáculos
 \begin{tcolorbox}[title=HU-009: Generación de obstáculos en el mapa]
 \textbf{Descripción:} Como jugador, quiero que aparezcan obstáculos en el mapa para que el juego sea más desafiante. \\
@@ -253,8 +245,6 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
 \end{tcolorbox}
 
-
-
 % --- Epic Mecanicas especiales del juego
 \begin{tcolorbox}[title=HU-014: Salto corto de tres casillas]
 \textbf{Descripción:} Como jugador, quiero poder realizar un salto corto de tres casillas para evitar obstáculos o cambiar rápidamente de posición. \\
@@ -299,8 +289,6 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \end{itemize}
 \textbf{Estimación:} 6h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
 \end{tcolorbox}
-
-
 
 % --- Epic Modo de juego contra IA
 \begin{tcolorbox}[title=HU-018: Iniciar partida contra ordenador]
@@ -355,9 +343,180 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
+% ============================
+% NUEVAS HISTORIAS DE USUARIO (Menú, Online, Configuración, Personalización)
+% ============================
 
+% --- Epic Menú Principal
+\begin{tcolorbox}[title=HU-023: Acceso al Menú Principal]
+\textbf{Descripción:} Como jugador, quiero que se muestre automáticamente el menú principal al iniciar el juego para poder elegir mi siguiente acción sin demoras. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item El menú aparece inmediatamente después de cargar el juego.
+    \item Incluye botones claros: Jugar, Configuración, Personalización, Leaderboard y Salir.
+    \item Soporta navegación con ratón y teclado (WASD/flechas + Enter).
+\end{itemize}
+\textbf{Estimación:} 6h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
+\end{tcolorbox}
 
-% --- Todos los epics
+\begin{tcolorbox}[title=HU-024: Selección de modo de juego desde el menú]
+\textbf{Descripción:} Como jugador, quiero poder seleccionar el modo de juego (Local 1vs1, vs IA o Online 1vs1) directamente desde el menú principal para comenzar la partida deseada. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Botones separados y visibles para cada modo.
+    \item Al seleccionar un modo se inicia la partida o se abre el lobby correspondiente.
+    \item El menú se oculta correctamente al empezar la partida.
+\end{itemize}
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-025: Acceso a Configuración y Personalización desde menú]
+\textbf{Descripción:} Como jugador, quiero acceder rápidamente a las pantallas de configuración y personalización desde el menú principal para ajustar el juego a mi gusto. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Botones dedicados para Configuración y Personalización.
+    \item Al hacer clic se abre la pantalla correspondiente sin perder progreso.
+    \item Se puede volver al menú principal fácilmente.
+\end{itemize}
+\textbf{Estimación:} 5h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-026: Visualización de Leaderboard en el menú]
+\textbf{Descripción:} Como jugador, quiero ver el ranking global o de amigos directamente desde el menú principal para motivarme y comparar puntuaciones. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Botón de Leaderboard que abre una tabla con posiciones.
+    \item Muestra al menos top 10 y mi posición.
+    \item Se actualiza con datos del servidor (futuro).
+\end{itemize}
+\textbf{Estimación:} 7h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-027: Salir del juego desde el menú]
+\textbf{Descripción:} Como jugador, quiero poder cerrar el juego de forma segura desde el menú principal. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Botón de Salir que confirma antes de cerrar.
+    \item Cierra la ventana o pestaña correctamente.
+\end{itemize}
+\textbf{Estimación:} 3h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
+\end{tcolorbox}
+
+% --- Epic Modo Online
+\begin{tcolorbox}[title=HU-028: Conexión al servidor ]
+\textbf{Descripción:} Como jugador, quiero conectarme automáticamente al servidor al seleccionar modo online para poder jugar contra otros usuarios. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Se establece conexión con el servidor
+    \item Se muestra feedback visual de estado de conexión.
+    \item Si falla la conexión, se muestra mensaje claro y botón de reintentar.
+\end{itemize}
+\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-029: Sistema de Matchmaking]
+\textbf{Descripción:} Como jugador, quiero que el sistema busque automáticamente un oponente para una partida 1vs1 online. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Botón “Buscar partida” inicia el matchmaking.
+    \item Se muestra tiempo de espera y cancelación.
+    \item Al encontrar oponente se inicia la partida inmediatamente.
+\end{itemize}
+\textbf{Estimación:} 12h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-030: Lobby / Sala de espera]
+\textbf{Descripción:} Como jugador, quiero ver una sala de espera mientras se empareja o se espera a un amigo. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Muestra nombres de jugadores conectados.
+    \item Opción de crear sala privada con código de invitación.
+    \item Cuenta atrás o botón “Listo” para empezar.
+\end{itemize}
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-031: Sincronización en tiempo real]
+\textbf{Descripción:} Como jugador, quiero que los movimientos de ambas serpientes se sincronicen en tiempo real sin lag perceptible. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Las posiciones se actualizan fluidamente entre clientes.
+    \item No se producen “teleports” ni colisiones fantasma.
+    \item La partida es justa para ambos jugadores.
+\end{itemize}
+\textbf{Estimación:} 15h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-032: Manejo de desconexiones]
+\textbf{Descripción:} Como jugador, quiero que el juego gestione correctamente las desconexiones para no arruinar la experiencia. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Si un jugador se desconecta, la partida se pausa.
+    \item Se intenta reconexión automática durante 10 segundos.
+    \item Si no hay reconexion la partida se da por perdida.
+    \item Mensaje claro informa al otro jugador.
+\end{itemize}
+\textbf{Estimación:} 9h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+% --- Epic Configuración
+\begin{tcolorbox}[title=HU-033: Ajustes de audio y gráficos]
+\textbf{Descripción:} Como jugador, quiero ajustar el volumen de música y efectos sonoros y la calidad gráfica. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Sliders de volumen y calidad.
+    \item Cambios se aplican en tiempo real.
+    \item Se guardan las preferencias.
+\end{itemize}
+\textbf{Estimación:} 7h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-034: Configuración de controles]
+\textbf{Descripción:} Como jugador, quiero reasignar las teclas de movimiento y acciones especiales. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Interfaz para cambiar WASD/flechas y teclas de salto/disparo.
+    \item Se detecta conflicto de teclas.
+    \item Preferencias se guardan.
+\end{itemize}
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+% --- Epic Personalización
+\begin{tcolorbox}[title=HU-035: Selección de skins para serpiente]
+\textbf{Descripción:} Como jugador, quiero elegir diferentes apariencias (colores y diseños) para mi serpiente. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Galería de skins con vista previa.
+    \item Cambio instantáneo en el juego.
+    \item Las skins se guardan y persisten.
+\end{itemize}
+\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-036: Personalización de obstáculos y manzanas]
+\textbf{Descripción:} Como jugador, quiero cambiar el aspecto visual de obstáculos y manzanas. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Opciones de skins para obstáculos y manzanas.
+    \item Vista previa en tiempo real.
+    \item Integración con el sistema de skins existente.
+\end{itemize}
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-037: Temas de fondo y tablero]
+\textbf{Descripción:} Como jugador, quiero seleccionar diferentes fondos y estilos de tablero. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Selección de temas visuales.
+    \item Aplicación inmediata al mapa.
+    \item Persistencia de la elección.
+\end{itemize}
+\textbf{Estimación:} 7h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\end{tcolorbox}
+
+% --- Epics originales
 \begin{tcolorbox}[title=EPIC-GAME-01: Lógica básica del juego]
 \textbf{Descripción:} Como jugador, quiero que el juego tenga una lógica clara para controlar la serpiente, interactuar con los elementos del mapa y determinar cuándo termina la partida. \\
 \textbf{Objetivo:} Implementar las mecánicas fundamentales que permiten jugar una partida básica de Snake, incluyendo movimiento, crecimiento, colisiones y condiciones de victoria o derrota. \\
@@ -419,6 +578,54 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \end{itemize}
 \end{tcolorbox}
 
+% --- Nuevos Epics (Menú, Online, Configuración, Personalización)
+\begin{tcolorbox}[title=EPIC-UI-05: Menú Principal]
+\textbf{Descripción:} Como jugador, quiero un menú principal claro e intuitivo al iniciar el juego para poder elegir rápidamente entre modos de juego, configuración, personalización y leaderboard sin complicaciones. \\
+\textbf{Objetivo:} Servir como punto central de navegación que mejora la experiencia de usuario desde el primer momento. \\
+\textbf{Alcance:} Incluye pantalla de título, botones de acceso a modos de juego, configuración, personalización, leaderboard y salida. \\
+\textbf{Criterios de Aceptación:}
+\begin{itemize}
+    \item El menú se muestra automáticamente al cargar el juego.
+    \item Todos los botones son responsivos y accesibles con teclado/ratón.
+    \item La navegación entre pantallas es fluida y sin carga visible.
+\end{itemize}
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=EPIC-ONLINE-06: Modo Multijugador Online (1vs1)]
+\textbf{Descripción:} Como jugador, quiero participar en duelos online en tiempo real contra otros jugadores para disfrutar de partidas competitivas sincronizadas con Colyseus. \\
+\textbf{Objetivo:} Implementar el sistema de matchmaking y sincronización de red para partidas 1vs1 de alta fidelidad. \\
+\textbf{Alcance:} Incluye creación de sala, matchmaking, conexión en tiempo real, manejo de desconexiones y sincronización de estado del juego. \\
+\textbf{Criterios de Aceptación:}
+\begin{itemize}
+    \item El jugador puede crear o unirse a una partida online.
+    \item La sincronización evita lag y asegura fairness.
+    \item Se muestra feedback claro de conexión y estado de la partida.
+\end{itemize}
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=EPIC-CONFIG-07: Sistema de Configuración]
+\textbf{Descripción:} Como jugador, quiero poder ajustar las opciones del juego (volumen, controles, gráficos) para personalizar mi experiencia según mis preferencias. \\
+\textbf{Objetivo:} Proporcionar un panel de configuración accesible y persistente que guarde las preferencias del usuario. \\
+\textbf{Alcance:} Incluye ajustes de audio, sensibilidad de controles, resolución/gráficos y opciones de accesibilidad. \\
+\textbf{Criterios de Aceptación:}
+\begin{itemize}
+    \item Los cambios se aplican en tiempo real.
+    \item Las preferencias se guardan localmente.
+    \item El menú de configuración es accesible desde el menú principal y desde la partida.
+\end{itemize}
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=EPIC-PERS-08: Sistema de Personalización]
+\textbf{Descripción:} Como jugador, quiero personalizar el aspecto visual de mi serpiente, obstáculos, manzanas y fondo para hacer la experiencia única. \\
+\textbf{Objetivo:} Permitir la customización estética sin afectar mecánicas, usando skins y colores desbloqueables. \\
+\textbf{Alcance:} Incluye selección de skins para serpiente, manzanas, obstáculos y fondo. \\
+\textbf{Criterios de Aceptación:}
+\begin{itemize}
+    \item Los cambios visuales se aplican inmediatamente en el juego.
+    \item Las personalizaciones se guardan y persisten entre sesiones.
+    \item Hay opciones predeterminadas y al menos 3 skins por elemento.
+\end{itemize}
+\end{tcolorbox}
 
 \newpage
 
