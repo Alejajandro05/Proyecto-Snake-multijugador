@@ -1,3 +1,4 @@
+
 \documentclass[12pt,a4paper]{article}
 
 % ----------------------------
@@ -51,7 +52,7 @@
     {\Huge \textbf{Sincro-Snake: Multijugador Real-Time}}\\[0.5cm]
     {\Large \textbf{Grupo 3}}\\[2cm]
 
-    \includegraphics[width=0.8\textwidth]{portada_snake.jpg}\\[1cm] 
+    \includegraphics[width=0.8\textwidth]{images/portada_snake.jpg}\\[1cm] 
     
     \textbf{Miembros del Grupo:} \\
     Benjamin Klett \\ Sergio Damaso Guerra \\ Alejandro Mentado García \\
@@ -94,47 +95,330 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 
 \subsection{Historias de Usuario (Funcionalidades)}
 
-% HU 1 - MUST
-\begin{tcolorbox}[title=HU-001: Duelo Local 1vs1]
-\textbf{Descripción:} Como usuario, quiero jugar con un amigo en el mismo teclado (WASD vs Flechas) para competir sin depender de la conexión a internet. \\
-\textbf{Criterios de Validación:} Dos serpientes independientes, colisión de cuerpos detectada y fin de partida con ganador. \\
-\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
-\end{tcolorbox}
 
-% HU 2 - MUST
-\begin{tcolorbox}[title=HU-002: Arena Online Automática]
-\textbf{Descripción:} Como jugador, quiero entrar en una cola de emparejamiento para ser conectado con un oponente remoto de forma rápida. \\
-\textbf{Criterios de Validación:} Entrada en sala de espera y transición automática al juego al detectar rival. \\
+
+% --- Epic Lógica básica del juego
+\begin{tcolorbox}[title=HU-001: Movimiento de la serpiente]
+\textbf{Descripción:} Como jugador, quiero controlar la dirección de la serpiente mediante el teclado para poder moverme por el mapa y buscar manzanas. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item El jugador puede mover la serpiente en cuatro direcciones.
+    \item El jugador puede usar las teclas WASD o las flechas del teclado.
+    \item La serpiente se mueve una casilla por cada actualización del juego.
+    \item La serpiente no puede moverse en dirección contraria inmediata a su dirección actual.
+    \item El movimiento se mantiene continuo mientras no se cambie la dirección.
+\end{itemize}
 \textbf{Estimación:} 12h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-% HU 3 - SHOULD
-\begin{tcolorbox}[title=HU-003: Movimiento Fluido (Anti-Lag)]
-\textbf{Descripción:} Como jugador online, quiero que los movimientos del rival se vean fluidos para que la partida sea justa y no haya saltos visuales. \\
-\textbf{Criterios de Validación:} Implementación de interpolación visible en el cliente Phaser. \\
-\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\begin{tcolorbox}[title=HU-002: Crecimiento de la serpiente]
+\textbf{Descripción:} Como jugador, quiero que la serpiente aumente su longitud cuando come una manzana para poder acercarme a la condición de victoria. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Cuando la serpiente come una manzana, aumenta su longitud.
+    \item La longitud aumenta en un bloque.
+    \item El nuevo bloque aparece en la cola de la serpiente.
+    \item El crecimiento ocurre inmediatamente después de comer la manzana.
+\end{itemize}
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-% HU 4 - SHOULD
-\begin{tcolorbox}[title=HU-004: Power-ups de Ventaja/Desventaja]
-\textbf{Descripción:} Como jugador, quiero recoger ítems especiales (escudo, turbo) para obtener ventajas tácticas sobre mi oponente. \\
-\textbf{Criterios de Validación:} Aparición aleatoria en mapa y aplicación de efectos temporales (velocidad/tamaño). \\
+\begin{tcolorbox}[title=HU-003: Muerte de la serpiente]
+\textbf{Descripción:} Como jugador, quiero que el juego detecte cuando la serpiente muere para que la partida termine correctamente. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item La serpiente muere al colisionar con el borde del mapa.
+    \item La serpiente muere al colisionar con un obstáculo mortal.
+    \item La serpiente muere al colisionar con otra serpiente.
+    \item Cuando la serpiente muere, la partida termina.
+\end{itemize}
+\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-004: Spawn inicial del jugador y longitud inicial]
+\textbf{Descripción:} Como jugador, quiero que mi serpiente aparezca automáticamente al comenzar la partida con una longitud inicial para poder empezar a jugar. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item La serpiente aparece al comenzar la partida.
+    \item La serpiente aparece dentro de los límites del mapa.
+    \item La serpiente tiene una longitud inicial de cuatro bloques.
+    \item La serpiente aparece en una zona libre del mapa.
+\end{itemize}
+\textbf{Estimación:} 6h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-005: Comer manzana y nueva manzana]
+\textbf{Descripción:} Como jugador, quiero que después de comer una manzana aparezca una nueva en el campo de juego para que el juego continúe. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Cuando la cabeza de la serpiente alcanza la casilla de la manzana, la manzana desaparece.
+    \item Después aparece una nueva manzana en el campo de juego.
+    \item La nueva manzana aparece dentro de los límites del campo de juego.
+    \item La nueva manzana no aparece en una casilla ocupada por una serpiente.
+    \item La nueva manzana no aparece en una casilla ocupada por un obstáculo.
+\end{itemize}
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-006: Sistema de colisiones]
+\textbf{Descripción:} Como jugador, quiero que el juego detecte colisiones con elementos del mapa para que las reglas del juego se apliquen correctamente. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item El sistema detecta colisiones con bordes del mapa.
+    \item El sistema detecta colisiones con obstáculos.
+    \item El sistema detecta colisiones entre serpientes.
+    \item Las colisiones provocan las consecuencias correspondientes.
+\end{itemize}
+\textbf{Estimación:} 12h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-007: Condición de victoria por longitud]
+\textbf{Descripción:} Como jugador, quiero ganar la partida cuando mi serpiente alcance el doble de longitud inicial para tener un objetivo claro durante la partida. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item El juego conoce la longitud inicial de la serpiente.
+    \item Cuando la serpiente alcanza el doble de longitud, se activa la condición de victoria.
+    \item El sistema finaliza la partida cuando se cumple esta condición.
+\end{itemize}
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-008: Pantalla de fin de partida]
+\textbf{Descripción:} Como jugador, quiero ver una pantalla de resultado al terminar la partida para conocer si gané o perdí. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Cuando termina la partida se muestra una pantalla final.
+    \item La pantalla muestra si el jugador ganó o perdió.
+    \item La pantalla permite regresar al menú principal.
+\end{itemize}
 \textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
-% HU 5 - COULD
-\begin{tcolorbox}[title=HU-005: Registro LAN y Leaderboard]
-\textbf{Descripción:} Como jugador competitivo, quiero registrar mi nombre para que mi puntuación sea guardada en el ranking histórico de la comunidad. \\
-\textbf{Criterios de Validación:} Pantalla de registro de nombre y visualización del Top 10 global. \\
+
+
+% --- Epic Sistema de obstáculos
+\begin{tcolorbox}[title=HU-009: Generación de obstáculos en el mapa]
+\textbf{Descripción:} Como jugador, quiero que aparezcan obstáculos en el mapa para que el juego sea más desafiante. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item El juego puede generar obstáculos durante la partida.
+    \item Los obstáculos aparecen dentro del mapa.
+    \item Los obstáculos no aparecen encima de serpientes.
+    \item Los obstáculos no aparecen encima de manzanas.
+\end{itemize}
+\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-010: Obstáculos con duración limitada]
+\textbf{Descripción:} Como jugador, quiero que algunos obstáculos desaparezcan después de cierto tiempo para que el mapa cambie durante la partida. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Cada obstáculo tiene un contador de duración.
+    \item El contador disminuye con cada movimiento del juego.
+    \item Cuando el contador llega a cero, el obstáculo desaparece.
+\end{itemize}
+\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-011: Desaparición de obstáculos después de movimientos]
+\textbf{Descripción:} Como jugador, quiero que los obstáculos desaparezcan después de varios movimientos para evitar bloqueos permanentes. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Los obstáculos pueden desaparecer después de tres movimientos.
+    \item Cuando desaparecen liberan la casilla del mapa.
+    \item La desaparición no afecta a serpientes cercanas.
+\end{itemize}
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-012: Colisión de serpiente con obstáculos]
+\textbf{Descripción:} Como jugador, quiero que la serpiente muera al chocar con un obstáculo para que el juego mantenga su dificultad. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Si la cabeza de la serpiente entra en una casilla con obstáculo, ocurre una colisión.
+    \item La serpiente muere tras la colisión.
+    \item El juego termina si el jugador muere.
+\end{itemize}
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-013: Skins de obstáculos]
+\textbf{Descripción:} Como jugador, quiero que los obstáculos tengan diferentes apariencias para personalizar el juego visualmente. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Los obstáculos pueden tener diferentes skins.
+    \item Las skins pueden cambiarse desde el sistema de personalización.
+    \item El cambio de skin afecta solo a la apariencia visual.
+\end{itemize}
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\end{tcolorbox}
+
+
+
+% --- Epic Mecanicas especiales del juego
+\begin{tcolorbox}[title=HU-014: Salto corto de tres casillas]
+\textbf{Descripción:} Como jugador, quiero poder realizar un salto corto de tres casillas para evitar obstáculos o cambiar rápidamente de posición. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item El jugador puede activar la acción de salto.
+    \item El salto mueve la serpiente tres casillas en la dirección actual.
+    \item El salto ocurre instantáneamente.
+\end{itemize}
+\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-015: Penalización de longitud por salto]
+\textbf{Descripción:} Como jugador, quiero que al realizar un salto se reduzca la longitud de la serpiente para equilibrar el uso de la habilidad. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Cuando se realiza un salto corto, la serpiente pierde una unidad de longitud.
+    \item La pérdida ocurre inmediatamente después del salto.
+    \item La longitud nunca puede ser menor a un bloque.
+\end{itemize}
+\textbf{Estimación:} 6h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-016: Disparo a cinco casillas de distancia]
+\textbf{Descripción:} Como jugador, quiero poder realizar un disparo hacia adelante para interactuar con elementos a distancia. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item El jugador puede activar la acción de disparo.
+    \item El disparo se realiza en línea recta.
+    \item El alcance máximo es de cinco casillas.
+\end{itemize}
+\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-017: Penalización de longitud por disparo]
+\textbf{Descripción:} Como jugador, quiero que disparar reduzca la longitud de mi serpiente para evitar abusar de esta habilidad. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Cada disparo reduce la longitud de la serpiente en una unidad.
+    \item La penalización ocurre inmediatamente después del disparo.
+    \item La longitud mínima se mantiene en un bloque.
+\end{itemize}
 \textbf{Estimación:} 6h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
 \end{tcolorbox}
 
-% HU 6 - COULD
-\begin{tcolorbox}[title=HU-006: Entrenamiento vs IA]
-\textbf{Descripción:} Como usuario solitario, quiero poder practicar contra un bot para mejorar mis reflejos antes de jugar online. \\
-\textbf{Criterios de Validación:} La IA evita bordes y persigue manzanas de forma autónoma. \\
-\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+
+
+% --- Epic Modo de juego contra IA
+\begin{tcolorbox}[title=HU-018: Iniciar partida contra ordenador]
+\textbf{Descripción:} Como jugador, quiero poder iniciar una partida contra una IA para jugar sin necesidad de otro jugador. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+\item El jugador puede seleccionar el modo 1 vs IA.
+\item El sistema genera una serpiente controlada por IA.
+\item La partida comienza normalmente.
+\end{itemize}
+\textbf{Estimación:} 2h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-019: Movimiento automático de la serpiente IA]
+\textbf{Descripción:} Como jugador, quiero que la serpiente controlada por IA se mueva automáticamente para que actúe como oponente. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+\item La serpiente IA se mueve sin intervención del jugador.
+\item La IA decide su dirección automáticamente.
+\end{itemize}
+\textbf{Estimación:} 4h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-020: IA sigue dirección hasta alinearse con la manzana]
+\textbf{Descripción:} Como jugador, quiero que la IA tenga un comportamiento simple para buscar manzanas. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+\item La IA mantiene una dirección inicial.
+\item La IA cambia comportamiento cuando está alineada con la manzana.
+\end{itemize}
+\textbf{Estimación:} 4h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-021: IA cambia dirección hacia la manzana]
+\textbf{Descripción:} Como jugador, quiero que la IA cambie dirección cuando está alineada con la manzana para intentar comerla. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+\item Si la IA está alineada horizontal o verticalmente con la manzana, cambia dirección.
+\item La IA intenta moverse hacia la manzana.
+\end{itemize}
+\textbf{Estimación:} 4h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-022: IA evita fronteras y serpientes]
+\textbf{Descripción:} Como jugador, quiero que la IA evite colisiones básicas para que el juego sea más interesante. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+\item La IA detecta cercanía con bordes del mapa.
+\item La IA cambia dirección para evitar colisiones.
+\item La IA intenta evitar otras serpientes.
+\end{itemize}
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+
+
+% --- Todos los epics
+\begin{tcolorbox}[title=EPIC-GAME-01: Lógica básica del juego]
+\textbf{Descripción:} Como jugador, quiero que el juego tenga una lógica clara para controlar la serpiente, interactuar con los elementos del mapa y determinar cuándo termina la partida. \\
+\textbf{Objetivo:} Implementar las mecánicas fundamentales que permiten jugar una partida básica de Snake, incluyendo movimiento, crecimiento, colisiones y condiciones de victoria o derrota. \\
+\textbf{Alcance:} Este epic incluye el movimiento de la serpiente, su crecimiento, la generación de manzanas, el sistema de colisiones y las condiciones que determinan el final de la partida. \\
+\textbf{Criterios de Aceptación:}
+\begin{itemize}
+    \item La serpiente puede moverse en cuatro direcciones mediante teclado (WASD o flechas).
+    \item La serpiente tiene una longitud inicial de cuatro bloques.
+    \item Cuando la serpiente come una manzana, aumenta su longitud.
+    \item Si la serpiente colisiona con el borde del mapa u otro objeto mortal, muere.
+    \item El juego puede determinar cuándo un jugador pierde.
+    \item El juego puede determinar cuándo un jugador gana al alcanzar el doble de longitud.
+    \item Al finalizar la partida se muestra una pantalla de resultado.
+\end{itemize}
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=EPIC-GAME-02: Sistema de obstáculos]
+\textbf{Descripción:} Como jugador, quiero que existan obstáculos en el mapa para aumentar la dificultad y la estrategia durante la partida. \\
+\textbf{Objetivo:} Añadir elementos en el mapa que bloqueen el movimiento de la serpiente y generen situaciones de riesgo durante la partida. \\
+\textbf{Alcance:} Este epic incluye la generación, duración, desaparición y colisión de obstáculos, así como su personalización visual. \\
+\textbf{Criterios de Aceptación:}
+\begin{itemize}
+    \item Los obstáculos pueden generarse en el mapa durante la partida.
+    \item Los obstáculos ocupan entre uno y cuatro bloques.
+    \item Los obstáculos pueden tener skins visuales diferentes.
+    \item La serpiente no puede atravesar un obstáculo.
+    \item Cuando la serpiente colisiona con un obstáculo se produce la muerte.
+    \item Los obstáculos pueden desaparecer después de un número determinado de movimientos.
+\end{itemize}
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=EPIC-GAME-03: Mecánicas especiales del juego]
+\textbf{Descripción:} Como jugador, quiero disponer de habilidades especiales durante la partida para crear nuevas estrategias y formas de interacción. \\
+\textbf{Objetivo:} Introducir acciones adicionales como saltos o disparos que modifiquen el comportamiento normal de la serpiente. \\
+\textbf{Alcance:} Este epic incluye el salto corto, el disparo a distancia y las penalizaciones asociadas a estas acciones. \\
+\textbf{Criterios de Aceptación:}
+\begin{itemize}
+    \item El jugador puede realizar un salto corto de tres casillas.
+    \item Al realizar un salto corto se pierde una unidad de longitud de la serpiente.
+    \item El jugador puede realizar un disparo a una distancia de cinco casillas.
+    \item Al realizar un disparo se pierde una unidad de longitud de la serpiente.
+    \item Las acciones especiales no permiten atravesar límites del mapa.
+    \item Las acciones especiales se ejecutan únicamente cuando el jugador las activa.
+\end{itemize}
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=EPIC-GAME-04: Modo de juego contra IA]
+\textbf{Descripción:} Como jugador, quiero poder jugar contra una inteligencia artificial para practicar o jugar cuando no haya otros jugadores disponibles. \\
+\textbf{Objetivo:} Implementar un oponente controlado por el sistema que pueda jugar de forma automática. \\
+\textbf{Alcance:} Este epic incluye la lógica de movimiento de la IA y su comportamiento para buscar manzanas y evitar peligros. \\
+\textbf{Criterios de Aceptación:}
+\begin{itemize}
+    \item El jugador puede iniciar una partida contra la IA.
+    \item La serpiente controlada por la IA se mueve automáticamente.
+    \item La IA avanza en una dirección hasta alinearse con la manzana.
+    \item Cuando está alineada con la manzana, cambia dirección para alcanzarla.
+    \item La IA intenta evitar los bordes del mapa.
+    \item La IA intenta evitar colisiones con otras serpientes.
+\end{itemize}
+\end{tcolorbox}
+
 
 \newpage
 
