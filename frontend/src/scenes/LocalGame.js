@@ -53,9 +53,21 @@ export class LocalGame extends Phaser.Scene {
         // Input
         this.cursors = this.input.keyboard.createCursorKeys();
         this.wasd    = this.input.keyboard.addKeys({ up: 'W', left: 'A', down: 'S', right: 'D' });
+
+        this.isPaused = false;
         this.input.keyboard.on('keydown-ESC', () => {
-            this.gameTimer.remove();
-            this.scene.start('MainMenu');
+            if (this.isPaused) return;
+            this.isPaused = true;
+
+            const state = this.engine.getState();
+            const p1 = state.players.get(P1_ID);
+            const p2 = state.players.get(P2_ID);
+
+            this.scene.pause();
+            this.scene.launch('PauseScene', {
+                p1Score: p1.score ?? 0,
+                p2Score: p2.score ?? 0
+            });
         });
 
         // Game loop driven by domain engine
