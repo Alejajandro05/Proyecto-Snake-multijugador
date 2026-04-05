@@ -15,6 +15,7 @@ export interface PlayerState {
   direction: Direction;
   nextDirection: Direction;
   alive: boolean;
+  lives: number;
   score: number;
   segments: SnakeSegmentState[];
 }

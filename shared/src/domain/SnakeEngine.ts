@@ -60,6 +60,7 @@ export class SnakeEngine {
       direction: 'right',
       nextDirection: 'right',
       alive: true,
+      lives: 3,
       score: 0,
       segments,
     };
@@ -177,7 +178,10 @@ export class SnakeEngine {
 
   private killPlayer(player: PlayerState): void {
     player.alive = false;
-    this.respawnQueue.set(player.id, this.tickCount + RESPAWN_TICKS);
+    player.lives -= 1;
+    if(player.lives > 0){
+      this.respawnQueue.set(player.id, this.tickCount + RESPAWN_TICKS);
+    }
   }
 
   private doRespawn(id: string): void {

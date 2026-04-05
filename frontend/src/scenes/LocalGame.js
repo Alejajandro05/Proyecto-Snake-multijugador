@@ -45,6 +45,23 @@ export class LocalGame extends Phaser.Scene {
             strokeThickness: 4,
         }).setOrigin(1, 0);
 
+        // Score display
+        this.p1LivesText = this.add.text(16, 45, 'J1: 0', {
+            fontFamily: 'Arial Black',
+            fontSize: 22,
+            color: '#e74c3c',
+            stroke: '#000000',
+            strokeThickness: 4,
+        });
+
+        this.p2LivesText = this.add.text(1008, 45, 'J2: 0', {
+            fontFamily: 'Arial Black',
+            fontSize: 22,
+            color: '#3498db',
+            stroke: '#000000',
+            strokeThickness: 4,
+        }).setOrigin(1, 0);
+
         this.add.text(512, 16, 'WASD  |  Flechas  –  ESC: Menú', {
             fontFamily: 'Arial',
             fontSize: 16,
@@ -127,11 +144,47 @@ export class LocalGame extends Phaser.Scene {
 
         const p1 = state.players.get(P1_ID);
         const p2 = state.players.get(P2_ID);
+
         if (p1) this.p1ScoreText.setText(`J1: ${p1.score}`);
         if (p2) this.p2ScoreText.setText(`J2: ${p2.score}`);
+
+        if (p1) this.p1LivesText.setText(`Vidas: ${p1.lives}`);
+        if (p2) this.p2LivesText.setText(`Vidas: ${p2.lives}`);
+
+        if(p1.score >= 10 || p2.score >= 10){
+            this.gameOver(true) // ganador por puntuación
+        }
+
+        if(p1.lives <= 0 || p2.lives <= 0){
+            this.gameOver(false); // perdedor por vidas
+        }
     }
 
-    shutdown() {
+    gameOver(reason) {
         if (this.gameTimer) this.gameTimer.remove();
+
+        const state = this.engine.getState();
+        const p1 = state.players.get(P1_ID);
+        const p2 = state.players.get(P2_ID);
+
+        if (reason) {   // ganador por puntuación
+            this.scene.start('GameOver', {
+                winner: p1.score > p2.score ? 'J1' : 'J2',
+                p1Score: p1.score,
+                p1Lives: p1.lives,
+                p2Score: p2.score,
+                p2Lives: p2.lives,
+                reason: 'score'
+            });
+        } else {   // perdedor por vidas
+            this.scene.start('GameOver', {
+                winner: p1.lives > 0 ? 'J1' : 'J2',
+                p1Score: p1.score,
+                p1Lives: p1.lives,
+                p2Score: p2.score,
+                p2Lives: p2.lives,
+                reason: 'lives'
+            });
+        }
     }
 }
