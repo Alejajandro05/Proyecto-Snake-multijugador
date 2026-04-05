@@ -1,9 +1,13 @@
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
-export interface SnakeSegmentState {
+export interface Position {
   x: number;
   y: number;
 }
+
+export type SnakeSegmentState = Position;
+export type FoodState = Position;
+export type ObstacleState = Position;
 
 export interface PlayerState {
   id: string;
@@ -15,12 +19,8 @@ export interface PlayerState {
   segments: SnakeSegmentState[];
 }
 
-export interface FoodState {
-  x: number;
-  y: number;
-}
-
 export interface GameState {
   players: Map<string, PlayerState>;
   food: FoodState[];
+  obstacles: ObstacleState[];
 }

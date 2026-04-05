@@ -1,4 +1,4 @@
-import type { Direction, GameState, PlayerState, FoodState, SnakeSegmentState } from './types.js';
+import type { Direction, GameState, PlayerState, FoodState, SnakeSegmentState, ObstacleState } from './types.js';
 import {
   GRID_COLS,
   GRID_ROWS,
@@ -32,6 +32,7 @@ export interface AddPlayerOptions {
 export class SnakeEngine {
   private players = new Map<string, PlayerState>();
   private food: FoodState[] = [];
+  private obstacles: ObstacleState[] = [];
   private respawnQueue = new Map<string, number>(); // playerId → respawn tick
   private tickCount = 0;
 
@@ -39,6 +40,7 @@ export class SnakeEngine {
     for (let i = 0; i < initialFood; i++) {
       this.food.push(this.randomFood());
     }
+    this.generateObstacles();
   }
 
   addPlayer(id: string, options?: AddPlayerOptions): PlayerState {
@@ -103,6 +105,7 @@ export class SnakeEngine {
     return {
       players: new Map(this.players),
       food: [...this.food],
+      obstacles: [...this.obstacles],
     };
   }
 
@@ -145,6 +148,12 @@ export class SnakeEngine {
           return;
         }
       }
+    }
+    
+    const hitObstacle  = this.obstacles.some(o => o.x === newX && o.y === newY);
+    if (hitObstacle) {
+        this.killPlayer(player);
+        return;
     }
 
     if (!player.alive) return;
@@ -194,4 +203,43 @@ export class SnakeEngine {
       y: Math.floor(Math.random() * GRID_ROWS) * GRID_SIZE,
     };
   }
+
+  private randomObstacleInQuadrant(quadrant: 'TL' | 'TR' | 'BL' | 'BR'): ObstacleState {
+    const midCol = GRID_COLS / 2;
+    const midRow = GRID_ROWS / 2;
+
+    let colMin = 0, colMax = midCol - 1;
+    let rowMin = 0, rowMax = midRow - 1;
+
+    switch (quadrant) {
+        case 'TR':
+            colMin = midCol; colMax = GRID_COLS - 1;
+            break;
+        case 'BL':
+            rowMin = midRow; rowMax = GRID_ROWS - 1;
+            break;
+        case 'BR':
+            colMin = midCol; colMax = GRID_COLS - 1;
+            rowMin = midRow; rowMax = GRID_ROWS - 1;
+            break;
+    }
+
+    return {
+        x: Math.floor(Math.random() * (colMax - colMin + 1) + colMin) * GRID_SIZE,
+        y: Math.floor(Math.random() * (rowMax - rowMin + 1) + rowMin) * GRID_SIZE
+    };
+  }
+
+  private generateObstacles(): void {
+    const quadrants: ('TL'|'TR'|'BL'|'BR')[] = ['TL','TR','BL','BR'];
+
+    quadrants.forEach(q => {
+        for (let i = 0; i < 2; i++) {
+            const obs = this.randomObstacleInQuadrant(q);
+            this.obstacles.push(obs);
+        }
+    });
+  }
+
 }
+

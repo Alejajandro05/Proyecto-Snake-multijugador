@@ -26,6 +26,7 @@ export class LocalGame extends Phaser.Scene {
         // Graphics layers
         this.snakeGraphics = this.add.graphics();
         this.foodGraphics  = this.add.graphics();
+        this.obstacleGraphics = this.add.graphics();
 
         // Score display
         this.p1ScoreText = this.add.text(16, 16, 'J1: 0', {
@@ -104,6 +105,7 @@ export class LocalGame extends Phaser.Scene {
     renderState(state) {
         this.snakeGraphics.clear();
         this.foodGraphics.clear();
+        this.obstacleGraphics.clear();
 
         state.players.forEach((player) => {
             if (!player.alive) return;
@@ -116,6 +118,11 @@ export class LocalGame extends Phaser.Scene {
         this.foodGraphics.fillStyle(0xffff00, 1);
         state.food.forEach((f) => {
             this.foodGraphics.fillRect(f.x + 1, f.y + 1, GRID_SIZE - 2, GRID_SIZE - 2);
+        });
+
+        this.obstacleGraphics.fillStyle(0x888888, 1);
+        state.obstacles.forEach((o) => {
+            this.obstacleGraphics.fillRect(o.x + 1, o.y + 1, GRID_SIZE - 2, GRID_SIZE - 2);
         });
 
         const p1 = state.players.get(P1_ID);
