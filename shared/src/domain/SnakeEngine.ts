@@ -1,4 +1,4 @@
-import type { Direction, GameState, PlayerState, FoodState, SnakeSegmentState, ObstacleState } from './types.js';
+import type { Direction, GameState, PlayerState, FoodState, SnakeSegmentState, ObstacleState, Position } from './types.js';
 import {
   GRID_COLS,
   GRID_ROWS,
@@ -201,17 +201,29 @@ export class SnakeEngine {
     player.alive = true;
   }
 
+  private getSnakesPosition(): Position[] {
+    let playerSegments: SnakeSegmentState[] = [];
+    this.players.forEach(p => p.segments.forEach(s => playerSegments.push(s)));
+    return playerSegments;
+  }
+
   private randomFood(): FoodState {
-    return {
-      x: Math.floor(Math.random() * GRID_COLS) * GRID_SIZE,
-      y: Math.floor(Math.random() * GRID_ROWS) * GRID_SIZE,
-    };
+    let playerSegments: Position[] = this.getSnakesPosition();
+    let pos: FoodState;
+    do{
+      pos = {
+        x: Math.floor(Math.random() * GRID_COLS) * GRID_SIZE,
+        y: Math.floor(Math.random() * GRID_ROWS) * GRID_SIZE,
+      };
+    }while (playerSegments.some(s => s.x === pos.x && s.y === pos.y));
+    return pos;
   }
 
   private randomObstacleInQuadrant(quadrant: 'TL' | 'TR' | 'BL' | 'BR'): ObstacleState {
     const midCol = GRID_COLS / 2;
     const midRow = GRID_ROWS / 2;
 
+    // por defecto TL
     let colMin = 0, colMax = midCol - 1;
     let rowMin = 0, rowMax = midRow - 1;
 
@@ -228,10 +240,15 @@ export class SnakeEngine {
             break;
     }
 
-    return {
+    let playerSegments = this.getSnakesPosition();
+    let pos: ObstacleState;
+    do{
+      pos = {
         x: Math.floor(Math.random() * (colMax - colMin + 1) + colMin) * GRID_SIZE,
         y: Math.floor(Math.random() * (rowMax - rowMin + 1) + rowMin) * GRID_SIZE
-    };
+      };
+    }while (playerSegments.some(s => s.x === pos.x && s.y === pos.y));
+    return pos;
   }
 
   private generateObstacles(): void {
