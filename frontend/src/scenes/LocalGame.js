@@ -1,5 +1,5 @@
 import { SnakeEngine } from '@shared/SnakeEngine';
-import { GRID_SIZE, TICK_MS } from '@shared/GameConfig';
+import { GRID_SIZE, TICK_MS, WIN_SCORE } from '@shared/GameConfig';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
@@ -151,7 +151,7 @@ export class LocalGame extends Phaser.Scene {
         if (p1) this.p1LivesText.setText(`Vidas: ${p1.lives}`);
         if (p2) this.p2LivesText.setText(`Vidas: ${p2.lives}`);
 
-        if(p1.score >= 10 || p2.score >= 10){
+        if(p1.score >= WIN_SCORE || p2.score >= WIN_SCORE){
             this.gameOver(true) // ganador por puntuación
         }
 

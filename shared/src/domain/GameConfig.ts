@@ -6,5 +6,7 @@ export const FOOD_COUNT = 3;
 export const INITIAL_SNAKE_LENGTH = 3;
 export const RESPAWN_DELAY_MS = 3000;
 export const SAFE_MARGIN = 3;
+export const WIN_SCORE = 10;
+export const MAX_LIVES = 3;
 
 export const PLAYER_COLORS: number[] = [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71];

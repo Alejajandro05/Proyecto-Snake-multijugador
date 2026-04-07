@@ -8,7 +8,8 @@ import {
   PLAYER_COLORS,
   RESPAWN_DELAY_MS,
   TICK_MS,
-  SAFE_MARGIN
+  SAFE_MARGIN,
+  MAX_LIVES,
 } from './GameConfig.js';
 
 const OPPOSITE: Record<Direction, Direction> = {
@@ -61,7 +62,7 @@ export class SnakeEngine {
       direction: 'right',
       nextDirection: 'right',
       alive: true,
-      lives: 3,
+      lives: MAX_LIVES,
       score: 0,
       segments,
     };
