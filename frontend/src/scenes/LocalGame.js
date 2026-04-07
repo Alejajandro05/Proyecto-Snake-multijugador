@@ -88,6 +88,23 @@ export class LocalGame extends Phaser.Scene {
             });
         });
 
+        // Input buffers: small queues for direction changes
+        this.inputBuffers = {
+            [P1_ID]: [],  // Max 3 directions
+            [P2_ID]: []
+        };
+
+        // Keydown listeners: push to buffer on press (async, outside game loop)
+        this.input.keyboard.on('keydown-W', () => this.pushDirection(P1_ID, 'up'));
+        this.input.keyboard.on('keydown-A', () => this.pushDirection(P1_ID, 'left'));
+        this.input.keyboard.on('keydown-S', () => this.pushDirection(P1_ID, 'down'));
+        this.input.keyboard.on('keydown-D', () => this.pushDirection(P1_ID, 'right'));
+
+        this.input.keyboard.on('keydown-UP', () => this.pushDirection(P2_ID, 'up'));
+        this.input.keyboard.on('keydown-LEFT', () => this.pushDirection(P2_ID, 'left'));
+        this.input.keyboard.on('keydown-DOWN', () => this.pushDirection(P2_ID, 'down'));
+        this.input.keyboard.on('keydown-RIGHT', () => this.pushDirection(P2_ID, 'right'));
+
         // Game loop driven by domain engine
         this.gameTimer = this.time.addEvent({
             delay: TICK_MS,
@@ -99,6 +116,13 @@ export class LocalGame extends Phaser.Scene {
         this.renderState(this.engine.getState());
     }
 
+    // Helper: Push direction to buffer (limit to 3 to prevent spam)
+    pushDirection(playerId, direction) {
+        if (this.inputBuffers[playerId].length < 3) {
+            this.inputBuffers[playerId].push(direction);
+        }
+    }
+
     gameTick() {
         this.handleInput();
         const state = this.engine.tick();
@@ -106,17 +130,13 @@ export class LocalGame extends Phaser.Scene {
     }
 
     handleInput() {
-        // Player 1 – WASD
-        if      (this.wasd.up.isDown)    this.engine.setNextDirection(P1_ID, 'up');
-        else if (this.wasd.down.isDown)  this.engine.setNextDirection(P1_ID, 'down');
-        else if (this.wasd.left.isDown)  this.engine.setNextDirection(P1_ID, 'left');
-        else if (this.wasd.right.isDown) this.engine.setNextDirection(P1_ID, 'right');
-
-        // Player 2 – Arrow keys
-        if      (this.cursors.up.isDown)    this.engine.setNextDirection(P2_ID, 'up');
-        else if (this.cursors.down.isDown)  this.engine.setNextDirection(P2_ID, 'down');
-        else if (this.cursors.left.isDown)  this.engine.setNextDirection(P2_ID, 'left');
-        else if (this.cursors.right.isDown) this.engine.setNextDirection(P2_ID, 'right');
+        // Process one buffered input per player per tick
+        [P1_ID, P2_ID].forEach(playerId => {
+            if (this.inputBuffers[playerId].length > 0) {
+                const direction = this.inputBuffers[playerId].shift();  // Dequeue
+                this.engine.setNextDirection(playerId, direction);
+            }
+        });
     }
 
     renderState(state) {
