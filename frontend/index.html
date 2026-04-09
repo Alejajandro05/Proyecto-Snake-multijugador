@@ -4,6 +4,12 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>snake</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+            crossorigin="anonymous"
+        >
         <style>
             /* Reset CSS: Please avoid making changes here unless you know what you're doing :) */
             *,
@@ -22,7 +28,11 @@
             body {
                 line-height: 1;
                 font-family: Arial, sans-serif;
-                background-color: #040218;
+                background:
+                    radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.22), transparent 32%),
+                    radial-gradient(circle at 85% 12%, rgba(34, 197, 94, 0.18), transparent 38%),
+                    linear-gradient(160deg, #020617 0%, #0b1120 48%, #172554 100%);
+                overflow: hidden;
             }
     
             ol, ul {
@@ -39,10 +49,188 @@
                 text-decoration: none;
                 color: inherit;
             }
+
+            #app-shell {
+                width: 100%;
+                height: 100%;
+            }
+
+            #game-frame {
+                width: 100vw;
+                height: 100vh;
+                max-height: 100vh;
+                border: 0;
+                background: transparent;
+                position: relative;
+            }
+
+            #game-container {
+                width: 100%;
+                height: 100%;
+            }
+
+            #localgame-hud {
+                pointer-events: none;
+                z-index: 5;
+                height: 100%;
+                padding: 0;
+            }
+
+            .hud-player-side {
+                width: clamp(130px, 14vw, 220px);
+                min-height: clamp(220px, 32vh, 320px);
+                background: linear-gradient(180deg, rgba(15, 23, 42, 0.75), rgba(8, 47, 73, 0.62));
+                border: 1px solid rgba(255, 255, 255, 0.18);
+                border-radius: 18px;
+                backdrop-filter: blur(4px);
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+            }
+
+            .hud-chip {
+                background: rgba(15, 23, 42, 0.72);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 14px;
+                min-width: 180px;
+                backdrop-filter: blur(3px);
+            }
+
+            .hud-title {
+                font-size: clamp(1.9rem, 3vw, 2.6rem);
+                font-weight: 800;
+                line-height: 1;
+                text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6);
+            }
+
+            .hud-sub {
+                font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+                font-weight: 700;
+                line-height: 1;
+                text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6);
+            }
+
+            #hud-help {
+                font-size: clamp(1rem, 1.3vw, 1.2rem);
+                letter-spacing: 0.02em;
+            }
+
+            .hud-score-big {
+                font-size: clamp(2.6rem, 5.5vw, 5rem);
+                font-weight: 800;
+                line-height: 0.95;
+                text-shadow: 0 3px 0 rgba(0, 0, 0, 0.55);
+            }
+
+            .hud-hearts {
+                font-size: clamp(1.35rem, 2.4vw, 2rem);
+                letter-spacing: 0.12em;
+            }
+
+            .hud-player-side .hud-title {
+                font-size: clamp(1.6rem, 2.8vw, 2.5rem);
+            }
+
+            #hud-left-player {
+                position: absolute;
+                left: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+            }
+
+            #hud-right-player {
+                position: absolute;
+                right: 16px;
+                top: 50%;
+                transform: translateY(-50%);
+            }
+
+            #hud-help-wrap {
+                position: absolute;
+                top: 14px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+
+            @media (max-width: 992px) {
+                .hud-player-side {
+                    width: 138px;
+                    min-height: 190px;
+                }
+
+                .hud-title {
+                    font-size: clamp(1.4rem, 4vw, 2rem);
+                }
+
+                .hud-sub {
+                    font-size: clamp(1rem, 3vw, 1.4rem);
+                }
+
+                #hud-left-player {
+                    left: 6px;
+                }
+
+                #hud-right-player {
+                    right: 6px;
+                }
+            }
+
+            @media (max-width: 768px) {
+                .hud-player-side {
+                    width: auto;
+                    min-height: 0;
+                    padding: 8px 12px !important;
+                    border-radius: 12px;
+                }
+
+                .hud-score-big {
+                    font-size: 2rem;
+                }
+
+                .hud-hearts {
+                    font-size: 1.2rem;
+                }
+
+                #hud-left-player,
+                #hud-right-player {
+                    top: 12px;
+                    transform: none;
+                }
+            }
+
+            #game-container canvas {
+                image-rendering: pixelated;
+                image-rendering: crisp-edges;
+            }
+
+            @media (max-width: 768px) {
+                #game-frame {
+                    border-radius: 0 !important;
+                }
+            }
         </style>
     </head>
     <body>
-        <div id="game-container"></div>
+        <main id="app-shell" class="container-fluid d-flex align-items-center justify-content-center p-0">
+            <section id="game-frame" class="overflow-hidden">
+                <header id="localgame-hud" class="position-absolute top-0 start-0 w-100 d-none">
+                    <div id="hud-help-wrap" class="hud-chip px-3 py-2 text-light text-center shadow-sm">
+                        <div id="hud-help" class="fw-semibold">WASD | Flechas - ESC: Menu</div>
+                    </div>
+
+                    <div id="hud-left-player" class="hud-player-side d-flex flex-column justify-content-between px-3 py-3 text-center text-danger">
+                        <div id="hud-j1-score" class="hud-title">J1: 0</div>
+                        <div id="hud-j1-score-big" class="hud-score-big">0</div>
+                        <div id="hud-j1-lives" class="hud-sub hud-hearts text-danger">&#10084;&#10084;&#10084;</div>
+                    </div>
+
+                    <div id="hud-right-player" class="hud-player-side d-flex flex-column justify-content-between px-3 py-3 text-center text-info">
+                        <div id="hud-j2-score" class="hud-title">J2: 0</div>
+                        <div id="hud-j2-score-big" class="hud-score-big">0</div>
+                        <div id="hud-j2-lives" class="hud-sub hud-hearts text-danger">&#10084;&#10084;&#10084;</div>
+                    </div>
+                </header>
+                <div id="game-container"></div>
+            </section>
+        </main>
         <script src="./phaser.js"></script>
         <script type="module" src="./src/main.js"></script>
     </body>
