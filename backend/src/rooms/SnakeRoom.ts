@@ -3,6 +3,7 @@ import { SnakeRoomState } from "./schema/SnakeRoomState.js";
 import { Player } from "./schema/Player.js";
 import { SnakeSegment } from "./schema/SnakeSegment.js";
 import { Food } from "./schema/Food.js";
+import { Obstacle } from "./schema/Obstacle.js";
 import { SnakeEngine } from "../../../shared/src/domain/SnakeEngine.js";
 import type { GameState } from "../../../shared/src/domain/types.js";
 import { TICK_MS, PLAYER_COLORS } from "../../../shared/src/domain/GameConfig.js";
@@ -35,6 +36,7 @@ export class SnakeRoom extends Room<SnakeRoomState> {
     player.sessionId = client.sessionId;
     player.color = playerState.color;
     player.alive = playerState.alive;
+    player.lives = playerState.lives;
     player.score = playerState.score;
     player.direction = playerState.direction;
     player.nextDirection = playerState.nextDirection;
@@ -70,12 +72,14 @@ export class SnakeRoom extends Room<SnakeRoomState> {
       player.direction = playerState.direction;
       player.nextDirection = playerState.nextDirection;
       player.alive = playerState.alive;
+      player.lives = playerState.lives;
       player.score = playerState.score;
 
       this.syncSegments(player, playerState.segments);
     });
 
     this.syncFood(gameState.food);
+    this.syncObstacles(gameState.obstacles);
   }
 
   private syncSegments(player: Player, segments: { x: number; y: number }[]): void {
@@ -101,6 +105,19 @@ export class SnakeRoom extends Room<SnakeRoomState> {
     for (let i = 0; i < food.length; i++) {
       this.state.food[i].x = food[i].x;
       this.state.food[i].y = food[i].y;
+    }
+  }
+
+  private syncObstacles(obstacles: { x: number; y: number }[]): void {
+    while (this.state.obstacles.length < obstacles.length) {
+      this.state.obstacles.push(new Obstacle());
+    }
+    while (this.state.obstacles.length > obstacles.length) {
+      this.state.obstacles.pop();
+    }
+    for (let i = 0; i < obstacles.length; i++) {
+      this.state.obstacles[i].x = obstacles[i].x;
+      this.state.obstacles[i].y = obstacles[i].y;
     }
   }
 }
