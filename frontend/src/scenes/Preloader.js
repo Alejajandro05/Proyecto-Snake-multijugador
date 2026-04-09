@@ -26,6 +26,9 @@ export class Preloader extends Phaser.Scene {
         //  Load the assets for the game - Replace with your own assets
         this.load.setPath('assets');
 
+        // 2. Cargamos el fondo épico que ya configuramos
+        this.load.image('fondo_duelo', 'fondo_duelo.png');
+
     }
 
     create() {

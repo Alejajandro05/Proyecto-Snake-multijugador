@@ -9,13 +9,22 @@ import { Pause } from './scenes/Pause.js';
 
 const config = {
     type: Phaser.AUTO,
+    
+    // 1. VOLVEMOS AL TAMAÑO DINÁMICO (Pantalla completa real)
     width: window.innerWidth,
     height: window.innerHeight,
+    
     parent: 'game-container',
-    backgroundColor: '#028af8',
+    
+    // 2. Mantenemos el fondo oscuro elegante que queríamos
+    backgroundColor: '#0B081A', 
+    
+    // 3. Mantenemos las mejoras de nitidez y el estilo retro para el tablero
     pixelArt: true,
-    antialias: false,
+    antialias: false, 
     roundPixels: true,
+    resolution: window.devicePixelRatio || 1,
+
     physics: {
         default: 'arcade',
         arcade: {
@@ -23,10 +32,13 @@ const config = {
             gravity: { y: 500 }
         }
     },
+    
+    // 4. VOLVEMOS AL MODO RESIZE: Phaser no pelea con tu CSS, simplemente se adapta
     scale: {
         mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.NO_CENTER
     },
+    
     scene: [
         Boot,
         Preloader,
