@@ -305,8 +305,8 @@ export class LocalGame extends Phaser.Scene {
         const p1 = state.players.get(P1_ID);
         const p2 = state.players.get(P2_ID);
 
-        if (p1 && this.hudJ1Score) this.hudJ1Score.textContent = `J1: ${p1.score}`;
-        if (p2 && this.hudJ2Score) this.hudJ2Score.textContent = `J2: ${p2.score}`;
+        if (p1 && this.hudJ1Score) this.hudJ1Score.textContent = `J1`;
+        if (p2 && this.hudJ2Score) this.hudJ2Score.textContent = `J2`;
         if (p1 && this.hudJ1ScoreBig) this.hudJ1ScoreBig.textContent = `${p1.score}`;
         if (p2 && this.hudJ2ScoreBig) this.hudJ2ScoreBig.textContent = `${p2.score}`;
 

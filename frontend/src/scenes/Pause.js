@@ -14,12 +14,13 @@ export class Pause extends Phaser.Scene {
         pauseDiv.style.left = '0';
         pauseDiv.style.width = '100vw';
         pauseDiv.style.height = '100vh';
-        pauseDiv.style.background = 'rgba(12, 15, 36, 0.55)';
-        pauseDiv.style.backdropFilter = 'blur(8px)';
+        pauseDiv.style.background = 'rgba(11,18,45,0.5)';
+        pauseDiv.style.backdropFilter = 'blur(15px)';
         pauseDiv.style.zIndex = '1000';
         pauseDiv.style.display = 'flex';
         pauseDiv.style.alignItems = 'center';
         pauseDiv.style.justifyContent = 'center';
+        pauseDiv.style.padding = '28px';
         pauseDiv.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
 
         const localGame = this.scene.get('LocalGame');
@@ -36,10 +37,10 @@ export class Pause extends Phaser.Scene {
             <div class="container">
                 <div class="row justify-content-center">
                     <div class="col-xl-5 col-lg-6 col-md-8">
-                        <div class="card shadow border-0" style="background: rgba(255, 255, 255, 0.97); border-radius: 24px;">
+                        <div class="card shadow" style="background: rgba(12, 18, 42, 0.95); border: 4px solid rgba(34, 211, 238, 0.45); border-radius: 28px; box-shadow: 0 26px 80px rgba(0,0,0,0.35);">
                             <div class="card-body p-5 text-center">
-                                <h1 class="display-5 fw-bold text-dark mb-2">PAUSA</h1>
-                                <p class="text-muted mb-4">Pulsa ESC o usa los botones para continuar.</p>
+                                <h1 class="display-5 fw-bold text-white mb-2">PAUSA</h1>
+                                <p class="text-white mb-4">Pulsa ESC o usa los botones para continuar.</p>
 
                                 <div class="row gx-3 gy-3 mb-4">
                                     <div class="col-6">
@@ -71,8 +72,8 @@ export class Pause extends Phaser.Scene {
                                 </div>
 
                                 <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
-                                    <button id="resume-btn" class="btn btn-success btn-lg px-5 py-3 fw-bold" style="border-radius: 50px; min-width: 160px;">Reanudar</button>
-                                    <button id="menu-btn" class="btn btn-secondary btn-lg px-5 py-3 fw-bold" style="border-radius: 50px; min-width: 160px;">Salir al Menú</button>
+                                    <button id="resume-btn" class="btn btn-secondary px-5 py-3 fw-bold" style="border-radius: 50px; min-width: 180px;">Reanudar</button>
+                                    <button id="menu-btn" class="btn btn-secondary px-5 py-3 fw-bold" style="border-radius: 50px; min-width: 180px;">Salir al Menú</button>
                                 </div>
                             </div>
                         </div>
