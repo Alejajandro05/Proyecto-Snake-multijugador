@@ -9,10 +9,13 @@ import { Pause } from './scenes/Pause.js';
 
 const config = {
     type: Phaser.AUTO,
-    width: 1024,
-    height: 768,
+    width: window.innerWidth,
+    height: window.innerHeight,
     parent: 'game-container',
     backgroundColor: '#028af8',
+    pixelArt: true,
+    antialias: false,
+    roundPixels: true,
     physics: {
         default: 'arcade',
         arcade: {
@@ -21,8 +24,8 @@ const config = {
         }
     },
     scale: {
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH
+        mode: Phaser.Scale.RESIZE,
+        autoCenter: Phaser.Scale.NO_CENTER
     },
     scene: [
         Boot,

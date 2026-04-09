@@ -1,4 +1,4 @@
-import type { Direction, GameState, PlayerState, FoodState, SnakeSegmentState, ObstacleState } from './types.js';
+import type { Direction, GameState, PlayerState, FoodState, SnakeSegmentState, ObstacleState, Position } from './types.js';
 import {
   GRID_COLS,
   GRID_ROWS,
@@ -8,6 +8,8 @@ import {
   PLAYER_COLORS,
   RESPAWN_DELAY_MS,
   TICK_MS,
+  SAFE_MARGIN,
+  MAX_LIVES,
 } from './GameConfig.js';
 
 const OPPOSITE: Record<Direction, Direction> = {
@@ -60,7 +62,7 @@ export class SnakeEngine {
       direction: 'right',
       nextDirection: 'right',
       alive: true,
-      lives: 3,
+      lives: MAX_LIVES,
       score: 0,
       segments,
     };
@@ -189,8 +191,16 @@ export class SnakeEngine {
     if (!player) return;
 
     const margin = INITIAL_SNAKE_LENGTH + 1;
-    const col = Math.floor(Math.random() * (GRID_COLS - margin * 2) + margin);
-    const row = Math.floor(Math.random() * (GRID_ROWS - margin * 2) + margin);
+    
+    let col: number;
+    let row: number;
+    let attempts = 0;
+
+    do {
+      col = Math.floor(Math.random() * (GRID_COLS - margin * 2) + margin);
+      row = Math.floor(Math.random() * (GRID_ROWS - margin * 2) + margin);
+      attempts++;
+    } while (!this.isSafeSpawn(col, row) && attempts < 50);
 
     player.segments = [];
     for (let i = 0; i < INITIAL_SNAKE_LENGTH; i++) {
@@ -201,17 +211,29 @@ export class SnakeEngine {
     player.alive = true;
   }
 
+  private getSnakesPosition(): Position[] {
+    let playerSegments: SnakeSegmentState[] = [];
+    this.players.forEach(p => p.segments.forEach(s => playerSegments.push(s)));
+    return playerSegments;
+  }
+
   private randomFood(): FoodState {
-    return {
-      x: Math.floor(Math.random() * GRID_COLS) * GRID_SIZE,
-      y: Math.floor(Math.random() * GRID_ROWS) * GRID_SIZE,
-    };
+    let playerSegments: Position[] = this.getSnakesPosition();
+    let pos: FoodState;
+    do{
+      pos = {
+        x: Math.floor(Math.random() * GRID_COLS) * GRID_SIZE,
+        y: Math.floor(Math.random() * GRID_ROWS) * GRID_SIZE,
+      };
+    }while (playerSegments.some(s => s.x === pos.x && s.y === pos.y));
+    return pos;
   }
 
   private randomObstacleInQuadrant(quadrant: 'TL' | 'TR' | 'BL' | 'BR'): ObstacleState {
     const midCol = GRID_COLS / 2;
     const midRow = GRID_ROWS / 2;
 
+    // por defecto TL
     let colMin = 0, colMax = midCol - 1;
     let rowMin = 0, rowMax = midRow - 1;
 
@@ -228,10 +250,15 @@ export class SnakeEngine {
             break;
     }
 
-    return {
+    let playerSegments = this.getSnakesPosition();
+    let pos: ObstacleState;
+    do{
+      pos = {
         x: Math.floor(Math.random() * (colMax - colMin + 1) + colMin) * GRID_SIZE,
         y: Math.floor(Math.random() * (rowMax - rowMin + 1) + rowMin) * GRID_SIZE
-    };
+      };
+    }while (playerSegments.some(s => s.x === pos.x && s.y === pos.y));
+    return pos;
   }
 
   private generateObstacles(): void {
@@ -242,6 +269,14 @@ export class SnakeEngine {
             const obs = this.randomObstacleInQuadrant(q);
             this.obstacles.push(obs);
         }
+    });
+  }
+
+  private isSafeSpawn(col: number, row: number): boolean {
+    return this.obstacles.every(ob => {
+      const obCol = ob.x / GRID_SIZE;
+      const obRow = ob.y / GRID_SIZE;
+      return Math.abs(obCol - col) > SAFE_MARGIN || Math.abs(obRow - row) > SAFE_MARGIN;
     });
   }
 
