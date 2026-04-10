@@ -4,99 +4,85 @@ export class MainMenu extends Phaser.Scene {
     }
 
     create() {
-        this.cameras.main.setBackgroundColor(0x1a1a2e);
-        this.backgroundImage = this.add.image(0, 0, 'background').setAlpha(0.3);
+    const fondo = this.add.image(this.scale.width / 2, this.scale.height / 2, 'fondo_duelo');
+        
+        // Función para calcular la escala perfecta sin importar el tamaño del monitor
+        const ajustarFondo = (width, height) => {
+            fondo.setPosition(width / 2, height / 2); // Mantener en el centro
+            const escalaX = width / fondo.width;
+            const escalaY = height / fondo.height;
+            fondo.setScale(Math.max(escalaX, escalaY)); // Cubrir toda la pantalla sin deformar
+        };
 
-        this.titleText = this.add.text(0, 0, 'SNAKE MULTIJUGADOR', {
-            fontFamily: 'Arial Black',
-            fontSize: 48,
-            color: '#ffffff',
-            stroke: '#000000',
-            strokeThickness: 8,
-            align: 'center',
-        }).setOrigin(0.5);
+        // Lo ajustamos al arrancar la escena
+        ajustarFondo(this.scale.width, this.scale.height);
 
-        // ── Local game button ───────────────────────────────────────────
-        this.localBtn = this.add.text(0, 0, '🎮  Juego Local  (2 jugadores)', {
-            fontFamily: 'Arial Black',
-            fontSize: 30,
-            color: '#2ecc71',
-            stroke: '#000000',
-            strokeThickness: 6,
-            align: 'center',
-        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-
-        this.localHint = this.add.text(0, 0, 'Jugador 1: WASD   |   Jugador 2: Flechas', {
-            fontFamily: 'Arial',
-            fontSize: 18,
-            color: '#aaaaaa',
-            align: 'center',
-        }).setOrigin(0.5);
-
-        // ── Online game button ──────────────────────────────────────────
-        this.onlineBtn = this.add.text(0, 0, '🌐  Juego Online  (Colyseus)', {
-            fontFamily: 'Arial Black',
-            fontSize: 30,
-            color: '#3498db',
-            stroke: '#000000',
-            strokeThickness: 6,
-            align: 'center',
-        }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-
-        this.onlineHint = this.add.text(0, 0, 'Conéctate con amigos en tiempo real', {
-            fontFamily: 'Arial',
-            fontSize: 18,
-            color: '#aaaaaa',
-            align: 'center',
-        }).setOrigin(0.5);
-
-        // ── Hover / click handlers ──────────────────────────────────────
-        this.localBtn.on('pointerover', () => this.localBtn.setColor('#27ae60'));
-        this.localBtn.on('pointerout',  () => this.localBtn.setColor('#2ecc71'));
-        this.localBtn.on('pointerdown', () => this.scene.start('LocalGame'));
-
-        this.onlineBtn.on('pointerover', () => this.onlineBtn.setColor('#2980b9'));
-        this.onlineBtn.on('pointerout',  () => this.onlineBtn.setColor('#3498db'));
-        this.onlineBtn.on('pointerdown', () => this.scene.start('OnlineGame'));
-
-        this.resizeHandler = (gameSize) => this.layoutMenu(gameSize.width, gameSize.height);
-        this.scale.on('resize', this.resizeHandler);
-        this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-            this.scale.off('resize', this.resizeHandler);
+        // Si el jugador redimensiona la ventana del navegador, recalculamos el fondo
+        this.scale.on('resize', (gameSize) => {
+            ajustarFondo(gameSize.width, gameSize.height);
         });
 
-        this.layoutMenu(this.scale.width, this.scale.height);
-    }
+        // 2. EL MENÚ EN HTML (Minimalista, transparente y usando Bootstrap)
+        const menuDiv = document.createElement('div');
+        menuDiv.id = 'main-menu-overlay';
+        
+        // Clases de Bootstrap para ocupar toda la pantalla y centrar el contenido
+        menuDiv.className = 'position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center';
+        menuDiv.style.zIndex = '1000';
 
-    layoutMenu(width, height) {
-        const centerX = width * 0.5;
+        // Inyectamos un HTML mucho más limpio. Sin cajas de fondo.
+        menuDiv.innerHTML = `
+            <div class="text-center" style="margin-top: -80px;"> <h1 class="display-1 fw-bold text-white mb-5" style="font-family: 'Teko', sans-serif; text-shadow: 0px 4px 20px #F67D31, 0px 0px 10px #F67D31; letter-spacing: 2px;">
+                    SNAKE CLASH
+                </h1>
+                
+                <div class="d-flex flex-column gap-3 align-items-center">
+                    
+                    <button id="btn-local" class="btn text-white fw-bold shadow" style="width: 280px; padding: 12px; background-color: #DE1A58; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: transform 0.2s ease;">
+                        🎮 JUEGO LOCAL
+                    </button>
+                    
+                    <button id="btn-online" class="btn text-white fw-bold shadow" style="width: 280px; padding: 12px; background-color: #8F0177; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: transform 0.2s ease;">
+                        🌐 1 VS 1 ONLINE
+                    </button>
 
-        this.backgroundImage
-            .setPosition(centerX, height * 0.5)
-            .setDisplaySize(width, height);
+                    <button id="btn-opciones" class="btn text-white fw-bold shadow" style="width: 280px; padding: 12px; background-color: #1A05A2; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: transform 0.2s ease;">
+                        ⚙️ OPCIONES
+                    </button>
+                </div>
+            </div>
+        `;
 
-        const titleSize = Math.max(28, Math.floor(width * 0.035));
-        const buttonSize = Math.max(20, Math.floor(width * 0.024));
-        const hintSize = Math.max(13, Math.floor(width * 0.012));
+        document.getElementById('game-container').appendChild(menuDiv);
 
-        this.titleText
-            .setFontSize(titleSize)
-            .setPosition(centerX, height * 0.22);
+        // 3. EVENTOS Y LIMPIEZA
+        const clearMenu = () => {
+            if (document.getElementById('game-container').contains(menuDiv)) {
+                document.getElementById('game-container').removeChild(menuDiv);
+            }
+        };
 
-        this.localBtn
-            .setFontSize(buttonSize)
-            .setPosition(centerX, height * 0.46);
+        // Lógica de navegación
+        document.getElementById('btn-local').addEventListener('click', () => {
+            clearMenu();
+            this.scene.start('LocalGame');
+        });
 
-        this.localHint
-            .setFontSize(hintSize)
-            .setPosition(centerX, height * 0.52);
+        document.getElementById('btn-online').addEventListener('click', () => {
+            clearMenu();
+            this.scene.start('OnlineGame');
+        });
 
-        this.onlineBtn
-            .setFontSize(buttonSize)
-            .setPosition(centerX, height * 0.62);
+        document.getElementById('btn-opciones').addEventListener('click', () => {
+            console.log("Configuración abierta");
+        });
 
-        this.onlineHint
-            .setFontSize(hintSize)
-            .setPosition(centerX, height * 0.68);
+        // Efecto visual: Que los botones aumenten de tamaño al pasar el ratón (Hover)
+        const buttons = ['btn-local', 'btn-online', 'btn-opciones'];
+        buttons.forEach(id => {
+            const btn = document.getElementById(id);
+            btn.addEventListener('mouseenter', () => btn.style.transform = 'scale(1.08)');
+            btn.addEventListener('mouseleave', () => btn.style.transform = 'scale(1)');
+        });
     }
 }
