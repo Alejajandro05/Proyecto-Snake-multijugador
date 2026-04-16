@@ -7,6 +7,7 @@ const OBSTACLE_COLOR = 0x888888;
 export class SnakeBoardRenderer {
     constructor(scene) {
         this.scene = scene;
+        this.outerPadding = 14;
         this.boardOffsetX = 0;
         this.boardOffsetY = 0;
         this.cellSize = GRID_SIZE;
@@ -29,9 +30,13 @@ export class SnakeBoardRenderer {
             ? this.scene.add.tileSprite(0, 0, 1, 1, ASSET_KEYS.MAP_FLOOR_TILE).setOrigin(0).setAlpha(0.96).setDepth(-15)
             : null;
         this.gridGraphics = this.scene.add.graphics().setDepth(-10);
+        this.boardFrameSprite = this.scene.textures.exists(ASSET_KEYS.MAP_BOARD_FRAME)
+            ? this.scene.add.image(0, 0, ASSET_KEYS.MAP_BOARD_FRAME).setOrigin(0).setAlpha(0.92).setDepth(5)
+            : null;
         this.snakeGraphics = this.scene.add.graphics().setDepth(10);
         this.foodGraphics = this.scene.add.graphics().setDepth(11);
         this.obstacleGraphics = this.scene.add.graphics().setDepth(12);
+        this.obstacleSprites = [];
     }
 
     updateLayout({
@@ -61,6 +66,7 @@ export class SnakeBoardRenderer {
             .setDisplaySize(viewportWidth, viewportHeight);
 
         this.updateFloorTileLayer();
+        this.updateBoardFrameSprite();
 
         [this.gridGraphics, this.snakeGraphics, this.foodGraphics, this.obstacleGraphics].forEach((layer) => {
             layer.setPosition(0, 0);
@@ -101,10 +107,23 @@ export class SnakeBoardRenderer {
         this.floorTileSprite.tileScaleY = scaleY;
     }
 
+    updateBoardFrameSprite() {
+        if (!this.boardFrameSprite) return;
+
+        const frameWidth = this.boardWidth + this.outerPadding * 2;
+        const frameHeight = this.boardHeight + this.outerPadding * 2;
+
+        this.boardFrameSprite
+            .setPosition(this.boardOffsetX - this.outerPadding, this.boardOffsetY - this.outerPadding)
+            .setDisplaySize(frameWidth, frameHeight)
+            .setVisible(true);
+    }
+
     clearDynamicLayers() {
         this.snakeGraphics.clear();
         this.foodGraphics.clear();
         this.obstacleGraphics.clear();
+        this.hideObstacleSprites();
     }
 
     renderState(state) {
@@ -131,32 +150,73 @@ export class SnakeBoardRenderer {
     }
 
     renderObstacles(obstacles) {
-        obstacles?.forEach?.((obstacle) => {
-            this.drawBoardCell(this.obstacleGraphics, obstacle.x, obstacle.y, OBSTACLE_COLOR);
+        if (!this.scene.textures.exists(ASSET_KEYS.MAP_OBSTACLE_ROCK)) {
+            obstacles?.forEach?.((obstacle) => {
+                this.drawBoardCell(this.obstacleGraphics, obstacle.x, obstacle.y, OBSTACLE_COLOR);
+            });
+            return;
+        }
+
+        obstacles?.forEach?.((obstacle, index) => {
+            const sprite = this.getObstacleSprite(index);
+            const col = Math.floor(obstacle.x / GRID_SIZE);
+            const row = Math.floor(obstacle.y / GRID_SIZE);
+            const px = this.boardOffsetX + col * this.cellSize;
+            const py = this.boardOffsetY + row * this.cellSize;
+            const padding = Math.max(1, Math.floor(this.cellSize * 0.04));
+
+            sprite
+                .setPosition(px + padding, py + padding)
+                .setDisplaySize(
+                    Math.max(1, this.cellSize - padding * 2),
+                    Math.max(1, this.cellSize - padding * 2)
+                )
+                .setVisible(true);
+        });
+    }
+
+    getObstacleSprite(index) {
+        if (this.obstacleSprites[index]) {
+            return this.obstacleSprites[index];
+        }
+
+        const sprite = this.scene.add.image(0, 0, ASSET_KEYS.MAP_OBSTACLE_ROCK)
+            .setOrigin(0)
+            .setDepth(12)
+            .setVisible(false);
+
+        this.obstacleSprites[index] = sprite;
+        return sprite;
+    }
+
+    hideObstacleSprites() {
+        this.obstacleSprites.forEach((sprite) => {
+            sprite.setVisible(false);
         });
     }
 
     drawBoardFrame() {
         this.boardBackgroundGraphics.clear();
 
-        const outerPadding = 14;
         this.boardBackgroundGraphics.fillStyle(0x0f172a, 0.86);
         this.boardBackgroundGraphics.fillRoundedRect(
-            this.boardOffsetX - outerPadding,
-            this.boardOffsetY - outerPadding,
-            this.boardWidth + outerPadding * 2,
-            this.boardHeight + outerPadding * 2,
+            this.boardOffsetX - this.outerPadding,
+            this.boardOffsetY - this.outerPadding,
+            this.boardWidth + this.outerPadding * 2,
+            this.boardHeight + this.outerPadding * 2,
             18
         );
 
-        this.boardBackgroundGraphics.lineStyle(3, 0x22d3ee, 0.55);
-        this.boardBackgroundGraphics.strokeRoundedRect(
-            this.boardOffsetX - outerPadding,
-            this.boardOffsetY - outerPadding,
-            this.boardWidth + outerPadding * 2,
-            this.boardHeight + outerPadding * 2,
-            18
-        );
+        if (!this.boardFrameSprite) {
+            this.boardBackgroundGraphics.lineStyle(3, 0x22d3ee, 0.55);
+            this.boardBackgroundGraphics.strokeRoundedRect(
+                this.boardOffsetX - this.outerPadding,
+                this.boardOffsetY - this.outerPadding,
+                this.boardWidth + this.outerPadding * 2,
+                this.boardHeight + this.outerPadding * 2,
+                18
+            );
+        }
     }
 
     drawGrid() {

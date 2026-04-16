@@ -31,7 +31,7 @@ const PLANNED_IMAGE_ASSETS = [
     {
         key: ASSET_KEYS.MAP_BOARD_FRAME,
         path: 'map/borders/board_frame.png',
-        enabled: false,
+        enabled: true,
     },
     {
         key: ASSET_KEYS.MAP_FLOOR_TILE,
@@ -41,7 +41,7 @@ const PLANNED_IMAGE_ASSETS = [
     {
         key: ASSET_KEYS.MAP_OBSTACLE_ROCK,
         path: 'map/obstacles/obstacle_rock.png',
-        enabled: false,
+        enabled: true,
     },
     {
         key: ASSET_KEYS.MAP_DECOR_CORNER_LEAF,
