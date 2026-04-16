@@ -31,6 +31,7 @@ export class LocalGame extends Phaser.Scene {
         this.toggleHud(true);
 
         this.boardBackgroundGraphics = this.add.graphics();
+        this.mapTileLayer = this.add.renderTexture(0, 0, 1, 1);
         this.gridGraphics = this.add.graphics();
 
         // Domain engine – pure game logic, no Phaser/Colyseus dependency
@@ -194,7 +195,26 @@ export class LocalGame extends Phaser.Scene {
         this.boardBackgroundGraphics.clear();
 
         const outerPadding = 14;
-        this.boardBackgroundGraphics.fillStyle(0x0f172a, 0.86);
+
+        // ── NUEVO: Rellenar el tablero con el tile de suelo ──────────────
+        this.mapTileLayer.setPosition(this.boardOffsetX, this.boardOffsetY);
+        this.mapTileLayer.resize(boardWidthScaled, boardHeightScaled);
+        this.mapTileLayer.clear();
+
+        const tileTexture = this.textures.get('map_tile');
+        const tileFrame = tileTexture.get();
+        const tileW = tileFrame.realWidth;   // 32
+        const tileH = tileFrame.realHeight;  // 32
+
+        for (let py = 0; py < boardHeightScaled; py += tileH) {
+            for (let px = 0; px < boardWidthScaled; px += tileW) {
+                this.mapTileLayer.draw('map_tile', px, py);
+            }
+        }
+        // ────────────────────────────────────────────────────────────────
+
+        // Marco oscuro exterior (ligeramente más transparente porque ya hay textura)
+        this.boardBackgroundGraphics.fillStyle(0x030a0f, 0.55);
         this.boardBackgroundGraphics.fillRoundedRect(
             this.boardOffsetX - outerPadding,
             this.boardOffsetY - outerPadding,
@@ -203,6 +223,7 @@ export class LocalGame extends Phaser.Scene {
             18
         );
 
+        // Borde exterior cyan (igual que antes)
         this.boardBackgroundGraphics.lineStyle(3, 0x22d3ee, 0.55);
         this.boardBackgroundGraphics.strokeRoundedRect(
             this.boardOffsetX - outerPadding,
@@ -211,11 +232,22 @@ export class LocalGame extends Phaser.Scene {
             boardHeightScaled + outerPadding * 2,
             18
         );
+
+        // Borde interior brillante (nuevo detalle pixel art / arcade)
+        this.boardBackgroundGraphics.lineStyle(1, 0x00ff88, 0.18);
+        this.boardBackgroundGraphics.strokeRoundedRect(
+            this.boardOffsetX - outerPadding + 4,
+            this.boardOffsetY - outerPadding + 4,
+            boardWidthScaled + (outerPadding - 4) * 2,
+            boardHeightScaled + (outerPadding - 4) * 2,
+            14
+        );
     }
+
 
     drawGrid() {
         this.gridGraphics.clear();
-        this.gridGraphics.lineStyle(1, 0xffffff, 0.08);
+        this.gridGraphics.lineStyle(1, 0xffffff, 0.12);
 
         for (let col = 0; col <= GRID_COLS; col += 1) {
             const x = this.boardOffsetX + col * this.cellSize;
@@ -313,11 +345,11 @@ export class LocalGame extends Phaser.Scene {
         if (p1) this.updateLivesHud(this.hudJ1Lives, p1.lives);
         if (p2) this.updateLivesHud(this.hudJ2Lives, p2.lives);
 
-        if(p1.score >= WIN_SCORE || p2.score >= WIN_SCORE){
+        if (p1.score >= WIN_SCORE || p2.score >= WIN_SCORE) {
             this.gameOver(true) // ganador por puntuación
         }
 
-        if(p1.lives <= 0 || p2.lives <= 0){
+        if (p1.lives <= 0 || p2.lives <= 0) {
             this.gameOver(false); // perdedor por vidas
         }
     }
