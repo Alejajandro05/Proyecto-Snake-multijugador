@@ -1,13 +1,18 @@
+import { getImageAssetsToPreload } from '../config/assetManifest.js';
+
 export class Preloader extends Phaser.Scene {
     constructor() {
         super('Preloader');
     }
 
     init() {
-        this.add.image(512, 384, 'background');
+        const centerX = this.scale.width * 0.5;
+        const centerY = this.scale.height * 0.5;
 
-        this.add.rectangle(512, 384, 468, 32).setStrokeStyle(1, 0xffffff);
-        const bar = this.add.rectangle(512 - 230, 384, 4, 28, 0xffffff);
+        this.add.image(centerX, centerY, 'background');
+        this.add.rectangle(centerX, centerY, 468, 32).setStrokeStyle(1, 0xffffff);
+
+        const bar = this.add.rectangle(centerX - 230, centerY, 4, 28, 0xffffff);
 
         this.load.on('progress', (progress) => {
             bar.width = 4 + (460 * progress);
@@ -17,13 +22,9 @@ export class Preloader extends Phaser.Scene {
     preload() {
         this.load.setPath('assets');
 
-        // Fondo del menú principal
-        this.load.image('fondo_duelo', 'fondo_duelo.png');
-
-        // ── NUEVOS ASSETS ────────────────────────────────────────────
-        // Tile de suelo del tablero (pixel art 8-bit, 32x32px)
-        this.load.image('map_tile', 'map_tile.png');
-        // ─────────────────────────────────────────────────────────────
+        getImageAssetsToPreload().forEach((asset) => {
+            this.load.image(asset.key, asset.path);
+        });
     }
 
     create() {
