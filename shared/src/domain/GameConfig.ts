@@ -2,7 +2,7 @@ export const GRID_COLS = 32;
 export const GRID_ROWS = 24;
 export const GRID_SIZE = 32;
 export const TICK_MS = 150;
-export const FOOD_COUNT = 3;
+export const FOOD_COUNT = 10;
 export const INITIAL_SNAKE_LENGTH = 3;
 export const RESPAWN_DELAY_MS = 3000;
 export const SAFE_MARGIN = 3;
@@ -29,23 +29,23 @@ export interface GameRuntimeConfig {
 
 type RuntimeConfigInput = Partial<GameRuntimeConfig>;
 
-const DEFAULT_DIFFICULTY: GameDifficulty = 'easy';
+const DEFAULT_DIFFICULTY: GameDifficulty = 'normal';
 
 const DIFFICULTY_PRESETS: Record<GameDifficulty, Pick<GameRuntimeConfig, 'tickMs' | 'foodCount' | 'obstaclesPerQuadrant'>> = {
 	easy: {
 		tickMs: 180,
-		foodCount: 3,
-		obstaclesPerQuadrant: 1,
+		foodCount: 10,
+		obstaclesPerQuadrant: 6,
 	},
 	normal: {
 		tickMs: TICK_MS,
 		foodCount: FOOD_COUNT,
-		obstaclesPerQuadrant: 2,
+		obstaclesPerQuadrant: 8,
 	},
 	hard: {
 		tickMs: 110,
-		foodCount: 4,
-		obstaclesPerQuadrant: 3,
+		foodCount: 5,
+		obstaclesPerQuadrant: 10,
 	},
 };
 
