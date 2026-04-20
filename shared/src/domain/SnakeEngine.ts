@@ -1,15 +1,8 @@
 import type { Direction, GameState, PlayerState, FoodState, SnakeSegmentState, ObstacleState, Position } from './types.js';
 import {
-  GRID_COLS,
-  GRID_ROWS,
-  GRID_SIZE,
-  FOOD_COUNT,
-  INITIAL_SNAKE_LENGTH,
+  type GameRuntimeConfig,
   PLAYER_COLORS,
-  RESPAWN_DELAY_MS,
-  TICK_MS,
-  SAFE_MARGIN,
-  MAX_LIVES,
+  resolveGameRuntimeConfig,
 } from './GameConfig.js';
 
 const OPPOSITE: Record<Direction, Direction> = {
@@ -18,8 +11,6 @@ const OPPOSITE: Record<Direction, Direction> = {
   left: 'right',
   right: 'left',
 };
-
-const RESPAWN_TICKS = Math.round(RESPAWN_DELAY_MS / TICK_MS);
 
 export interface AddPlayerOptions {
   color?: number;
@@ -32,28 +23,43 @@ export interface AddPlayerOptions {
  * All game logic (movement, collision detection, food spawning, respawn) lives here.
  */
 export class SnakeEngine {
+  private readonly config: GameRuntimeConfig;
   private players = new Map<string, PlayerState>();
   private food: FoodState[] = [];
   private obstacles: ObstacleState[] = [];
   private respawnQueue = new Map<string, number>(); // playerId → respawn tick
   private tickCount = 0;
+  private readonly respawnTicks: number;
 
-  constructor(initialFood = FOOD_COUNT) {
-    for (let i = 0; i < initialFood; i++) {
+  constructor(config?: Partial<GameRuntimeConfig>);
+  constructor(initialFood?: number, config?: Partial<GameRuntimeConfig>);
+  constructor(initialFoodOrConfig?: number | Partial<GameRuntimeConfig>, configOverrides?: Partial<GameRuntimeConfig>) {
+    const configInput = typeof initialFoodOrConfig === 'number'
+      ? { ...configOverrides, foodCount: initialFoodOrConfig }
+      : initialFoodOrConfig;
+
+    this.config = resolveGameRuntimeConfig(configInput);
+    this.respawnTicks = Math.max(1, Math.round(this.config.respawnDelayMs / this.config.tickMs));
+
+    for (let i = 0; i < this.config.foodCount; i++) {
       this.food.push(this.randomFood());
     }
     this.generateObstacles();
   }
 
+  getConfig(): GameRuntimeConfig {
+    return { ...this.config };
+  }
+
   addPlayer(id: string, options?: AddPlayerOptions): PlayerState {
     const colorIndex = this.players.size;
     const color = options?.color ?? PLAYER_COLORS[colorIndex % PLAYER_COLORS.length];
-    const startCol = options?.startCol ?? (colorIndex * 6 + 5) % GRID_COLS;
-    const startRow = options?.startRow ?? Math.floor(GRID_ROWS / 2);
+    const startCol = options?.startCol ?? (colorIndex * 6 + 5) % this.config.gridCols;
+    const startRow = options?.startRow ?? Math.floor(this.config.gridRows / 2);
 
     const segments: SnakeSegmentState[] = [];
-    for (let i = 0; i < INITIAL_SNAKE_LENGTH; i++) {
-      segments.push({ x: (startCol - i) * GRID_SIZE, y: startRow * GRID_SIZE });
+    for (let i = 0; i < this.config.initialSnakeLength; i++) {
+      segments.push({ x: (startCol - i) * this.config.gridSize, y: startRow * this.config.gridSize });
     }
 
     const player: PlayerState = {
@@ -62,7 +68,7 @@ export class SnakeEngine {
       direction: 'right',
       nextDirection: 'right',
       alive: true,
-      lives: MAX_LIVES,
+      lives: this.config.maxLives,
       score: 0,
       segments,
     };
@@ -122,17 +128,17 @@ export class SnakeEngine {
     let newY = head.y;
 
     switch (player.direction) {
-      case 'left':  newX -= GRID_SIZE; break;
-      case 'right': newX += GRID_SIZE; break;
-      case 'up':    newY -= GRID_SIZE; break;
-      case 'down':  newY += GRID_SIZE; break;
+      case 'left':  newX -= this.config.gridSize; break;
+      case 'right': newX += this.config.gridSize; break;
+      case 'up':    newY -= this.config.gridSize; break;
+      case 'down':  newY += this.config.gridSize; break;
     }
 
     // Wrap around walls (toroidal board)
-    if (newX < 0)                        newX = (GRID_COLS - 1) * GRID_SIZE;
-    else if (newX >= GRID_COLS * GRID_SIZE) newX = 0;
-    if (newY < 0)                        newY = (GRID_ROWS - 1) * GRID_SIZE;
-    else if (newY >= GRID_ROWS * GRID_SIZE) newY = 0;
+    if (newX < 0)                        newX = (this.config.gridCols - 1) * this.config.gridSize;
+    else if (newX >= this.config.gridCols * this.config.gridSize) newX = 0;
+    if (newY < 0)                        newY = (this.config.gridRows - 1) * this.config.gridSize;
+    else if (newY >= this.config.gridRows * this.config.gridSize) newY = 0;
 
     // Self collision
     for (const seg of player.segments) {
@@ -182,7 +188,7 @@ export class SnakeEngine {
     player.alive = false;
     player.lives -= 1;
     if(player.lives > 0){
-      this.respawnQueue.set(player.id, this.tickCount + RESPAWN_TICKS);
+      this.respawnQueue.set(player.id, this.tickCount + this.respawnTicks);
     }
   }
 
@@ -190,21 +196,21 @@ export class SnakeEngine {
     const player = this.players.get(id);
     if (!player) return;
 
-    const margin = INITIAL_SNAKE_LENGTH + 1;
+    const margin = this.config.initialSnakeLength + 1;
     
     let col: number;
     let row: number;
     let attempts = 0;
 
     do {
-      col = Math.floor(Math.random() * (GRID_COLS - margin * 2) + margin);
-      row = Math.floor(Math.random() * (GRID_ROWS - margin * 2) + margin);
+      col = Math.floor(Math.random() * (this.config.gridCols - margin * 2) + margin);
+      row = Math.floor(Math.random() * (this.config.gridRows - margin * 2) + margin);
       attempts++;
     } while (!this.isSafeSpawn(col, row) && attempts < 50);
 
     player.segments = [];
-    for (let i = 0; i < INITIAL_SNAKE_LENGTH; i++) {
-      player.segments.push({ x: (col - i) * GRID_SIZE, y: row * GRID_SIZE });
+    for (let i = 0; i < this.config.initialSnakeLength; i++) {
+      player.segments.push({ x: (col - i) * this.config.gridSize, y: row * this.config.gridSize });
     }
     player.direction = 'right';
     player.nextDirection = 'right';
@@ -222,40 +228,40 @@ export class SnakeEngine {
     let pos: FoodState;
     do{
       pos = {
-        x: Math.floor(Math.random() * GRID_COLS) * GRID_SIZE,
-        y: Math.floor(Math.random() * GRID_ROWS) * GRID_SIZE,
+        x: Math.floor(Math.random() * this.config.gridCols) * this.config.gridSize,
+        y: Math.floor(Math.random() * this.config.gridRows) * this.config.gridSize,
       };
     }while (playerSegments.some(s => s.x === pos.x && s.y === pos.y));
     return pos;
   }
 
   private randomObstacleInQuadrant(quadrant: 'TL' | 'TR' | 'BL' | 'BR'): ObstacleState {
-    const midCol = GRID_COLS / 2;
-    const midRow = GRID_ROWS / 2;
+    const midCol = Math.floor(this.config.gridCols / 2);
+    const midRow = Math.floor(this.config.gridRows / 2);
 
     // por defecto TL
     let colMin = 0, colMax = midCol - 1;
     let rowMin = 0, rowMax = midRow - 1;
 
     switch (quadrant) {
-        case 'TR':
-            colMin = midCol; colMax = GRID_COLS - 1;
-            break;
-        case 'BL':
-            rowMin = midRow; rowMax = GRID_ROWS - 1;
-            break;
-        case 'BR':
-            colMin = midCol; colMax = GRID_COLS - 1;
-            rowMin = midRow; rowMax = GRID_ROWS - 1;
-            break;
+      case 'TR':
+        colMin = midCol; colMax = this.config.gridCols - 1;
+        break;
+      case 'BL':
+        rowMin = midRow; rowMax = this.config.gridRows - 1;
+        break;
+      case 'BR':
+        colMin = midCol; colMax = this.config.gridCols - 1;
+        rowMin = midRow; rowMax = this.config.gridRows - 1;
+        break;
     }
 
     let playerSegments = this.getSnakesPosition();
     let pos: ObstacleState;
     do{
       pos = {
-        x: Math.floor(Math.random() * (colMax - colMin + 1) + colMin) * GRID_SIZE,
-        y: Math.floor(Math.random() * (rowMax - rowMin + 1) + rowMin) * GRID_SIZE
+        x: Math.floor(Math.random() * (colMax - colMin + 1) + colMin) * this.config.gridSize,
+        y: Math.floor(Math.random() * (rowMax - rowMin + 1) + rowMin) * this.config.gridSize
       };
     }while (playerSegments.some(s => s.x === pos.x && s.y === pos.y));
     return pos;
@@ -265,18 +271,18 @@ export class SnakeEngine {
     const quadrants: ('TL'|'TR'|'BL'|'BR')[] = ['TL','TR','BL','BR'];
 
     quadrants.forEach(q => {
-        for (let i = 0; i < 2; i++) {
-            const obs = this.randomObstacleInQuadrant(q);
-            this.obstacles.push(obs);
-        }
+      for (let i = 0; i < this.config.obstaclesPerQuadrant; i++) {
+        const obs = this.randomObstacleInQuadrant(q);
+        this.obstacles.push(obs);
+      }
     });
   }
 
   private isSafeSpawn(col: number, row: number): boolean {
     return this.obstacles.every(ob => {
-      const obCol = ob.x / GRID_SIZE;
-      const obRow = ob.y / GRID_SIZE;
-      return Math.abs(obCol - col) > SAFE_MARGIN || Math.abs(obRow - row) > SAFE_MARGIN;
+      const obCol = ob.x / this.config.gridSize;
+      const obRow = ob.y / this.config.gridSize;
+      return Math.abs(obCol - col) > this.config.safeMargin || Math.abs(obRow - row) > this.config.safeMargin;
     });
   }
 

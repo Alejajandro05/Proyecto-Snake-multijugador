@@ -6,15 +6,54 @@ import { Food } from "./schema/Food.js";
 import { Obstacle } from "./schema/Obstacle.js";
 import { SnakeEngine } from "../../../shared/src/domain/SnakeEngine.js";
 import type { GameState } from "../../../shared/src/domain/types.js";
-import { TICK_MS, PLAYER_COLORS } from "../../../shared/src/domain/GameConfig.js";
+import { PLAYER_COLORS, TICK_MS, type GameDifficulty, resolveGameRuntimeConfig } from "../../../shared/src/domain/GameConfig.js";
+
+interface SnakeRoomCreateOptions {
+  boardCols?: number;
+  boardRows?: number;
+  boardCellSize?: number;
+  foodCount?: number;
+  obstaclesPerQuadrant?: number;
+  difficulty?: GameDifficulty;
+}
+
+function toFiniteNumber(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return undefined;
+}
+
+function toDifficulty(value: unknown): GameDifficulty | undefined {
+  if (value === "easy" || value === "normal" || value === "hard") {
+    return value;
+  }
+  return undefined;
+}
+
+function getRoomRuntimeConfig(options?: SnakeRoomCreateOptions) {
+  return resolveGameRuntimeConfig({
+    gridCols: toFiniteNumber(options?.boardCols),
+    gridRows: toFiniteNumber(options?.boardRows),
+    gridSize: toFiniteNumber(options?.boardCellSize),
+    foodCount: toFiniteNumber(options?.foodCount),
+    obstaclesPerQuadrant: toFiniteNumber(options?.obstaclesPerQuadrant),
+    difficulty: toDifficulty(options?.difficulty),
+  });
+}
 
 export class SnakeRoom extends Room<SnakeRoomState> {
   maxClients = 4;
   private engine!: SnakeEngine;
+  private tickMs = TICK_MS;
 
-  onCreate(_options: any) {
+  onCreate(options?: SnakeRoomCreateOptions) {
     this.setState(new SnakeRoomState());
-    this.engine = new SnakeEngine();
+    const runtimeConfig = getRoomRuntimeConfig(options);
+    this.engine = new SnakeEngine(runtimeConfig);
+    this.tickMs = runtimeConfig.tickMs;
 
     this.onMessage("changeDirection", (client, direction: string) => {
       this.engine.setNextDirection(client.sessionId, direction as any);
@@ -23,7 +62,7 @@ export class SnakeRoom extends Room<SnakeRoomState> {
     this.setSimulationInterval(() => {
       const state = this.engine.tick();
       this.syncToSchema(state);
-    }, TICK_MS);
+    }, this.tickMs);
   }
 
   onJoin(client: Client, _options: any) {
