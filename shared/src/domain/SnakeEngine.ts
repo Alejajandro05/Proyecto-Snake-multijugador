@@ -16,6 +16,7 @@ export interface AddPlayerOptions {
   color?: number;
   startCol?: number;
   startRow?: number;
+  skinId?: string;
 }
 
 /**
@@ -54,6 +55,7 @@ export class SnakeEngine {
   addPlayer(id: string, options?: AddPlayerOptions): PlayerState {
     const colorIndex = this.players.size;
     const color = options?.color ?? PLAYER_COLORS[colorIndex % PLAYER_COLORS.length];
+    const skinId = options?.skinId?.trim() || `skin-${colorIndex + 1}`;
     const startCol = options?.startCol ?? (colorIndex * 6 + 5) % this.config.gridCols;
     const startRow = options?.startRow ?? Math.floor(this.config.gridRows / 2);
 
@@ -64,6 +66,7 @@ export class SnakeEngine {
 
     const player: PlayerState = {
       id,
+      skinId,
       color,
       direction: 'right',
       nextDirection: 'right',

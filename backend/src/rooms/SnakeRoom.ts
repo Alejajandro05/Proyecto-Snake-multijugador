@@ -15,6 +15,11 @@ interface SnakeRoomCreateOptions {
   foodCount?: number;
   obstaclesPerQuadrant?: number;
   difficulty?: GameDifficulty;
+  mapId?: string;
+}
+
+interface SnakeRoomJoinOptions {
+  skinId?: string;
 }
 
 function toFiniteNumber(value: unknown): number | undefined {
@@ -31,6 +36,18 @@ function toDifficulty(value: unknown): GameDifficulty | undefined {
     return value;
   }
   return undefined;
+}
+
+function toMapId(value: unknown): string {
+  if (typeof value !== "string") return "classic";
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized.slice(0, 32) : "classic";
+}
+
+function toSkinId(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized.slice(0, 32) : fallback;
 }
 
 function getRoomRuntimeConfig(options?: SnakeRoomCreateOptions) {
@@ -55,6 +72,15 @@ export class SnakeRoom extends Room<SnakeRoomState> {
     this.engine = new SnakeEngine(runtimeConfig);
     this.tickMs = runtimeConfig.tickMs;
 
+    this.state.boardCols = runtimeConfig.gridCols;
+    this.state.boardRows = runtimeConfig.gridRows;
+    this.state.boardCellSize = runtimeConfig.gridSize;
+    this.state.tickMs = runtimeConfig.tickMs;
+    this.state.foodCount = runtimeConfig.foodCount;
+    this.state.obstaclesPerQuadrant = runtimeConfig.obstaclesPerQuadrant;
+    this.state.difficulty = runtimeConfig.difficulty;
+    this.state.mapId = toMapId(options?.mapId);
+
     this.onMessage("changeDirection", (client, direction: string) => {
       this.engine.setNextDirection(client.sessionId, direction as any);
     });
@@ -65,14 +91,17 @@ export class SnakeRoom extends Room<SnakeRoomState> {
     }, this.tickMs);
   }
 
-  onJoin(client: Client, _options: any) {
+  onJoin(client: Client, options?: SnakeRoomJoinOptions) {
     const colorIndex = this.state.players.size % PLAYER_COLORS.length;
+    const fallbackSkinId = `skin-${colorIndex + 1}`;
     const playerState = this.engine.addPlayer(client.sessionId, {
       color: PLAYER_COLORS[colorIndex],
+      skinId: toSkinId(options?.skinId, fallbackSkinId),
     });
 
     const player = new Player();
     player.sessionId = client.sessionId;
+    player.skinId = playerState.skinId;
     player.color = playerState.color;
     player.alive = playerState.alive;
     player.lives = playerState.lives;
@@ -113,6 +142,7 @@ export class SnakeRoom extends Room<SnakeRoomState> {
       player.alive = playerState.alive;
       player.lives = playerState.lives;
       player.score = playerState.score;
+      player.skinId = playerState.skinId;
 
       this.syncSegments(player, playerState.segments);
     });
