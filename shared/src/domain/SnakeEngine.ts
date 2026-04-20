@@ -154,10 +154,27 @@ export class SnakeEngine {
     // Collision with other players
     for (const other of this.players.values()) {
       if (other.id === player.id || !other.alive) continue;
-      for (const seg of other.segments) {
+      for (let i = 0; i < other.segments.length; i++) {
+        const seg = other.segments[i];
         if (seg.x === newX && seg.y === newY) {
-          this.killPlayer(player);
-          return;
+          if (i === 0) {
+            // Head-to-head collision: larger snake survives
+            if (player.segments.length > other.segments.length) {
+              this.killPlayer(other);
+            } else if (player.segments.length < other.segments.length) {
+              this.killPlayer(player);
+              return;
+            } else {
+              // Same size, both die
+              this.killPlayer(player);
+              this.killPlayer(other);
+              return;
+            }
+          } else {
+            // Hit body, die
+            this.killPlayer(player);
+            return;
+          }
         }
       }
     }
