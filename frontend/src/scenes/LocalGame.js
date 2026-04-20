@@ -295,7 +295,15 @@ export class LocalGame extends Phaser.Scene {
 
     gameTick() {
         this.handleInput();
+        const oldScore = this.engine.getState().players.get(P1_ID).score; // Guardar solo 1 número
+
         const state = this.engine.tick();
+
+        // Si el score de P1 o P2 ha cambiado, suena la manzana
+        if (state.players.get(P1_ID).score > oldScore || state.players.get(P2_ID).score > oldScore) {
+            this.sound.play('eat_apple', { volume: 0.7 });
+        }
+
         this.renderState(state);
     }
 
