@@ -13,6 +13,9 @@ const DIR_ANGLE = {
     up:    -Math.PI / 2,
 };
 
+const BOARD_WIDTH_PX = GRID_COLS * GRID_SIZE;
+const BOARD_HEIGHT_PX = GRID_ROWS * GRID_SIZE;
+
 // Mapa playerIndex → keys de sus sprites
 const PLAYER_SPRITE_KEYS = [
     {
@@ -235,14 +238,13 @@ export class SnakeBoardRenderer {
         // Detectar giro: el segmento anterior y el siguiente no están en la misma línea
         if (this.scene.textures.exists(keys.turn)) {
             const prev = segments[i - 1];
+            const curr = segments[i];
             const next = segments[i + 1];
-            if (prev && next) {
-                const dxIn  = segments[i].x - prev.x;
-                const dyIn  = segments[i].y - prev.y;
-                const dxOut = next.x - segments[i].x;
-                const dyOut = next.y - segments[i].y;
+            if (prev && curr && next) {
+                const currToPrev = this._directionBetween(curr, prev);
+                const currToNext = this._directionBetween(curr, next);
                 // Es un giro si cambia de eje (horizontal ↔ vertical)
-                const isTurn = (dxIn !== 0 && dyOut !== 0) || (dyIn !== 0 && dxOut !== 0);
+                const isTurn = this._isTurnByDirections(currToPrev, currToNext);
                 if (isTurn) return keys.turn;
             }
         }
@@ -260,16 +262,77 @@ export class SnakeBoardRenderer {
             return DIR_ANGLE[playerDirection] ?? 0;
         }
 
-        // Dirección de entrada al segmento: prev → current
         const prev    = segments[i - 1];
         const current = segments[i];
-        const dx      = current.x - prev.x;
-        const dy      = current.y - prev.y;
+        if (!prev || !current) return 0;
 
-        if (dx > 0) return DIR_ANGLE.right;
-        if (dx < 0) return DIR_ANGLE.left;
-        if (dy > 0) return DIR_ANGLE.down;
-        return DIR_ANGLE.up;
+        const currentToPrev = this._directionBetween(current, prev);
+
+        if (isTail) {
+            const dir = this._oppositeDirection(currentToPrev);
+            return DIR_ANGLE[dir] ?? 0;
+        }
+
+        const next = segments[i + 1];
+        if (!next) {
+            const dir = currentToPrev;
+            return DIR_ANGLE[dir] ?? 0;
+        }
+
+        const currToNext = this._directionBetween(current, next);
+
+        if (this._isTurnByDirections(currentToPrev, currToNext)) {
+            return this._turnAngleFromConnections(currentToPrev, currToNext);
+        }
+
+        return DIR_ANGLE[currentToPrev] ?? 0;
+    }
+
+    _normalizeDelta(delta, span) {
+        if (delta > GRID_SIZE) return delta - span;
+        if (delta < -GRID_SIZE) return delta + span;
+        return delta;
+    }
+
+    _directionBetween(fromSeg, toSeg) {
+        const dx = this._normalizeDelta(toSeg.x - fromSeg.x, BOARD_WIDTH_PX);
+        const dy = this._normalizeDelta(toSeg.y - fromSeg.y, BOARD_HEIGHT_PX);
+
+        if (Math.abs(dx) >= Math.abs(dy)) {
+            return dx >= 0 ? 'right' : 'left';
+        }
+        return dy >= 0 ? 'down' : 'up';
+    }
+
+    _isTurnByDirections(dirA, dirB) {
+        const horizontalA = dirA === 'left' || dirA === 'right';
+        const horizontalB = dirB === 'left' || dirB === 'right';
+        return horizontalA !== horizontalB;
+    }
+
+    _turnAngleFromConnections(currToPrev, currToNext) {
+        const connections = new Set([
+            currToPrev,
+            currToNext,
+        ]);
+
+        // Base real del asset turn.png: conecta hacia derecha y abajo.
+        if (connections.has('right') && connections.has('down')) return 0;
+        if (connections.has('down') && connections.has('left')) return Math.PI / 2;
+        if (connections.has('left') && connections.has('up')) return Math.PI;
+        if (connections.has('up') && connections.has('right')) return -Math.PI / 2;
+
+        return 0;
+    }
+
+    _oppositeDirection(direction) {
+        switch (direction) {
+            case 'up': return 'down';
+            case 'down': return 'up';
+            case 'left': return 'right';
+            case 'right': return 'left';
+            default: return direction;
+        }
     }
 
     /**
