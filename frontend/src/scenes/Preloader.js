@@ -29,6 +29,10 @@ export class Preloader extends Phaser.Scene {
         // 2. Cargamos el fondo épico que ya configuramos
         this.load.image('fondo_duelo', 'fondo_duelo.png');
 
+        this.load.audio('musica_in_game', 'audio/musica_in_game.mp3');
+        this.load.audio('eat_apple', 'audio/eat_apple.mp3');
+        this.load.audio('sonido_choque', 'audio/sonido_choque.mp3');
+
     }
 
     create() {

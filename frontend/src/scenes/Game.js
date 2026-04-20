@@ -129,6 +129,7 @@ export class Game extends Phaser.Scene {
             tail.destroy();
         } else {
             // Spawn new food if eating
+            this.sound.play('eat_apple', { volume: 0.7 });
             this.food.destroy();
             this.spawnFood();
         }

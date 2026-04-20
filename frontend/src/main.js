@@ -47,7 +47,7 @@ const config = {
         OnlineGame,
         Game,
         GameOver,
-        Pause
+        Pause,
     ]
 };
 

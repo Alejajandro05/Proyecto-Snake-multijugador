@@ -206753,7 +206753,7 @@ var NoAudioSoundManager = new Class({
      * @since 3.0.0
      *
      * @param {string} key - Asset key for the sound.
-     * @param {(Phaser.Types.Sound.SoundConfig|Phaser.Types.Sound.SoundMarker)} [extra] - An optional additional object containing settings to be applied to the sound. It could be either config or marker object.
+     * @param {{volume: number}} [extra] - An optional additional object containing settings to be applied to the sound. It could be either config or marker object.
      *
      * @return {boolean} Always 'false' for the No Audio Sound Manager.
      */

@@ -27,6 +27,33 @@ export class LocalGame extends Phaser.Scene {
         this.boardOffsetY = 0;
         this.cellSize = GRID_SIZE;
 
+// 1. Iniciamos la música
+        this.music = this.sound.add('musica_in_game', { loop: true, volume: 0.3 });
+        this.music.play();
+
+        // --- EL CONTROL DE LA MÚSICA ---
+
+        // 2. Si la escena se CIERRA (Sales al menú principal) -> Parar música
+        this.events.on('shutdown', () => {
+            if (this.music && this.music.isPlaying) {
+                this.music.stop();
+            }
+        });
+
+        // 3. Si la escena se PAUSA (Abres el menú de pausa) -> Pausar música
+        this.events.on('pause', () => {
+            if (this.music && this.music.isPlaying) {
+                this.music.pause();
+            }
+        });
+
+        // 4. Si la escena se REANUDA (Cierras el menú de pausa) -> Reanudar música
+        this.events.on('resume', () => {
+            if (this.music && this.music.isPaused) {
+                this.music.resume();
+            }
+        });
+
         this.cacheHudElements();
         this.toggleHud(true);
 
