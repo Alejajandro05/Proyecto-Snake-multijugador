@@ -11,6 +11,7 @@ export type ObstacleState = Position;
 
 export interface PlayerState {
   id: string;
+  skinId: string;
   color: number;
   direction: Direction;
   nextDirection: Direction;

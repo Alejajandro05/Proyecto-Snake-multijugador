@@ -3,6 +3,7 @@ import { SnakeSegment } from "./SnakeSegment.js";
 
 export class Player extends Schema {
   @type("string")  sessionId: string = "";
+  @type("string")  skinId: string = "";
   @type("number")  color: number = 0x00ff00;
   @type("string")  direction: string = "right";
   @type("string")  nextDirection: string = "right";
