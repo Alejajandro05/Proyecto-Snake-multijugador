@@ -6,6 +6,7 @@ export const ASSET_KEYS = Object.freeze({
     MAP_FLOOR_TILE: 'map-floor-tile',
     MAP_OBSTACLE_ROCK: 'map-obstacle-rock',
     MAP_DECOR_CORNER_LEAF: 'map-decor-corner-leaf',
+    FOOD_FRUITS_SHEET: 'food-fruits-sheet',
     SNAKE_P1_HEAD: 'snake-p1-head',
     SNAKE_P1_BODY: 'snake-p1-body',
     SNAKE_P1_TURN: 'snake-p1-turn',
@@ -37,9 +38,23 @@ const PLANNED_IMAGE_ASSETS = [
     { key: ASSET_KEYS.SNAKE_P2_TAIL, path: 'snakes/player2/tail.png', enabled: true },
 ];
 
+const SPRITESHEET_ASSETS = [
+    // 192x64 sprite sheet (6x2) de frutas, con frames de 32x32.
+    {
+        key: ASSET_KEYS.FOOD_FRUITS_SHEET,
+        path: 'Fruits/Fruits/Fruits_Spritesheet.png',
+        frameConfig: { frameWidth: 32, frameHeight: 32 },
+        enabled: true,
+    },
+];
+
 export function getImageAssetsToPreload() {
     return [
         ...CORE_IMAGE_ASSETS,
         ...PLANNED_IMAGE_ASSETS.filter((asset) => asset.enabled),
     ];
+}
+
+export function getSpriteSheetAssetsToPreload() {
+    return SPRITESHEET_ASSETS.filter((asset) => asset.enabled);
 }

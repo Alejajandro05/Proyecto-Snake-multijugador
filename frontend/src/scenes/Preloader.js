@@ -1,4 +1,4 @@
-import { getImageAssetsToPreload } from '../config/assetManifest.js';
+import { getImageAssetsToPreload, getSpriteSheetAssetsToPreload } from '../config/assetManifest.js';
 
 export class Preloader extends Phaser.Scene {
     constructor() {
@@ -24,6 +24,10 @@ export class Preloader extends Phaser.Scene {
 
         getImageAssetsToPreload().forEach((asset) => {
             this.load.image(asset.key, asset.path);
+        });
+
+        getSpriteSheetAssetsToPreload().forEach((asset) => {
+            this.load.spritesheet(asset.key, asset.path, asset.frameConfig);
         });
     }
 

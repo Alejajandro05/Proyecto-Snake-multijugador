@@ -4,6 +4,8 @@ import { ASSET_KEYS } from '../config/assetManifest.js';
 
 const FOOD_COLOR     = 0xffff00;
 const OBSTACLE_COLOR = 0x888888;
+const FOOD_FRAME_CYCLE = [0, 1, 2, 3, 4, 5];
+const FOOD_PADDING_RATIO = 0.04;
 
 // Ángulos de rotación para cada dirección (en radianes)
 const DIR_ANGLE = {
@@ -65,6 +67,7 @@ export class SnakeBoardRenderer {
         this.snakeGraphics    = this.scene.add.graphics().setDepth(10);
         this.foodGraphics     = this.scene.add.graphics().setDepth(11);
         this.obstacleGraphics = this.scene.add.graphics().setDepth(12);
+        this.foodSprites      = [];
         this.obstacleSprites  = [];
 
         // Pool de sprites por jugador: snakeSpritePools[playerIndex] = []
@@ -154,6 +157,7 @@ export class SnakeBoardRenderer {
         this.snakeGraphics.clear();
         this.foodGraphics.clear();
         this.obstacleGraphics.clear();
+        this.hideFoodSprites();
         this.hideObstacleSprites();
         // Ocultar todos los sprites de serpientes antes de redibujar
         this.snakeSpritePools.forEach(pool => pool.forEach(s => s.setVisible(false)));
@@ -382,9 +386,52 @@ export class SnakeBoardRenderer {
     // ─────────────────────────────────────────────────────────────────
 
     renderFood(foodItems) {
-        foodItems?.forEach?.((food) => {
-            this.drawBoardCell(this.foodGraphics, food.x, food.y, FOOD_COLOR);
+        if (!this.scene.textures.exists(ASSET_KEYS.FOOD_FRUITS_SHEET)) {
+            foodItems?.forEach?.((food) => {
+                this.drawBoardCell(this.foodGraphics, food.x, food.y, FOOD_COLOR);
+            });
+            return;
+        }
+
+        foodItems?.forEach?.((food, index) => {
+            const sprite   = this.getFoodSprite(index);
+            const frame    = this._getFoodFrame(food);
+            const col      = Math.floor(food.x / GRID_SIZE);
+            const row      = Math.floor(food.y / GRID_SIZE);
+            const px       = this.boardOffsetX + col * this.cellSize;
+            const py       = this.boardOffsetY + row * this.cellSize;
+            const padding  = Math.max(0, Math.floor(this.cellSize * FOOD_PADDING_RATIO));
+
+            sprite
+                .setFrame(frame)
+                .setPosition(px + padding, py + padding)
+                .setDisplaySize(
+                    Math.max(1, this.cellSize - padding * 2),
+                    Math.max(1, this.cellSize - padding * 2)
+                )
+                .setVisible(true);
         });
+    }
+
+    getFoodSprite(index) {
+        if (this.foodSprites[index]) return this.foodSprites[index];
+        const sprite = this.scene.add.image(0, 0, ASSET_KEYS.FOOD_FRUITS_SHEET, FOOD_FRAME_CYCLE[0])
+            .setOrigin(0)
+            .setDepth(11)
+            .setVisible(false);
+        this.foodSprites[index] = sprite;
+        return sprite;
+    }
+
+    _getFoodFrame(food) {
+        const col = Math.floor(food.x / GRID_SIZE);
+        const row = Math.floor(food.y / GRID_SIZE);
+        const hash = (col * 31 + row * 17) >>> 0;
+        return FOOD_FRAME_CYCLE[hash % FOOD_FRAME_CYCLE.length];
+    }
+
+    hideFoodSprites() {
+        this.foodSprites.forEach(s => s.setVisible(false));
     }
 
     renderObstacles(obstacles) {
