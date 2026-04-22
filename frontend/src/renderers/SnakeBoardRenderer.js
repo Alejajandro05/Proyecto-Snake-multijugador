@@ -66,6 +66,7 @@ export class SnakeBoardRenderer {
         this.foodGraphics = this.scene.add.graphics().setDepth(11);
         this.obstacleGraphics = this.scene.add.graphics().setDepth(12);
         this.obstacleSprites = [];
+        this.foodSprites = [];
 
         // Pool de sprites por jugador: snakeSpritePools[playerIndex] = []
         this.snakeSpritePools = [[], []];
@@ -155,6 +156,7 @@ export class SnakeBoardRenderer {
         this.foodGraphics.clear();
         this.obstacleGraphics.clear();
         this.hideObstacleSprites();
+        this.foodSprites.forEach(s => s.setVisible(false));    
         this.snakeSpritePools.forEach(pool => pool.forEach(s => s.setVisible(false)));
     }
 
@@ -358,11 +360,45 @@ export class SnakeBoardRenderer {
     //  COMIDA Y OBSTÁCULOS
     // ─────────────────────────────────────────────────────────────────
 
+
     renderFood(foodItems) {
+    // Ocultar todos los sprites de comida antes de redibujar
+    this.foodSprites.forEach(s => s.setVisible(false));
+
+    if (!this.scene.textures.exists(ASSET_KEYS.MAP_FOOD_APPLE)) {
+        // FALLBACK: rectángulo amarillo original
         foodItems?.forEach?.((food) => {
             this.drawBoardCell(this.foodGraphics, food.x, food.y, FOOD_COLOR);
         });
+        return;
     }
+
+    foodItems?.forEach?.((food, index) => {
+        const sprite = this._getFoodSprite(index);
+        const col     = Math.floor(food.x / GRID_SIZE);
+        const row     = Math.floor(food.y / GRID_SIZE);
+        const centerX = this.boardOffsetX + col * this.cellSize + this.cellSize * 0.5;
+        const centerY = this.boardOffsetY + row * this.cellSize + this.cellSize * 0.5;
+
+        sprite
+            .setPosition(centerX, centerY)
+            .setDisplaySize(this.cellSize, this.cellSize)
+            .setVisible(true);
+    });
+}
+
+_getFoodSprite(index) {
+    if (this.foodSprites[index]) return this.foodSprites[index];
+
+    const sprite = this.scene.add.image(0, 0, ASSET_KEYS.MAP_FOOD_APPLE)
+        .setOrigin(0.5)
+        .setDepth(11)
+        .setVisible(false);
+
+    this.foodSprites[index] = sprite;
+    return sprite;
+}    
+
 
     renderObstacles(obstacles) {
         if (!this.scene.textures.exists(ASSET_KEYS.MAP_OBSTACLE_ROCK)) {
