@@ -22,6 +22,10 @@ export class MainMenu extends Phaser.Scene {
         const savedMusicVol = localStorage.getItem('musicVolume') !== null ? parseFloat(localStorage.getItem('musicVolume')) : 0.2;
         const savedSfxVol = localStorage.getItem('sfxVolume') !== null ? parseFloat(localStorage.getItem('sfxVolume')) : 0.7;
 
+        const savedMusicKey = localStorage.getItem('selectedMusic') || 'musica_in_game';
+
+        this.menuMusic = this.sound.add(savedMusicKey, { loop: true, volume: savedMusicVol });
+
         this.menuMusic = this.sound.add('musica_in_game', { loop: true, volume: savedMusicVol });
 
         const menuDiv = document.createElement('div');
@@ -62,6 +66,15 @@ export class MainMenu extends Phaser.Scene {
                         <input type="range" class="form-range" id="sfx-vol" min="0" max="1" step="0.05" value="${savedSfxVol}">
                     </div>
 
+                    <div class="text-start mb-3">
+                        <label for="music-select" class="form-label text-white fw-semibold mb-1 small">Elegir Pista</label>
+                        <select class="form-select form-select-sm bg-dark text-white border-secondary" id="music-select">
+                            <option value="musica_in_game" ${savedMusicKey === 'musica_in_game' ? 'selected' : ''}>Música 1 (Original)</option>
+                            <option value="musica2" ${savedMusicKey === 'musica2' ? 'selected' : ''}>Música 2 (Chill)</option>
+                            <option value="musica3" ${savedMusicKey === 'musica3' ? 'selected' : ''}>Música 3 (Action)</option>
+                        </select>
+                    </div>
+    
                     <button id="btn-volver" class="btn text-white fw-bold shadow mt-3 menu-btn" style="width: 100%; padding: 10px; background-color: #334155; border: 2px solid #94A3B8; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.1rem;">
                         VOLVER
                     </button>
@@ -139,6 +152,27 @@ export class MainMenu extends Phaser.Scene {
         buttons.forEach(btn => {
             btn.addEventListener('mouseenter', () => btn.style.transform = 'scale(1.05)');
             btn.addEventListener('mouseleave', () => btn.style.transform = 'scale(1)');
+        });
+
+        const musicSelect = document.getElementById('music-select');
+
+        musicSelect.addEventListener('change', (e) => {
+            const newKey = e.target.value;
+            localStorage.setItem('selectedMusic', newKey);
+
+            // Si la música estaba sonando (porque el usuario movió el slider), la cambiamos
+            if (this.menuMusic.isPlaying || this.musicTimeout) {
+                this.menuMusic.stop();
+                this.menuMusic = this.sound.add(newKey, { loop: true, volume: parseFloat(sliderMusic.value) });
+                this.menuMusic.play();
+
+                // Reiniciar el timeout para que no se corte justo al cambiar
+                if (this.musicTimeout) clearTimeout(this.musicTimeout);
+                this.musicTimeout = setTimeout(() => { this.menuMusic.pause(); }, 2000);
+            } else {
+                // Si estaba en silencio, solo preparamos la nueva instancia
+                this.menuMusic = this.sound.add(newKey, { loop: true, volume: parseFloat(sliderMusic.value) });
+            }
         });
     }
 }

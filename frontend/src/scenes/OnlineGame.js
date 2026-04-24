@@ -55,8 +55,11 @@ export class OnlineGame extends Phaser.Scene {
         this.latestState = null;
         this.renderState({ players: new Map(), food: [], obstacles: [] });
 
-        // --- SISTEMA DE AUDIO ONLINE ---
-        this.music = this.sound.add('musica_in_game', { loop: true, volume: 0.1 });
+        this.userMusicVol = localStorage.getItem('musicVolume') !== null ? parseFloat(localStorage.getItem('musicVolume')) : 0.2;
+        this.userSfxVol = localStorage.getItem('sfxVolume') !== null ? parseFloat(localStorage.getItem('sfxVolume')) : 0.7;
+
+        const musicKey = localStorage.getItem('selectedMusic') || 'musica_in_game';
+        this.music = this.sound.add(musicKey, { loop: true, volume: this.userMusicVol });
         this.music.play();
 
         this.events.on('shutdown', () => { if (this.music) this.music.stop(); });

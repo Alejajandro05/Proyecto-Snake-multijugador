@@ -25,6 +25,9 @@ export class Preloader extends Phaser.Scene {
         this.load.audio('musica_in_game', 'audio/musica_in_game.mp3');
         this.load.audio('eat_apple', 'audio/eat_apple.mp3');
         this.load.audio('sonido_choque', 'audio/sonido_choque.mp3');
+        this.load.audio('musica2', 'audio/musica2.mp3');
+        this.load.audio('musica3', 'audio/musica3.mp3');
+
 
         getImageAssetsToPreload().forEach((asset) => {
             this.load.image(asset.key, asset.path);

@@ -81,7 +81,15 @@ export class LocalGame extends Phaser.Scene {
         this.updateLayout(this.scale.width, this.scale.height);
 
         // Music Logic for Local Game
-        this.music = this.sound.add('musica_in_game', { loop: true, volume: 0.1 });
+        this.updateLayout(this.scale.width, this.scale.height);
+
+        // --- NUEVO: Leer los volúmenes del jugador antes de usarlos ---
+        this.userMusicVol = localStorage.getItem('musicVolume') !== null ? parseFloat(localStorage.getItem('musicVolume')) : 0.2;
+        this.userSfxVol = localStorage.getItem('sfxVolume') !== null ? parseFloat(localStorage.getItem('sfxVolume')) : 0.7;
+
+        // Music Logic for Local Game
+        const musicKey = localStorage.getItem('selectedMusic') || 'musica_in_game';
+        this.music = this.sound.add(musicKey, { loop: true, volume: this.userMusicVol });
         this.music.play();
 
         this.events.on('shutdown', () => {
@@ -226,16 +234,13 @@ export class LocalGame extends Phaser.Scene {
         const p1New = state.players.get(P1_ID);
         const p2New = state.players.get(P2_ID);
 
-        // Comer manzana
         if ((p1New?.score || 0) > score1 || (p2New?.score || 0) > score2) {
-            this.sound.play('eat_apple', { volume: 0.7 });
+            this.sound.play('eat_apple', { volume: this.userSfxVol * 0.7 });
         }
 
-        // Choque / Perder vida
         if ((p1New && p1New.lives < lives1) || (p2New && p2New.lives < lives2)) {
-            this.sound.play('sonido_choque', { volume: 0.7 });
+            this.sound.play('sonido_choque', { volume: this.userSfxVol });
 
-            // Si alguien se queda a 0 vidas (Game Over real), paramos la música
             if ((p1New && p1New.lives <= 0) || (p2New && p2New.lives <= 0)) {
                 if (this.music) this.music.stop();
             }
