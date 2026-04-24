@@ -81,7 +81,7 @@ export class LocalGame extends Phaser.Scene {
         this.updateLayout(this.scale.width, this.scale.height);
 
         // Music Logic for Local Game
-        this.music = this.sound.add('musica_in_game', { loop: true, volume: 0.3 });
+        /*this.music = this.sound.add('musica_in_game', { loop: true, volume: 0.2 });
         this.music.play();
 
         this.events.on('shutdown', () => {
@@ -103,7 +103,7 @@ export class LocalGame extends Phaser.Scene {
                 this.music.resume();
             }
         });
-
+        */
         this.renderState(this.engine.getState());
     }
 
@@ -224,7 +224,15 @@ export class LocalGame extends Phaser.Scene {
             this.sound.play('eat_apple', { volume: 0.7 });
         }
 
-        // 5. Dibujar
+        if ((p1New && p1New.lives < lives1) || (p2New && p2New.lives < lives2)) {
+            this.sound.play('sonido_choque', { volume: 0.9 });
+
+            if ((p1New && p1New.lives <= 0) || (p2New && p2New.lives <= 0)) {
+                if (this.music) this.music.stop();
+            }
+        }
+
+
         this.renderState(state);
     }
 
