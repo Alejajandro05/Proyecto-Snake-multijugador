@@ -6,15 +6,80 @@ import { Food } from "./schema/Food.js";
 import { Obstacle } from "./schema/Obstacle.js";
 import { SnakeEngine } from "../../../shared/src/domain/SnakeEngine.js";
 import type { GameState } from "../../../shared/src/domain/types.js";
-import { TICK_MS, PLAYER_COLORS } from "../../../shared/src/domain/GameConfig.js";
+import { PLAYER_COLORS, TICK_MS, type GameDifficulty, resolveGameRuntimeConfig } from "../../../shared/src/domain/GameConfig.js";
+
+interface SnakeRoomCreateOptions {
+  boardCols?: number;
+  boardRows?: number;
+  boardCellSize?: number;
+  foodCount?: number;
+  obstaclesPerQuadrant?: number;
+  difficulty?: GameDifficulty;
+  mapId?: string;
+}
+
+interface SnakeRoomJoinOptions {
+  skinId?: string;
+}
+
+function toFiniteNumber(value: unknown): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return undefined;
+}
+
+function toDifficulty(value: unknown): GameDifficulty | undefined {
+  if (value === "easy" || value === "normal" || value === "hard") {
+    return value;
+  }
+  return undefined;
+}
+
+function toMapId(value: unknown): string {
+  if (typeof value !== "string") return "classic";
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized.slice(0, 32) : "classic";
+}
+
+function toSkinId(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized.slice(0, 32) : fallback;
+}
+
+function getRoomRuntimeConfig(options?: SnakeRoomCreateOptions) {
+  return resolveGameRuntimeConfig({
+    gridCols: toFiniteNumber(options?.boardCols),
+    gridRows: toFiniteNumber(options?.boardRows),
+    gridSize: toFiniteNumber(options?.boardCellSize),
+    foodCount: toFiniteNumber(options?.foodCount),
+    obstaclesPerQuadrant: toFiniteNumber(options?.obstaclesPerQuadrant),
+    difficulty: toDifficulty(options?.difficulty),
+  });
+}
 
 export class SnakeRoom extends Room<SnakeRoomState> {
   maxClients = 4;
   private engine!: SnakeEngine;
+  private tickMs = TICK_MS;
 
-  onCreate(_options: any) {
+  onCreate(options?: SnakeRoomCreateOptions) {
     this.setState(new SnakeRoomState());
-    this.engine = new SnakeEngine();
+    const runtimeConfig = getRoomRuntimeConfig(options);
+    this.engine = new SnakeEngine(runtimeConfig);
+    this.tickMs = runtimeConfig.tickMs;
+
+    this.state.boardCols = runtimeConfig.gridCols;
+    this.state.boardRows = runtimeConfig.gridRows;
+    this.state.boardCellSize = runtimeConfig.gridSize;
+    this.state.tickMs = runtimeConfig.tickMs;
+    this.state.foodCount = runtimeConfig.foodCount;
+    this.state.obstaclesPerQuadrant = runtimeConfig.obstaclesPerQuadrant;
+    this.state.difficulty = runtimeConfig.difficulty;
+    this.state.mapId = toMapId(options?.mapId);
 
     this.onMessage("changeDirection", (client, direction: string) => {
       this.engine.setNextDirection(client.sessionId, direction as any);
@@ -23,17 +88,20 @@ export class SnakeRoom extends Room<SnakeRoomState> {
     this.setSimulationInterval(() => {
       const state = this.engine.tick();
       this.syncToSchema(state);
-    }, TICK_MS);
+    }, this.tickMs);
   }
 
-  onJoin(client: Client, _options: any) {
+  onJoin(client: Client, options?: SnakeRoomJoinOptions) {
     const colorIndex = this.state.players.size % PLAYER_COLORS.length;
+    const fallbackSkinId = `skin-${colorIndex + 1}`;
     const playerState = this.engine.addPlayer(client.sessionId, {
       color: PLAYER_COLORS[colorIndex],
+      skinId: toSkinId(options?.skinId, fallbackSkinId),
     });
 
     const player = new Player();
     player.sessionId = client.sessionId;
+    player.skinId = playerState.skinId;
     player.color = playerState.color;
     player.alive = playerState.alive;
     player.lives = playerState.lives;
@@ -74,6 +142,7 @@ export class SnakeRoom extends Room<SnakeRoomState> {
       player.alive = playerState.alive;
       player.lives = playerState.lives;
       player.score = playerState.score;
+      player.skinId = playerState.skinId;
 
       this.syncSegments(player, playerState.segments);
     });

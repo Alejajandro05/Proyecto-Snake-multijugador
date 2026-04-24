@@ -1,5 +1,6 @@
 import { SnakeEngine } from '@shared/SnakeEngine';
-import { GRID_COLS, GRID_ROWS, GRID_SIZE, MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig';
+import { MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig';
+import { SnakeBoardRenderer } from '../renderers/SnakeBoardRenderer.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
@@ -15,33 +16,15 @@ export class LocalGame extends Phaser.Scene {
     }
 
     create() {
-        this.cameras.main.roundPixels = true;
-        this.cameras.main.setBackgroundColor(0x1a1a2e);
-        this.backgroundImage = this.add.image(this.scale.width * 0.5, this.scale.height * 0.5, 'background')
-            .setAlpha(0.22)
-            .setDepth(-50);
-
-        this.worldWidth = GRID_COLS * GRID_SIZE;
-        this.worldHeight = GRID_ROWS * GRID_SIZE;
-        this.boardOffsetX = 0;
-        this.boardOffsetY = 0;
-        this.cellSize = GRID_SIZE;
+        this.boardRenderer = new SnakeBoardRenderer(this);
 
         this.cacheHudElements();
         this.toggleHud(true);
-
-        this.boardBackgroundGraphics = this.add.graphics();
-        this.gridGraphics = this.add.graphics();
 
         // Domain engine – pure game logic, no Phaser/Colyseus dependency
         this.engine = new SnakeEngine();
         this.engine.addPlayer(P1_ID, { color: 0xe74c3c, startCol: 8,  startRow: 12 });
         this.engine.addPlayer(P2_ID, { color: 0x3498db, startCol: 24, startRow: 12 });
-
-        // Graphics layers
-        this.snakeGraphics = this.add.graphics();
-        this.foodGraphics  = this.add.graphics();
-        this.obstacleGraphics = this.add.graphics();
 
         // Input
         this.cursors = this.input.keyboard.createCursorKeys();
@@ -97,6 +80,30 @@ export class LocalGame extends Phaser.Scene {
 
         this.updateLayout(this.scale.width, this.scale.height);
 
+        // Music Logic for Local Game
+        this.music = this.sound.add('musica_in_game', { loop: true, volume: 0.1 });
+        this.music.play();
+
+        this.events.on('shutdown', () => {
+            if (this.music && this.music.isPlaying) {
+                this.music.stop();
+            }
+        });
+
+        this.events.on('pause', () => {
+            if (this.music && this.music.isPlaying) {
+                this.music.pause();
+            }
+        });
+
+        this.events.on('resume', () => {
+            this.isPaused = false;
+
+            if (this.music && this.music.isPaused) {
+                this.music.resume();
+            }
+        });
+
         this.renderState(this.engine.getState());
     }
 
@@ -132,29 +139,25 @@ export class LocalGame extends Phaser.Scene {
         const sidePanelWidthLeft = this.hudLeftPlayer ? this.hudLeftPlayer.offsetWidth : 0;
         const sidePanelWidthRight = this.hudRightPlayer ? this.hudRightPlayer.offsetWidth : 0;
         const sideGap = 22;
-        const availableWidth = Math.max(320, viewportWidth - safePadding * 2 - sidePanelWidthLeft - sidePanelWidthRight - sideGap * 2);
-        const availableHeight = Math.max(240, viewportHeight - topGap - safePadding);
-
-        this.cellSize = Math.max(12, Math.floor(Math.min(availableWidth / GRID_COLS, availableHeight / GRID_ROWS)));
-        this.boardWidth = this.cellSize * GRID_COLS;
-        this.boardHeight = this.cellSize * GRID_ROWS;
-
-        this.boardOffsetX = Math.floor((viewportWidth - this.boardWidth) * 0.5);
-        this.boardOffsetY = Math.floor(topGap + (availableHeight - this.boardHeight) * 0.5);
-
-        this.backgroundImage
-            .setPosition(viewportWidth * 0.5, viewportHeight * 0.5)
-            .setDisplaySize(viewportWidth, viewportHeight);
-
-        [this.gridGraphics, this.snakeGraphics, this.foodGraphics, this.obstacleGraphics].forEach((layer) => {
-            layer.setPosition(0, 0);
-            layer.setScale(1);
-        });
+        this.applyBoardMetrics(this.boardRenderer.updateLayout({
+            viewportWidth,
+            viewportHeight,
+            safePadding,
+            sideGap,
+            topGap,
+            sidePanelWidthLeft,
+            sidePanelWidthRight,
+        }));
 
         this.positionHudElements(viewportWidth, viewportHeight, sidePanelWidthLeft, sidePanelWidthRight, sideGap, safePadding, helpHeight);
+    }
 
-        this.drawBoardFrame(this.boardWidth, this.boardHeight);
-        this.drawGrid();
+    applyBoardMetrics(metrics) {
+        this.boardOffsetX = metrics.boardOffsetX;
+        this.boardOffsetY = metrics.boardOffsetY;
+        this.boardWidth = metrics.boardWidth;
+        this.boardHeight = metrics.boardHeight;
+        this.cellSize = metrics.cellSize;
     }
 
     positionHudElements(viewportWidth, viewportHeight, sidePanelWidthLeft, sidePanelWidthRight, sideGap, safePadding, helpHeight) {
@@ -190,66 +193,6 @@ export class LocalGame extends Phaser.Scene {
         }
     }
 
-    drawBoardFrame(boardWidthScaled, boardHeightScaled) {
-        this.boardBackgroundGraphics.clear();
-
-        const outerPadding = 14;
-        this.boardBackgroundGraphics.fillStyle(0x0f172a, 0.86);
-        this.boardBackgroundGraphics.fillRoundedRect(
-            this.boardOffsetX - outerPadding,
-            this.boardOffsetY - outerPadding,
-            boardWidthScaled + outerPadding * 2,
-            boardHeightScaled + outerPadding * 2,
-            18
-        );
-
-        this.boardBackgroundGraphics.lineStyle(3, 0x22d3ee, 0.55);
-        this.boardBackgroundGraphics.strokeRoundedRect(
-            this.boardOffsetX - outerPadding,
-            this.boardOffsetY - outerPadding,
-            boardWidthScaled + outerPadding * 2,
-            boardHeightScaled + outerPadding * 2,
-            18
-        );
-    }
-
-    drawGrid() {
-        this.gridGraphics.clear();
-        this.gridGraphics.lineStyle(1, 0xffffff, 0.08);
-
-        for (let col = 0; col <= GRID_COLS; col += 1) {
-            const x = this.boardOffsetX + col * this.cellSize;
-            this.gridGraphics.beginPath();
-            this.gridGraphics.moveTo(x, this.boardOffsetY);
-            this.gridGraphics.lineTo(x, this.boardOffsetY + this.boardHeight);
-            this.gridGraphics.strokePath();
-        }
-
-        for (let row = 0; row <= GRID_ROWS; row += 1) {
-            const y = this.boardOffsetY + row * this.cellSize;
-            this.gridGraphics.beginPath();
-            this.gridGraphics.moveTo(this.boardOffsetX, y);
-            this.gridGraphics.lineTo(this.boardOffsetX + this.boardWidth, y);
-            this.gridGraphics.strokePath();
-        }
-    }
-
-    drawBoardCell(layer, x, y, color) {
-        const col = Math.floor(x / GRID_SIZE);
-        const row = Math.floor(y / GRID_SIZE);
-        const px = this.boardOffsetX + col * this.cellSize;
-        const py = this.boardOffsetY + row * this.cellSize;
-        const padding = Math.max(1, Math.floor(this.cellSize * 0.08));
-
-        layer.fillStyle(color, 1);
-        layer.fillRect(
-            px + padding,
-            py + padding,
-            Math.max(1, this.cellSize - padding * 2),
-            Math.max(1, this.cellSize - padding * 2)
-        );
-    }
-
     updateLivesHud(targetElement, lives) {
         if (!targetElement) return;
 
@@ -268,7 +211,36 @@ export class LocalGame extends Phaser.Scene {
 
     gameTick() {
         this.handleInput();
+
+        const oldState = this.engine.getState();
+        const p1Old = oldState.players.get(P1_ID);
+        const p2Old = oldState.players.get(P2_ID);
+
+        const score1 = p1Old?.score || 0;
+        const score2 = p2Old?.score || 0;
+        const lives1 = p1Old?.lives || 0;
+        const lives2 = p2Old?.lives || 0;
+
         const state = this.engine.tick();
+
+        const p1New = state.players.get(P1_ID);
+        const p2New = state.players.get(P2_ID);
+
+        // Comer manzana
+        if ((p1New?.score || 0) > score1 || (p2New?.score || 0) > score2) {
+            this.sound.play('eat_apple', { volume: 0.7 });
+        }
+
+        // Choque / Perder vida
+        if ((p1New && p1New.lives < lives1) || (p2New && p2New.lives < lives2)) {
+            this.sound.play('sonido_choque', { volume: 0.7 });
+
+            // Si alguien se queda a 0 vidas (Game Over real), paramos la música
+            if ((p1New && p1New.lives <= 0) || (p2New && p2New.lives <= 0)) {
+                if (this.music) this.music.stop();
+            }
+        }
+
         this.renderState(state);
     }
 
@@ -283,24 +255,7 @@ export class LocalGame extends Phaser.Scene {
     }
 
     renderState(state) {
-        this.snakeGraphics.clear();
-        this.foodGraphics.clear();
-        this.obstacleGraphics.clear();
-
-        state.players.forEach((player) => {
-            if (!player.alive) return;
-            player.segments.forEach((seg) => {
-                this.drawBoardCell(this.snakeGraphics, seg.x, seg.y, player.color);
-            });
-        });
-
-        state.food.forEach((f) => {
-            this.drawBoardCell(this.foodGraphics, f.x, f.y, 0xffff00);
-        });
-
-        state.obstacles.forEach((o) => {
-            this.drawBoardCell(this.obstacleGraphics, o.x, o.y, 0x888888);
-        });
+        this.boardRenderer.renderState(state);
 
         const p1 = state.players.get(P1_ID);
         const p2 = state.players.get(P2_ID);
@@ -313,11 +268,11 @@ export class LocalGame extends Phaser.Scene {
         if (p1) this.updateLivesHud(this.hudJ1Lives, p1.lives);
         if (p2) this.updateLivesHud(this.hudJ2Lives, p2.lives);
 
-        if(p1.score >= WIN_SCORE || p2.score >= WIN_SCORE){
+        if (p1.score >= WIN_SCORE || p2.score >= WIN_SCORE) {
             this.gameOver(true) // ganador por puntuación
         }
 
-        if(p1.lives <= 0 || p2.lives <= 0){
+        if (p1.lives <= 0 || p2.lives <= 0) {
             this.gameOver(false); // perdedor por vidas
         }
     }
