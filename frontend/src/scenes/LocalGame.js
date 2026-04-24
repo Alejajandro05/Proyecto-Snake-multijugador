@@ -81,7 +81,7 @@ export class LocalGame extends Phaser.Scene {
         this.updateLayout(this.scale.width, this.scale.height);
 
         // Music Logic for Local Game
-        /*this.music = this.sound.add('musica_in_game', { loop: true, volume: 0.2 });
+        this.music = this.sound.add('musica_in_game', { loop: true, volume: 0.1 });
         this.music.play();
 
         this.events.on('shutdown', () => {
@@ -103,7 +103,7 @@ export class LocalGame extends Phaser.Scene {
                 this.music.resume();
             }
         });
-        */
+
         this.renderState(this.engine.getState());
     }
 
@@ -213,25 +213,33 @@ export class LocalGame extends Phaser.Scene {
         this.handleInput();
 
         const oldState = this.engine.getState();
-        const score1 = oldState.players.get(P1_ID)?.score || 0;
-        const score2 = oldState.players.get(P2_ID)?.score || 0;
+        const p1Old = oldState.players.get(P1_ID);
+        const p2Old = oldState.players.get(P2_ID);
+
+        const score1 = p1Old?.score || 0;
+        const score2 = p2Old?.score || 0;
+        const lives1 = p1Old?.lives || 0;
+        const lives2 = p2Old?.lives || 0;
 
         const state = this.engine.tick();
 
-        if ((state.players.get(P1_ID)?.score || 0) > score1 ||
-            (state.players.get(P2_ID)?.score || 0) > score2) {
+        const p1New = state.players.get(P1_ID);
+        const p2New = state.players.get(P2_ID);
 
+        // Comer manzana
+        if ((p1New?.score || 0) > score1 || (p2New?.score || 0) > score2) {
             this.sound.play('eat_apple', { volume: 0.7 });
         }
 
+        // Choque / Perder vida
         if ((p1New && p1New.lives < lives1) || (p2New && p2New.lives < lives2)) {
-            this.sound.play('sonido_choque', { volume: 0.9 });
+            this.sound.play('sonido_choque', { volume: 0.7 });
 
+            // Si alguien se queda a 0 vidas (Game Over real), paramos la música
             if ((p1New && p1New.lives <= 0) || (p2New && p2New.lives <= 0)) {
                 if (this.music) this.music.stop();
             }
         }
-
 
         this.renderState(state);
     }
