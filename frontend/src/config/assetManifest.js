@@ -23,7 +23,7 @@ const CORE_IMAGE_ASSETS = [
 
 const PLANNED_IMAGE_ASSETS = [
     { key: ASSET_KEYS.MAP_BOARD_BACKGROUND, path: 'map/backgrounds/board_background.png', enabled: false },
-    { key: ASSET_KEYS.MAP_BOARD_FRAME,      path: 'map/borders/board_frame.png',          enabled: true  },
+    { key: ASSET_KEYS.MAP_BOARD_FRAME,      path: 'map/borders/board_frame.png',          enabled: false },
     { key: ASSET_KEYS.MAP_FLOOR_TILE,       path: 'map/tiles/floor_tile.png',             enabled: true  },
     { key: ASSET_KEYS.MAP_OBSTACLE_ROCK,    path: 'map/obstacles/obstacle_rock.png',      enabled: true  },
     { key: ASSET_KEYS.MAP_DECOR_CORNER_LEAF,path: 'map/decor/corner_leaf.png',            enabled: false },
