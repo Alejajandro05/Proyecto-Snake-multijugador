@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { SnakeEngine } from '@shared/SnakeEngine';
 import { MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig';
-import { SnakeBoardRenderer } from '../renderers/SnakeBoardRenderer.js';
+import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
