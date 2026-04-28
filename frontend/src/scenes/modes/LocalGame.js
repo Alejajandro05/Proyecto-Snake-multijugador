@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { SnakeEngine } from '@shared/SnakeEngine';
 import { MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig';
-import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
+import { SnakeBoardRenderer } from '../renderers/SnakeBoardRenderer.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
@@ -41,7 +41,7 @@ export class LocalGame extends Phaser.Scene {
             const p2 = state.players.get(P2_ID);
 
             this.scene.pause();
-            this.scene.launch('Pause', {
+            this.scene.launch('PauseScene', {
                 p1Score: p1.score ?? 0,
                 p2Score: p2.score ?? 0
             });
