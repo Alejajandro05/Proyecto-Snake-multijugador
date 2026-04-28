@@ -8,10 +8,12 @@ import {
 } from "colyseus";
 
 import { SnakeRoom } from "./rooms/SnakeRoom.js";
+import { MyRoom } from "./rooms/MyRoom.js";
 
 const server = defineServer({
     rooms: {
-        snake_room: defineRoom(SnakeRoom)
+        snake_room: defineRoom(SnakeRoom),
+        my_room: defineRoom(MyRoom)
     },
 
     routes: createRouter({

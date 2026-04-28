@@ -1,21 +1,20 @@
-# 1. Usamos la imagen que ya tienes (basada en las capas de Debian 13)
-FROM dhi.io/node:25-debian13-dev
+# syntax=docker/dockerfile:1
+# Build from repository root: docker build -f backend/Dockerfile --target development .
 
-# 2. Establecemos el directorio de trabajo (la capa 6 ya lo creó, aquí lo usamos)
+FROM node:22-bookworm-slim AS development
 WORKDIR /app
-
-# 3. Copiamos los archivos de dependencias
-# Se hace antes para aprovechar el sistema de capas de Docker
-COPY package*.json ./
-
-# 4. Instalamos las dependencias de Colyseus
+COPY backend/package*.json ./
 RUN npm install
-
-# 5. Copiamos todo el código de tu servidor
-COPY . .
-
-# 6. Exponemos el puerto oficial de Colyseus
+COPY backend/ ./
 EXPOSE 2567
-
-# 7. Ejecutamos el servidor en modo desarrollo
 CMD ["npm", "run", "start"]
+
+FROM node:22-bookworm-slim AS production
+WORKDIR /app
+COPY backend/package*.json ./
+RUN npm ci
+COPY backend/ ./
+RUN npm run build
+ENV NODE_ENV=production
+EXPOSE 2567
+CMD ["node", "build/backend/src/index.js"]
