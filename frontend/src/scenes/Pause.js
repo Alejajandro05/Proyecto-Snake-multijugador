@@ -1,3 +1,5 @@
+import Phaser from 'phaser';
+
 export class Pause extends Phaser.Scene {
     constructor() {
         super('PauseScene');
