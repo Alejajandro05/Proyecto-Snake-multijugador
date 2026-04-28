@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { Client } from '@colyseus/sdk';
 import { MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
-import { SnakeBoardRenderer } from '../renderers/SnakeBoardRenderer.js';
+import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 
 function normalizeHttpUrlToWebSocket(url) {
     const s = String(url ?? '').trim();
