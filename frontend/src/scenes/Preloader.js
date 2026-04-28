@@ -21,7 +21,7 @@ export class Preloader extends Phaser.Scene {
     }
 
     preload() {
-        this.load.setPath('assets');
+        this.load.setPath('');
 
         this.load.audio('musica_in_game', 'audio/musica_in_game.mp3');
         this.load.audio('eat_apple', 'audio/eat_apple.mp3');
