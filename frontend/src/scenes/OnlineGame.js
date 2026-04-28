@@ -89,6 +89,22 @@ export class OnlineGame extends Phaser.Scene {
         this.latestState = null;
         this.renderState({ players: new Map(), food: [], obstacles: [] });
 
+        this.userMusicVol = localStorage.getItem('musicVolume') !== null ? parseFloat(localStorage.getItem('musicVolume')) : 0.2;
+        this.userSfxVol = localStorage.getItem('sfxVolume') !== null ? parseFloat(localStorage.getItem('sfxVolume')) : 0.7;
+
+        const musicKey = localStorage.getItem('selectedMusic') || 'musica_in_game';
+        this.music = this.sound.add(musicKey, { loop: true, volume: this.userMusicVol });
+        this.music.play();
+
+        this.events.on('shutdown', () => { if (this.music) this.music.stop(); });
+        this.events.on('pause', () => { if (this.music) this.music.pause(); });
+        this.events.on('resume', () => {
+            this.isPaused = false;
+            if (this.music) this.music.resume();
+        });
+
+        this.audioStateCache = new Map();
+
         await this.connectToServer();
     }
 
@@ -215,6 +231,7 @@ export class OnlineGame extends Phaser.Scene {
             this.room = await client.joinOrCreate('snake_room');
 
             this.room.onStateChange((state) => {
+                this.checkAudioEvents(state);
                 this.latestState = state;
                 this.renderState(state);
             });
@@ -237,6 +254,40 @@ export class OnlineGame extends Phaser.Scene {
             this.cleanupRoom();
             this.scene.start('MainMenu');
         }
+    }
+
+    checkAudioEvents(state) {
+        if (!state || !state.players || !this.room) return;
+
+        const mySessionId = this.room.sessionId; // Así sabemos cuál es nuestra serpiente
+
+        state.players.forEach((player, sessionId) => {
+            // Recuperamos cómo estaba este jugador hace un milisegundo
+            const oldData = this.audioStateCache.get(sessionId) || { score: 0, lives: MAX_LIVES };
+
+            const isMe = (sessionId === mySessionId);
+
+            // --- Lógica de Comer Manzana ---
+            if (player.score > oldData.score) {
+                // Si soy yo, volumen normal. Si es el enemigo, volumen muy bajito.
+                const vol = isMe ? 0.7 : 0.15;
+                this.sound.play('eat_apple', { volume: vol });
+            }
+
+            // --- Lógica de Choque / Perder Vida ---
+            if (player.lives < oldData.lives) {
+                const vol = isMe ? 0.9 : 0.2;
+                this.sound.play('sonido_choque', { volume: vol });
+
+                // Solo paramos la música si YO muero definitivamente
+                if (isMe && player.lives <= 0 && this.music) {
+                    this.music.stop();
+                }
+            }
+
+            // Actualizamos la caché para la próxima comprobación
+            this.audioStateCache.set(sessionId, { score: player.score, lives: player.lives });
+        });
     }
 
     sendDirection(direction) {
