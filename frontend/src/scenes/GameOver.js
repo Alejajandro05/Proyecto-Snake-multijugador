@@ -15,7 +15,7 @@ export class GameOver extends Phaser.Scene {
         gameOverDiv.style.left = '0';
         gameOverDiv.style.width = '100vw';
         gameOverDiv.style.height = '100vh';
-        gameOverDiv.style.backgroundImage = "linear-gradient(160deg, rgba(11,18,45,0.88) 0%, rgba(18,38,79,0.88) 45%, rgba(27,47,106,0.88) 100%), url('assets/bg.png')";
+        gameOverDiv.style.backgroundImage = "linear-gradient(160deg, rgba(11,18,45,0.88) 0%, rgba(18,38,79,0.88) 45%, rgba(27,47,106,0.88) 100%), url('bg.png')";
         gameOverDiv.style.backgroundSize = 'cover';
         gameOverDiv.style.backgroundPosition = 'center';
         gameOverDiv.style.backdropFilter = 'blur(12px)';
