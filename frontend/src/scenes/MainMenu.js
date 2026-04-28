@@ -59,21 +59,21 @@ export class MainMenu extends Phaser.Scene {
                     <h2 class="text-white text-center fw-bold mb-3" style="font-family: 'Montserrat', sans-serif;">AJUSTES</h2>
                     
                     <div class="text-start">
-                        <label for="music-vol" class="form-label text-white fw-semibold mb-1 small">Música de la partida (Prueba)</label>
+                        <label for="music-vol" class="form-label text-white fw-semibold mb-1 small">Música de la partida</label>
                         <input type="range" class="form-range" id="music-vol" min="0" max="1" step="0.05" value="${savedMusicVol}">
                     </div>
 
                     <div class="text-start">
-                        <label for="sfx-vol" class="form-label text-white fw-semibold mb-1 small">Efectos SFX (Prueba)</label>
+                        <label for="sfx-vol" class="form-label text-white fw-semibold mb-1 small">Efectos SFX </label>
                         <input type="range" class="form-range" id="sfx-vol" min="0" max="1" step="0.05" value="${savedSfxVol}">
                     </div>
 
                     <div class="text-start mb-3">
                         <label for="music-select" class="form-label text-white fw-semibold mb-1 small">Elegir Pista</label>
                         <select class="form-select form-select-sm bg-dark text-white border-secondary" id="music-select">
-                            <option value="musica_in_game" ${savedMusicKey === 'musica_in_game' ? 'selected' : ''}>Música 1 (Original)</option>
-                            <option value="musica2" ${savedMusicKey === 'musica2' ? 'selected' : ''}>Música 2 (Chill)</option>
-                            <option value="musica3" ${savedMusicKey === 'musica3' ? 'selected' : ''}>Música 3 (Action)</option>
+                            <option value="musica_in_game" ${savedMusicKey === 'musica_in_game' ? 'selected' : ''}>Música 1</option>
+                            <option value="musica2" ${savedMusicKey === 'musica2' ? 'selected' : ''}>Música 2</option>
+                            <option value="musica3" ${savedMusicKey === 'musica3' ? 'selected' : ''}>Música 3</option>
                         </select>
                     </div>
     
