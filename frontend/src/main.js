@@ -45,6 +45,7 @@ const config = {
         Boot,
         Preloader,
         MainMenu,
+        LocalGameSetup,
         LocalGame,
         OnlineGame,
         Game,
