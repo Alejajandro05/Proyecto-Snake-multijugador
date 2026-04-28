@@ -103,7 +103,7 @@ export class MainMenu extends Phaser.Scene {
         document.getElementById('btn-local').addEventListener('click', () => {
             detenerAudioPrueba();
             clearMenu();
-            this.scene.start('TimeAttackGame');
+            this.scene.start('LocalGame');
         });
 
         document.getElementById('btn-online').addEventListener('click', () => {
