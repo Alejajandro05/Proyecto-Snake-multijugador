@@ -41,7 +41,7 @@ export class LocalGame extends Phaser.Scene {
             const p2 = state.players.get(P2_ID);
 
             this.scene.pause();
-            this.scene.launch('PauseScene', {
+            this.scene.launch('Pause', {
                 p1Score: p1.score ?? 0,
                 p2Score: p2.score ?? 0
             });
