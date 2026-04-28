@@ -2,9 +2,13 @@ import assert from "assert";
 import { SnakeEngine } from "../../shared/src/domain/SnakeEngine.js";
 import { GRID_SIZE, TICK_MS, RESPAWN_DELAY_MS, GRID_COLS } from "../../shared/src/domain/GameConfig.js";
 
+function createEngine(): SnakeEngine {
+  return new SnakeEngine({ foodCount: 0, obstaclesPerQuadrant: 0 });
+}
+
 describe("SnakeEngine – domain logic", () => {
   it("adds a player with 3 segments pointing right", () => {
-    const engine = new SnakeEngine(0);
+    const engine = createEngine();
     const p = engine.addPlayer("p1");
 
     assert.strictEqual(p.id, "p1");
@@ -17,7 +21,7 @@ describe("SnakeEngine – domain logic", () => {
   });
 
   it("moves the snake head one grid cell in the current direction", () => {
-    const engine = new SnakeEngine(0);
+    const engine = createEngine();
     engine.addPlayer("p1");
 
     const before = engine.getState().players.get("p1")!.segments[0].x;
@@ -28,7 +32,7 @@ describe("SnakeEngine – domain logic", () => {
   });
 
   it("respects setNextDirection and rejects 180-degree reversal", () => {
-    const engine = new SnakeEngine(0);
+    const engine = createEngine();
     engine.addPlayer("p1");
 
     // Valid: up (perpendicular to current 'right')
@@ -43,7 +47,7 @@ describe("SnakeEngine – domain logic", () => {
   });
 
   it("increments score and grows snake when eating food", () => {
-    const engine = new SnakeEngine(0);
+    const engine = createEngine();
     engine.addPlayer("p1");
 
     // Manually place food directly in front of the head
@@ -61,7 +65,7 @@ describe("SnakeEngine – domain logic", () => {
   });
 
   it("kills a player on self collision and schedules respawn", () => {
-    const engine = new SnakeEngine(0);
+    const engine = createEngine();
     engine.addPlayer("p1");
 
     // Grow the snake long enough for self collision
@@ -84,7 +88,7 @@ describe("SnakeEngine – domain logic", () => {
   });
 
   it("wraps the snake around the board edges (toroidal)", () => {
-    const engine = new SnakeEngine(0);
+    const engine = createEngine();
     engine.addPlayer("p1");
 
     // @ts-ignore
@@ -100,7 +104,7 @@ describe("SnakeEngine – domain logic", () => {
   });
 
   it("respawns the player after RESPAWN_DELAY_MS", () => {
-    const engine = new SnakeEngine(0);
+    const engine = createEngine();
     engine.addPlayer("p1");
 
     // @ts-ignore – force the player dead
@@ -116,7 +120,7 @@ describe("SnakeEngine – domain logic", () => {
   });
 
   it("removePlayer cleans up state and respawn queue", () => {
-    const engine = new SnakeEngine(0);
+    const engine = createEngine();
     engine.addPlayer("p1");
     engine.removePlayer("p1");
 
