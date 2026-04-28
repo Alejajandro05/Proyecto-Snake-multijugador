@@ -8,6 +8,7 @@ import { LocalGame } from './scenes/modes/LocalGame.js';
 import { OnlineGame } from './scenes/modes/OnlineGame.js';
 import { TimeAttackGame } from './scenes/modes/TimeAttackGame.js';
 import { Pause } from './scenes/Pause.js';
+import {LocalGameSetup} from "./scenes/LocalGameSetup";
 
 const config = {
     type: Phaser.AUTO,
