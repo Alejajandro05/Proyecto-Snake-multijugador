@@ -1,8 +1,7 @@
 import Phaser from 'phaser';
 import { SnakeEngine } from '@shared/SnakeEngine';
-import { MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
+import { MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
-import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
@@ -17,15 +16,6 @@ export class LocalGame extends Phaser.Scene {
         super('LocalGame');
     }
 
-    init(data) {
-        // data puede venir desde LocalGameSetup; si no, caemos al storage.
-        const fromStorage = loadLocalGameSettings();
-        const merged = normalizeLocalGameSettings({ ...fromStorage, ...(data ?? {}) });
-        this.matchSettings = merged;
-        // Persistir por si el usuario entra directo a LocalGame desde otro sitio.
-        saveLocalGameSettings(merged);
-    }
-
     create() {
         this.boardRenderer = new SnakeBoardRenderer(this);
 
@@ -33,13 +23,9 @@ export class LocalGame extends Phaser.Scene {
         this.toggleHud(true);
 
         // Domain engine – pure game logic, no Phaser/Colyseus dependency
-        const difficulty = this.matchSettings?.difficulty ?? 'normal';
-        const p1Cfg = this.matchSettings?.players?.p1 ?? {};
-        const p2Cfg = this.matchSettings?.players?.p2 ?? {};
-
-        this.engine = new SnakeEngine({ difficulty });
-        this.engine.addPlayer(P1_ID, { color: p1Cfg.color, skinId: p1Cfg.skinId, startCol: 8, startRow: 12 });
-        this.engine.addPlayer(P2_ID, { color: p2Cfg.color, skinId: p2Cfg.skinId, startCol: 24, startRow: 12 });
+        this.engine = new SnakeEngine();
+        this.engine.addPlayer(P1_ID, { color: 0xe74c3c, startCol: 8,  startRow: 12 });
+        this.engine.addPlayer(P2_ID, { color: 0x3498db, startCol: 24, startRow: 12 });
 
         // Input
         this.cursors = this.input.keyboard.createCursorKeys();
@@ -79,9 +65,8 @@ export class LocalGame extends Phaser.Scene {
         this.input.keyboard.on('keydown-RIGHT', () => this.pushDirection(P2_ID, 'right'));
 
         // Game loop driven by domain engine
-        const runtimeConfig = this.engine.getConfig?.() ?? {};
         this.gameTimer = this.time.addEvent({
-            delay: runtimeConfig.tickMs ?? 150,
+            delay: TICK_MS,
             loop: true,
             callback: this.gameTick,
             callbackScope: this,
@@ -143,36 +128,12 @@ export class LocalGame extends Phaser.Scene {
         this.hudHelpWrap = document.getElementById('hud-help-wrap');
         this.hudLeftPlayer = document.getElementById('hud-left-player');
         this.hudRightPlayer = document.getElementById('hud-right-player');
-        this.applyHudIdentity();
+        if (this.hudHelp) {
+            this.hudHelp.textContent = 'WASD | Flechas - ESC: Menu';
+        }
 
         this.updateLivesHud(this.hudJ1Lives, MAX_LIVES);
         this.updateLivesHud(this.hudJ2Lives, MAX_LIVES);
-    }
-
-    applyHudIdentity() {
-        const difficulty = String(this.matchSettings?.difficulty ?? 'normal');
-        const p1Name = this.matchSettings?.players?.p1?.name ?? 'J1';
-        const p2Name = this.matchSettings?.players?.p2?.name ?? 'J2';
-        const p1Color = this.matchSettings?.players?.p1?.color;
-        const p2Color = this.matchSettings?.players?.p2?.color;
-
-        if (this.hudJ1Score) this.hudJ1Score.textContent = p1Name;
-        if (this.hudJ2Score) this.hudJ2Score.textContent = p2Name;
-
-        if (this.hudLeftPlayer && p1Color !== undefined) {
-            this.hudLeftPlayer.style.borderColor = `${colorNumberToCssHex(p1Color)}55`;
-            this.hudLeftPlayer.style.boxShadow = `0 12px 40px rgba(0,0,0,0.35), 0 0 0 2px ${colorNumberToCssHex(p1Color)}33 inset`;
-        }
-
-        if (this.hudRightPlayer && p2Color !== undefined) {
-            this.hudRightPlayer.style.borderColor = `${colorNumberToCssHex(p2Color)}55`;
-            this.hudRightPlayer.style.boxShadow = `0 12px 40px rgba(0,0,0,0.35), 0 0 0 2px ${colorNumberToCssHex(p2Color)}33 inset`;
-        }
-
-        if (this.hudHelp) {
-            const label = difficulty === 'easy' ? 'Easy' : difficulty === 'hard' ? 'Difficult' : 'Medium';
-            this.hudHelp.textContent = `${label} | ${p1Name} (WASD) vs ${p2Name} (Flechas) — ESC: Menu`;
-        }
     }
 
     toggleHud(visible) {
@@ -305,7 +266,8 @@ export class LocalGame extends Phaser.Scene {
         const p1 = state.players.get(P1_ID);
         const p2 = state.players.get(P2_ID);
 
-        // Los nombres los fijamos con la config (applyHudIdentity).
+        if (p1 && this.hudJ1Score) this.hudJ1Score.textContent = `J1`;
+        if (p2 && this.hudJ2Score) this.hudJ2Score.textContent = `J2`;
         if (p1 && this.hudJ1ScoreBig) this.hudJ1ScoreBig.textContent = `${p1.score}`;
         if (p2 && this.hudJ2ScoreBig) this.hudJ2ScoreBig.textContent = `${p2.score}`;
 
