@@ -1,11 +1,20 @@
+# Desarrollo local: backend + frontend (Vite). Sin Caddy; usa los puertos publicados.
+#
+# Backend: el puerto 2567 está publicado para probar Colyseus desde el host (cliente en
+# ws://localhost:2567). En producción con docker-compose.prod.yml suele bastar el acceso
+# interno backend:2567 vía Caddy y puedes comentar "ports" aquí si no necesitas depuración.
+
 services:
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: development
     container_name: snake_backend
     volumes:
       - ./backend:/app
       - ./shared:/shared
-      - backend_node_modules:/app/node_modules # Referencia al volumen nombrado
+      - backend_node_modules:/app/node_modules
     ports:
       - "2567:2567"
     environment:
@@ -19,7 +28,7 @@ services:
     volumes:
       - ./frontend:/app
       - ./shared:/shared
-      - frontend_node_modules:/app/node_modules # Referencia al volumen nombrado
+      - frontend_node_modules:/app/node_modules
     ports:
       - "5173:5173"
     environment:
@@ -29,7 +38,6 @@ services:
     depends_on:
       - backend
 
-# Definición de volúmenes nombrados
 volumes:
   backend_node_modules:
   frontend_node_modules:

@@ -1,0 +1,43 @@
+# Producción: Caddy (TLS + estáticos) + backend Colyseus (solo red interna).
+# Uso típico tras build del frontend en el host:
+#   (cd frontend && npm ci && npm run build)
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Sitio y volúmenes TLS: ajusta SITE_ADDRESS o el Caddyfile según tu dominio.
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: production
+    container_name: snake_backend_prod
+    restart: unless-stopped
+    expose:
+      - "2567"
+    environment:
+      NODE_ENV: production
+    # Descomenta para depurar Colyseus desde el host sin pasar por Caddy:
+    # ports:
+    #   - "2567:2567"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: snake_caddy_prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-www.snake-multijugador.site}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./frontend/dist:/srv/dist:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+
+volumes:
+  caddy_data:
+  caddy_config:

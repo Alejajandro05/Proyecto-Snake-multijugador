@@ -1,4 +1,4 @@
-import { Room, Client, CloseCode } from "colyseus";
+import { Room, Client } from "colyseus";
 import { SnakeRoomState } from "./schema/SnakeRoomState.js";
 import { Player } from "./schema/Player.js";
 import { SnakeSegment } from "./schema/SnakeSegment.js";
@@ -61,13 +61,13 @@ function getRoomRuntimeConfig(options?: SnakeRoomCreateOptions) {
   });
 }
 
-export class SnakeRoom extends Room<SnakeRoomState> {
+export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
   maxClients = 4;
   private engine!: SnakeEngine;
   private tickMs = TICK_MS;
 
   onCreate(options?: SnakeRoomCreateOptions) {
-    this.setState(new SnakeRoomState());
+    this.state = new SnakeRoomState();
     const runtimeConfig = getRoomRuntimeConfig(options);
     this.engine = new SnakeEngine(runtimeConfig);
     this.tickMs = runtimeConfig.tickMs;
@@ -120,7 +120,7 @@ export class SnakeRoom extends Room<SnakeRoomState> {
     console.log(client.sessionId, "joined. Players:", this.state.players.size);
   }
 
-  onLeave(client: Client, _code: CloseCode) {
+  onLeave(client: Client, _code: number) {
     this.engine.removePlayer(client.sessionId);
     this.state.players.delete(client.sessionId);
     console.log(client.sessionId, "left. Players:", this.state.players.size);
