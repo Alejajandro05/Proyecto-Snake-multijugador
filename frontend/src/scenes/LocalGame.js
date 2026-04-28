@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { SnakeEngine } from '@shared/SnakeEngine';
-import { MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig';
+import { MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
 import { SnakeBoardRenderer } from '../renderers/SnakeBoardRenderer.js';
+import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../utils/localGameSettings.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
@@ -16,6 +17,15 @@ export class LocalGame extends Phaser.Scene {
         super('LocalGame');
     }
 
+    init(data) {
+        // data puede venir desde LocalGameSetup; si no, caemos al storage.
+        const fromStorage = loadLocalGameSettings();
+        const merged = normalizeLocalGameSettings({ ...fromStorage, ...(data ?? {}) });
+        this.matchSettings = merged;
+        // Persistir por si el usuario entra directo a LocalGame desde otro sitio.
+        saveLocalGameSettings(merged);
+    }
+
     create() {
         this.boardRenderer = new SnakeBoardRenderer(this);
 
@@ -23,9 +33,13 @@ export class LocalGame extends Phaser.Scene {
         this.toggleHud(true);
 
         // Domain engine – pure game logic, no Phaser/Colyseus dependency
-        this.engine = new SnakeEngine();
-        this.engine.addPlayer(P1_ID, { color: 0xe74c3c, startCol: 8,  startRow: 12 });
-        this.engine.addPlayer(P2_ID, { color: 0x3498db, startCol: 24, startRow: 12 });
+        const difficulty = this.matchSettings?.difficulty ?? 'normal';
+        const p1Cfg = this.matchSettings?.players?.p1 ?? {};
+        const p2Cfg = this.matchSettings?.players?.p2 ?? {};
+
+        this.engine = new SnakeEngine({ difficulty });
+        this.engine.addPlayer(P1_ID, { color: p1Cfg.color, skinId: p1Cfg.skinId, startCol: 8, startRow: 12 });
+        this.engine.addPlayer(P2_ID, { color: p2Cfg.color, skinId: p2Cfg.skinId, startCol: 24, startRow: 12 });
 
         // Input
         this.cursors = this.input.keyboard.createCursorKeys();
@@ -65,8 +79,9 @@ export class LocalGame extends Phaser.Scene {
         this.input.keyboard.on('keydown-RIGHT', () => this.pushDirection(P2_ID, 'right'));
 
         // Game loop driven by domain engine
+        const runtimeConfig = this.engine.getConfig?.() ?? {};
         this.gameTimer = this.time.addEvent({
-            delay: TICK_MS,
+            delay: runtimeConfig.tickMs ?? 150,
             loop: true,
             callback: this.gameTick,
             callbackScope: this,
@@ -82,7 +97,15 @@ export class LocalGame extends Phaser.Scene {
         this.updateLayout(this.scale.width, this.scale.height);
 
         // Music Logic for Local Game
-        this.music = this.sound.add('musica_in_game', { loop: true, volume: 0.1 });
+        this.updateLayout(this.scale.width, this.scale.height);
+
+        // --- NUEVO: Leer los volúmenes del jugador antes de usarlos ---
+        this.userMusicVol = localStorage.getItem('musicVolume') !== null ? parseFloat(localStorage.getItem('musicVolume')) : 0.2;
+        this.userSfxVol = localStorage.getItem('sfxVolume') !== null ? parseFloat(localStorage.getItem('sfxVolume')) : 0.7;
+
+        // Music Logic for Local Game
+        const musicKey = localStorage.getItem('selectedMusic') || 'musica_in_game';
+        this.music = this.sound.add(musicKey, { loop: true, volume: this.userMusicVol });
         this.music.play();
 
         this.events.on('shutdown', () => {
@@ -120,12 +143,36 @@ export class LocalGame extends Phaser.Scene {
         this.hudHelpWrap = document.getElementById('hud-help-wrap');
         this.hudLeftPlayer = document.getElementById('hud-left-player');
         this.hudRightPlayer = document.getElementById('hud-right-player');
-        if (this.hudHelp) {
-            this.hudHelp.textContent = 'WASD | Flechas - ESC: Menu';
-        }
+        this.applyHudIdentity();
 
         this.updateLivesHud(this.hudJ1Lives, MAX_LIVES);
         this.updateLivesHud(this.hudJ2Lives, MAX_LIVES);
+    }
+
+    applyHudIdentity() {
+        const difficulty = String(this.matchSettings?.difficulty ?? 'normal');
+        const p1Name = this.matchSettings?.players?.p1?.name ?? 'J1';
+        const p2Name = this.matchSettings?.players?.p2?.name ?? 'J2';
+        const p1Color = this.matchSettings?.players?.p1?.color;
+        const p2Color = this.matchSettings?.players?.p2?.color;
+
+        if (this.hudJ1Score) this.hudJ1Score.textContent = p1Name;
+        if (this.hudJ2Score) this.hudJ2Score.textContent = p2Name;
+
+        if (this.hudLeftPlayer && p1Color !== undefined) {
+            this.hudLeftPlayer.style.borderColor = `${colorNumberToCssHex(p1Color)}55`;
+            this.hudLeftPlayer.style.boxShadow = `0 12px 40px rgba(0,0,0,0.35), 0 0 0 2px ${colorNumberToCssHex(p1Color)}33 inset`;
+        }
+
+        if (this.hudRightPlayer && p2Color !== undefined) {
+            this.hudRightPlayer.style.borderColor = `${colorNumberToCssHex(p2Color)}55`;
+            this.hudRightPlayer.style.boxShadow = `0 12px 40px rgba(0,0,0,0.35), 0 0 0 2px ${colorNumberToCssHex(p2Color)}33 inset`;
+        }
+
+        if (this.hudHelp) {
+            const label = difficulty === 'easy' ? 'Easy' : difficulty === 'hard' ? 'Difficult' : 'Medium';
+            this.hudHelp.textContent = `${label} | ${p1Name} (WASD) vs ${p2Name} (Flechas) — ESC: Menu`;
+        }
     }
 
     toggleHud(visible) {
@@ -227,16 +274,13 @@ export class LocalGame extends Phaser.Scene {
         const p1New = state.players.get(P1_ID);
         const p2New = state.players.get(P2_ID);
 
-        // Comer manzana
         if ((p1New?.score || 0) > score1 || (p2New?.score || 0) > score2) {
-            this.sound.play('eat_apple', { volume: 0.7 });
+            this.sound.play('eat_apple', { volume: this.userSfxVol * 0.7 });
         }
 
-        // Choque / Perder vida
         if ((p1New && p1New.lives < lives1) || (p2New && p2New.lives < lives2)) {
-            this.sound.play('sonido_choque', { volume: 0.7 });
+            this.sound.play('sonido_choque', { volume: this.userSfxVol });
 
-            // Si alguien se queda a 0 vidas (Game Over real), paramos la música
             if ((p1New && p1New.lives <= 0) || (p2New && p2New.lives <= 0)) {
                 if (this.music) this.music.stop();
             }
@@ -261,8 +305,7 @@ export class LocalGame extends Phaser.Scene {
         const p1 = state.players.get(P1_ID);
         const p2 = state.players.get(P2_ID);
 
-        if (p1 && this.hudJ1Score) this.hudJ1Score.textContent = `J1`;
-        if (p2 && this.hudJ2Score) this.hudJ2Score.textContent = `J2`;
+        // Los nombres los fijamos con la config (applyHudIdentity).
         if (p1 && this.hudJ1ScoreBig) this.hudJ1ScoreBig.textContent = `${p1.score}`;
         if (p2 && this.hudJ2ScoreBig) this.hudJ2ScoreBig.textContent = `${p2.score}`;
 
