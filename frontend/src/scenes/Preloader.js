@@ -1,3 +1,4 @@
+import Phaser from 'phaser';
 import { getImageAssetsToPreload, getSpriteSheetAssetsToPreload } from '../config/assetManifest.js';
 
 export class Preloader extends Phaser.Scene {

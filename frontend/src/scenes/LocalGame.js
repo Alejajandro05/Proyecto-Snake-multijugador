@@ -1,3 +1,4 @@
+import Phaser from 'phaser';
 import { SnakeEngine } from '@shared/SnakeEngine';
 import { MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig';
 import { SnakeBoardRenderer } from '../renderers/SnakeBoardRenderer.js';
