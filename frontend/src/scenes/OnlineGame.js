@@ -2,7 +2,40 @@ import { Client } from '@colyseus/sdk';
 import { MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
 import { SnakeBoardRenderer } from '../renderers/SnakeBoardRenderer.js';
 
-const SERVER_URL = 'ws://localhost:2567';
+function normalizeHttpUrlToWebSocket(url) {
+    const s = String(url ?? '').trim();
+    if (!s) return '';
+    if (s.startsWith('https://')) return `wss://${s.slice('https://'.length)}`;
+    if (s.startsWith('http://')) return `ws://${s.slice('http://'.length)}`;
+    return s;
+}
+
+/** Path público del WebSocket detrás del proxy (p. ej. Caddy handle /ws* → strip_prefix /ws → backend). */
+function getPublicWsPathSuffix() {
+    const raw = import.meta.env.VITE_WS_PATH;
+    if (raw === '') return '';
+    if (raw === undefined || raw === null) return '/ws';
+    const p = String(raw).trim();
+    if (!p) return '/ws';
+    return p.startsWith('/') ? p : `/${p}`;
+}
+
+function getColyseusServerUrl() {
+    const explicitWs = String(import.meta.env.VITE_COLYSEUS_URL ?? '').trim();
+    if (explicitWs) return explicitWs;
+
+    const fromHttpEnv = normalizeHttpUrlToWebSocket(import.meta.env.VITE_SERVER_URL ?? '');
+    if (fromHttpEnv) return fromHttpEnv;
+
+    if (import.meta.env.DEV) {
+        return 'ws://localhost:2567';
+    }
+
+    const { protocol, host } = window.location;
+    const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
+    const pathSuffix = getPublicWsPathSuffix();
+    return `${wsProtocol}//${host}${pathSuffix}`;
+}
 
 /**
  * Online multiplayer game use case.
@@ -177,7 +210,7 @@ export class OnlineGame extends Phaser.Scene {
 
     async connectToServer() {
         try {
-            const client = new Client(SERVER_URL);
+            const client = new Client(getColyseusServerUrl());
             this.room = await client.joinOrCreate('snake_room');
 
             this.room.onStateChange((state) => {

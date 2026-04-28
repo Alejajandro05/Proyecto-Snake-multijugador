@@ -1,0 +1,19 @@
+{$SITE_ADDRESS:localhost} {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+	}
+
+	handle /ws* {
+		uri strip_prefix /ws
+		reverse_proxy backend:2567
+	}
+
+	handle {
+		root * /srv/dist
+		encode gzip
+		try_files {path} /index.html
+		file_server
+	}
+}
