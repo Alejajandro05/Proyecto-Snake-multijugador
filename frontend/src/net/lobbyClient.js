@@ -51,8 +51,7 @@ export function createLobbyClient() {
       return client.joinById(roomId, options);
     },
     async fetchPublicLobbies() {
-      const response = await fetch(`${getServerHttpUrl()}/api/lobbies/list/${Date.now()}`, {
-        method: 'POST',
+      const response = await fetch(`${getServerHttpUrl()}/api/lobbies`, {
         cache: 'no-store',
       });
       if (!response.ok) throw new Error('No se pudo cargar la lista de salas.');
@@ -60,12 +59,7 @@ export function createLobbyClient() {
       return data.lobbies ?? [];
     },
     async resolveInviteCode(code) {
-      const response = await fetch(`${getServerHttpUrl()}/api/lobbies/resolve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ code }),
+      const response = await fetch(`${getServerHttpUrl()}/api/lobbies/resolve?code=${encodeURIComponent(code)}`, {
         cache: 'no-store',
       });
       if (!response.ok) throw new Error('No se pudo resolver el codigo.');
