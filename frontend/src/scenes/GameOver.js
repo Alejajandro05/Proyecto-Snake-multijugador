@@ -26,19 +26,37 @@ export class GameOver extends Phaser.Scene {
         gameOverDiv.style.padding = '28px';
         gameOverDiv.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
 
-        const winnerName = data.winner === 'J1' ? 'Jugador 1' : 'Jugador 2';
-        const winnerClass = data.winner === 'J1' ? 'danger' : 'primary';
-        const winnerGradient = data.winner === 'J1'
-            ? 'linear-gradient(135deg, rgba(231, 76, 60, 0.95) 0%, rgba(245, 183, 177, 0.95) 100%)'
-            : 'linear-gradient(135deg, rgba(52, 152, 219, 0.95) 0%, rgba(166, 226, 241, 0.95) 100%)';
+        let winnerName, winnerClass, winnerGradient;
+
+        if (data.winner === 'EMPATE') {
+            winnerName = '¡EMPATE!';
+            winnerClass = 'warning';
+            winnerGradient = 'linear-gradient(135deg, rgba(241, 196, 15, 0.95) 0%, rgba(243, 156, 18, 0.95) 100%)';
+        } else if (data.winner === 'J1') {
+            winnerName = 'Jugador 1';
+            winnerClass = 'danger';
+            winnerGradient = 'linear-gradient(135deg, rgba(231, 76, 60, 0.95) 0%, rgba(245, 183, 177, 0.95) 100%)';
+        } else {
+            winnerName = 'Jugador 2';
+            winnerClass = 'primary';
+            winnerGradient = 'linear-gradient(135deg, rgba(52, 152, 219, 0.95) 0%, rgba(166, 226, 241, 0.95) 100%)';
+        }
 
         let reasonText = '';
         if (data.reason === 'score') {
             reasonText = '¡Ganador por alcanzar la puntuación máxima!';
         } else if (data.reason === 'lives') {
             reasonText = '¡Ganador por el oponente quedarse sin vidas!';
+        } else if (data.reason === 'time') {
+            reasonText = '¡El tiempo se ha agotado!';
+        } else if (data.reason === 'tiebreaker') {
+            reasonText = '¡Ganador por muerte súbita (5 frutas)!';
         }
 
+        const mostrarVidas = (data.reason !== 'time' && data.reason !== 'tiebreaker');        const vidasJ1HTML = mostrarVidas ? `<div><span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Vidas: ${data.p1Lives}</span></div>` : '';
+        const vidasJ2HTML = mostrarVidas ? `<div><span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Vidas: ${data.p2Lives}</span></div>` : '';
+
+        const escenaRevancha = (data.reason === 'time' || data.reason === 'tiebreaker') ? 'TimeAttackGame' : 'LocalGame';
         gameOverDiv.innerHTML = `
             <div class="container">
                 <div class="row justify-content-center">
@@ -64,9 +82,7 @@ export class GameOver extends Phaser.Scene {
                                                 <div class="mb-3">
                                                     <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Puntuación: ${data.p1Score}</span>
                                                 </div>
-                                                <div>
-                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Vidas: ${data.p1Lives}</span>
-                                                </div>
+                                                ${vidasJ1HTML}
                                             </div>
                                         </div>
                                     </div>
@@ -77,9 +93,7 @@ export class GameOver extends Phaser.Scene {
                                                 <div class="mb-3">
                                                     <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Puntuación: ${data.p2Score}</span>
                                                 </div>
-                                                <div>
-                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Vidas: ${data.p2Lives}</span>
-                                                </div>
+                                                ${vidasJ2HTML}
                                             </div>
                                         </div>
                                     </div>
@@ -101,7 +115,7 @@ export class GameOver extends Phaser.Scene {
         document.getElementById('new-match-btn').addEventListener('click', () => {
             document.body.removeChild(gameOverDiv);
             this.game.canvas.style.display = 'block';
-            this.scene.start('LocalGame');
+            this.scene.start(escenaRevancha); // Te lleva al modo correcto
         });
 
         document.getElementById('menu-btn').addEventListener('click', () => {

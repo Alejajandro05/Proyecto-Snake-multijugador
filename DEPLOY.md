@@ -21,7 +21,7 @@ Eso descarta modificaciones locales en archivos trackeados; los `.env` no tracke
 Orquestación habitual: **backend** (Colyseus en **2567** dentro de la red Docker), **Caddy** (puertos **80/443**, TLS, estáticos y proxy WebSocket) y el **frontend** como **`frontend/dist`** en producción (no el servidor de desarrollo Vite en **5173**).
 
 - **Caddyfile en la raíz del repo:** [`Caddyfile`](Caddyfile) — usa la variable de entorno `SITE_ADDRESS` (por defecto `www.snake-multijugador.site` en [`docker-compose.prod.yml`](docker-compose.prod.yml)).
-- **WebSockets:** prefijo público **`/ws`** → `reverse_proxy` al servicio `backend:2567` con `strip_prefix /ws`. El cliente ya usa `wss://<dominio>/ws` (véase [`frontend/src/scenes/OnlineGame.js`](frontend/src/scenes/OnlineGame.js)).
+- **WebSockets:** prefijo público **`/ws`** → `reverse_proxy` al servicio `backend:2567` con `strip_prefix /ws`. El cliente ya usa `wss://<dominio>/ws` (véase [`frontend/src/scenes/OnlineGame.js`](frontend/src/scenes/modes/OnlineGame.js)).
 - Referencia adicional: [`deploy/Caddyfile.example`](deploy/Caddyfile.example).
 
 Caddy gestiona **Upgrade** y TLS para WebSockets. Un `nginx.conf` en el repo, si existe, sería solo alternativa documental.

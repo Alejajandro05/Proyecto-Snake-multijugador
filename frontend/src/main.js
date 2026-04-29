@@ -4,10 +4,12 @@ import { Game } from './scenes/Game.js';
 import { GameOver } from './scenes/GameOver.js';
 import { Preloader } from './scenes/Preloader.js';
 import { MainMenu } from './scenes/MainMenu.js';
-import { LocalGame } from './scenes/LocalGame.js';
+import { LocalGame } from './scenes/modes/LocalGame.js';
 import { OnlineMenu } from './scenes/OnlineMenu.js';
-import { OnlineGame } from './scenes/OnlineGame.js';
+import { OnlineGame } from './scenes/modes/OnlineGame.js';
+import { TimeAttackGame } from './scenes/modes/TimeAttackGame.js';
 import { Pause } from './scenes/Pause.js';
+import {LocalGameSetup} from "./scenes/LocalGameSetup";
 
 const config = {
     type: Phaser.AUTO,
@@ -46,9 +48,11 @@ const config = {
         Preloader,
         MainMenu,
         OnlineMenu,
+        LocalGameSetup,
         LocalGame,
         OnlineGame,
         Game,
+        TimeAttackGame,
         GameOver,
         Pause
     ]

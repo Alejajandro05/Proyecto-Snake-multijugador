@@ -2,13 +2,13 @@ import Phaser from 'phaser';
 
 export class Pause extends Phaser.Scene {
     constructor() {
-        super('PauseScene');
+        super('Pause');
     }
 
     create(data) {
-        const { width, height } = this.scale;
+        // Guardamos la escena que nos llamó para poder reanudarla luego.
+        const callerScene = data.caller || 'LocalGame';
 
-        // Mostrar overlay sobre el juego pausado
         const pauseDiv = document.createElement('div');
         pauseDiv.id = 'pause-screen';
         pauseDiv.style.position = 'fixed';
@@ -25,15 +25,10 @@ export class Pause extends Phaser.Scene {
         pauseDiv.style.padding = '28px';
         pauseDiv.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
 
-        const localGame = this.scene.get('LocalGame');
-        const state = localGame?.engine?.getState?.() ?? null;
-        const p1 = state?.players?.get?.('player1');
-        const p2 = state?.players?.get?.('player2');
-
-        const p1Score = p1?.score ?? data?.p1Score ?? 0;
-        const p2Score = p2?.score ?? data?.p2Score ?? 0;
-        const p1Lives = p1?.lives ?? data?.p1Lives ?? 0;
-        const p2Lives = p2?.lives ?? data?.p2Lives ?? 0;
+        const p1Score = data?.p1Score ?? 0;
+        const p2Score = data?.p2Score ?? 0;
+        const p1Lives = data?.p1Lives ?? 0;
+        const p2Lives = data?.p2Lives ?? 0;
 
         pauseDiv.innerHTML = `
             <div class="container">
@@ -90,29 +85,24 @@ export class Pause extends Phaser.Scene {
             if (document.body.contains(pauseDiv)) {
                 document.body.removeChild(pauseDiv);
             }
-            this.game.canvas.style.display = 'block';
         };
 
-        document.getElementById('resume-btn').addEventListener('click', () => {
+        const reanudarJuego = () => {
             removePauseOverlay();
             this.scene.stop();
-            this.scene.resume('LocalGame');
-            const localGame = this.scene.get('LocalGame');
-            if (localGame) localGame.isPaused = false;
-        });
+            this.scene.resume(callerScene);
+            const gameScene = this.scene.get(callerScene);
+            if (gameScene) gameScene.isPaused = false;
+        };
+
+        document.getElementById('resume-btn').addEventListener('click', reanudarJuego);
 
         document.getElementById('menu-btn').addEventListener('click', () => {
             removePauseOverlay();
-            this.scene.stop('LocalGame');
+            this.scene.stop(callerScene);
             this.scene.start('MainMenu');
         });
 
-        this.input.keyboard.on('keydown-ESC', () => {
-            removePauseOverlay();
-            this.scene.stop();
-            this.scene.resume('LocalGame');
-            const localGame = this.scene.get('LocalGame');
-            if (localGame) localGame.isPaused = false;
-        });
+        this.input.keyboard.on('keydown-ESC', reanudarJuego);
     }
 }

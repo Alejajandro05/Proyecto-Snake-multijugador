@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
-import { createLobbyClient } from '../net/lobbyClient.js';
-import { SnakeBoardRenderer } from '../renderers/SnakeBoardRenderer.js';
+import { createLobbyClient } from '../../net/lobbyClient.js';
+import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 
 function normalizeHttpUrlToWebSocket(url) {
     const s = String(url ?? '').trim();
