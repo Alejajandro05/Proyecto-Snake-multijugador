@@ -134,7 +134,7 @@ export class MainMenu extends Phaser.Scene {
         document.getElementById('btn-online').addEventListener('click', () => {
             detenerAudioPrueba();
             clearMenu();
-            this.scene.start('OnlineGame');
+            this.scene.start('OnlineMenu');
         });
 
         document.getElementById('btn-time-attack').addEventListener('click', () => {
