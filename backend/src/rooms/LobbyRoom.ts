@@ -71,7 +71,7 @@ function toSkinId(value: unknown, fallback: string) {
   return optionId && allowedSkinIds.includes(optionId) ? optionId : fallback;
 }
 
-export class LobbyRoom extends Room<LobbyRoomState> {
+export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
   private static registry = new Map<string, LobbyRegistryEntry>();
   maxClients = 2;
 
