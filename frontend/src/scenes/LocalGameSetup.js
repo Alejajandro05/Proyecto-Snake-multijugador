@@ -55,84 +55,82 @@ export class LocalGameSetup extends Phaser.Scene {
         menuDiv.className = 'position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center';
         menuDiv.style.zIndex = '1000';
 
-        const colors = Array.isArray(PLAYER_COLORS) && PLAYER_COLORS.length ? PLAYER_COLORS : [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71];
+        const SNAKE_SKINS = [
+            'snake000', 'snake001', 'snake002', 'snake003', 'snake004',
+            'snake005', 'snake006', 'snake007', 'snake008', 'snake009',
+            'snake010', 'snake011', 'snake012', 'snake013', 'snake014',
+            'snake015', 'snake016', 'snake017', 'snake018', 'snake019',
+            'snake020', 'snake022'
+        ];
 
-        const colorOptionsHtml = (selected) =>
-            colors
-                .map((c, idx) => {
-                    const hex = `0x${c.toString(16).padStart(6, '0')}`;
-                    const isSelected = c === selected ? 'selected' : '';
-                    return `<option value="${hex}" ${isSelected}>Skin ${idx + 1}</option>`;
-                })
-                .join('');
+        let p1SkinIndex = 0;
+        let p2SkinIndex = 1;
+
+        const prevP1Skin = saved?.players?.p1?.skinId;
+        const prevP2Skin = saved?.players?.p2?.skinId;
+        if (prevP1Skin && SNAKE_SKINS.includes(prevP1Skin)) p1SkinIndex = SNAKE_SKINS.indexOf(prevP1Skin);
+        if (prevP2Skin && SNAKE_SKINS.includes(prevP2Skin)) p2SkinIndex = SNAKE_SKINS.indexOf(prevP2Skin);
 
         menuDiv.innerHTML = `
-            <div class="w-100 px-3" style="max-width: 980px;">
-                <div class="rounded-4 shadow-lg p-4 p-md-5" style="background: rgba(15, 23, 42, 0.86); border: 1px solid rgba(255,255,255,0.14); backdrop-filter: blur(6px);">
-                    <div class="d-flex align-items-center justify-content-between mb-4">
-                        <button id="btn-setup-back" class="btn btn-sm btn-outline-light fw-semibold" type="button" style="border-radius: 999px; padding: 8px 14px;">
-                            ← Volver
-                        </button>
-                        <div class="text-center flex-grow-1">
-                            <div class="h2 text-white fw-bold mb-0" style="font-family: 'Teko', sans-serif; letter-spacing: 1px;">CONFIGURACIÓN LOCAL</div>
-                            <div class="text-white-50 small">Elige dificultad, nombre y skin de cada jugador</div>
-                        </div>
-                        <div style="width: 92px;"></div>
+            <style>
+                .diff-btn { border: 1px solid rgba(255,255,255,0.3); color: white; background: transparent; transition: all 0.2s; }
+                .diff-btn:hover { background: rgba(255,255,255,0.1); }
+                .diff-btn.active { background: white !important; color: black !important; border-color: white !important; }
+                .skin-arrow { transition: transform 0.2s; cursor: pointer; }
+                .skin-arrow:hover { transform: scale(1.2); }
+                #btn-create-local-game { transition: transform 0.2s; }
+                #btn-create-local-game:hover { transform: scale(1.02); }
+                input.custom-input:focus { border-bottom: 2px solid rgba(255,255,255,0.5) !important; outline: none; box-shadow: none; }
+                input.custom-input { border-bottom: 2px solid transparent !important; border-radius: 0; }
+            </style>
+            <div class="w-100 px-3 d-flex flex-column align-items-center" style="max-width: 900px;">
+                <button id="btn-setup-back" class="btn btn-sm btn-outline-light fw-semibold align-self-start mb-3" type="button" style="border-radius: 999px; padding: 8px 14px;">
+                    ← Volver
+                </button>
+                <div class="rounded-4 shadow-lg p-4 p-md-5 d-flex flex-column align-items-center w-100" style="background: rgba(15, 23, 42, 0.86); border: 1px solid rgba(255,255,255,0.14); backdrop-filter: blur(6px);">
+                    
+                    <div class="rounded-pill px-5 py-2 mb-4 text-center" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); min-width: 50%;">
+                        <h1 class="h3 text-white fw-bold mb-0" style="font-family: 'Teko', sans-serif; letter-spacing: 1px;">CONFIGURACIÓN LOCAL</h1>
                     </div>
 
-                    <div class="row g-3 align-items-stretch">
-                        <div class="col-12 col-lg-4">
-                            <div class="rounded-4 p-3 h-100" style="background: rgba(2, 6, 23, 0.55); border: 1px solid rgba(255,255,255,0.12);">
-                                <div class="text-white fw-bold mb-2">Modo de juego</div>
-                                <div class="text-white-50 small mb-2">Dificultad</div>
-                                <input id="difficulty" type="hidden" value="${initialDifficulty}" />
-                                <div class="btn-group w-100" role="group" aria-label="Dificultad">
-                                    <button id="btn-diff-easy"   type="button" class="btn fw-bold" data-difficulty="easy"   style="border: 1px solid rgba(255,255,255,0.18);">Easy</button>
-                                    <button id="btn-diff-normal" type="button" class="btn fw-bold" data-difficulty="normal" style="border: 1px solid rgba(255,255,255,0.18);">Medium</button>
-                                    <button id="btn-diff-hard"   type="button" class="btn fw-bold" data-difficulty="hard"   style="border: 1px solid rgba(255,255,255,0.18);">Difficult</button>
+                    <div class="w-75 border-bottom border-secondary opacity-50 mb-4"></div>
+
+                    <div class="d-flex gap-3 mb-4 w-100 justify-content-center flex-wrap">
+                        <button id="btn-diff-easy" type="button" class="btn rounded-pill px-4 py-2 fw-bold diff-btn" data-difficulty="easy" style="min-width: 120px;">Easy</button>
+                        <button id="btn-diff-normal" type="button" class="btn rounded-pill px-4 py-2 fw-bold diff-btn" data-difficulty="normal" style="min-width: 120px;">Medium</button>
+                        <button id="btn-diff-hard" type="button" class="btn rounded-pill px-4 py-2 fw-bold diff-btn" data-difficulty="hard" style="min-width: 120px;">Hard</button>
+                        <input id="difficulty" type="hidden" value="${initialDifficulty}" />
+                    </div>
+
+                    <div class="w-75 border-bottom border-secondary opacity-50 mb-4"></div>
+
+                    <div class="row w-100 mb-4 justify-content-center gap-2 gap-md-5">
+                        <div class="col-12 col-sm-auto text-center d-flex flex-column align-items-center mb-4 mb-sm-0">
+                            <input id="p1-name" class="form-control bg-transparent text-white text-center fs-5 fw-bold mb-3 custom-input" placeholder="Jugador 1" maxlength="16" value="${initialP1Name}" style="max-width: 200px;" />
+                            <div class="d-flex align-items-center gap-3">
+                                <button id="p1-prev" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height: 1;">&lsaquo;</button>
+                                <div id="p1-skin-container" class="rounded-4 d-flex align-items-center justify-content-center shadow-sm" style="width: 160px; height: 160px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); transition: border-color 0.3s; padding: 10px;">
                                 </div>
-                                <div class="text-white-50 small mt-2">
-                                    - Easy: más lento y más comida<br/>
-                                    - Medium: balanceado<br/>
-                                    - Difficult: más rápido y más obstáculos
-                                </div>
+                                <button id="p1-next" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height: 1;">&rsaquo;</button>
                             </div>
+                            <div class="badge rounded-pill mt-3 px-3 py-2" style="background: rgba(222, 26, 88, 0.22); color: #fff; border: 1px solid rgba(222, 26, 88, 0.4); letter-spacing: 1px;">WASD</div>
                         </div>
 
-                        <div class="col-12 col-lg-4">
-                            <div class="rounded-4 p-3 h-100" style="background: rgba(2, 6, 23, 0.55); border: 1px solid rgba(255,255,255,0.12);">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <div class="text-white fw-bold">Jugador 1</div>
-                                    <div class="badge rounded-pill" style="background: rgba(222, 26, 88, 0.22); color: #fff; border: 1px solid rgba(222, 26, 88, 0.4);">WASD</div>
+                        <div class="col-12 col-sm-auto text-center d-flex flex-column align-items-center">
+                            <input id="p2-name" class="form-control bg-transparent text-white text-center fs-5 fw-bold mb-3 custom-input" placeholder="Jugador 2" maxlength="16" value="${initialP2Name}" style="max-width: 200px;" />
+                            <div class="d-flex align-items-center gap-3">
+                                <button id="p2-prev" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height: 1;">&lsaquo;</button>
+                                <div id="p2-skin-container" class="rounded-4 d-flex align-items-center justify-content-center shadow-sm" style="width: 160px; height: 160px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); transition: border-color 0.3s; padding: 10px;">
                                 </div>
-                                <label class="form-label text-white-50 small mb-1" for="p1-name">Nombre</label>
-                                <input id="p1-name" class="form-control bg-dark text-white border-secondary" placeholder="Jugador 1" maxlength="16" value="${initialP1Name}" />
-                                <label class="form-label text-white-50 small mb-1 mt-3" for="p1-skin">Skin</label>
-                                <select id="p1-skin" class="form-select bg-dark text-white border-secondary">
-                                    ${colorOptionsHtml(initialP1Color)}
-                                </select>
+                                <button id="p2-next" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height: 1;">&rsaquo;</button>
                             </div>
-                        </div>
-
-                        <div class="col-12 col-lg-4">
-                            <div class="rounded-4 p-3 h-100" style="background: rgba(2, 6, 23, 0.55); border: 1px solid rgba(255,255,255,0.12);">
-                                <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <div class="text-white fw-bold">Jugador 2</div>
-                                    <div class="badge rounded-pill" style="background: rgba(56, 189, 248, 0.18); color: #fff; border: 1px solid rgba(56, 189, 248, 0.35);">Flechas</div>
-                                </div>
-                                <label class="form-label text-white-50 small mb-1" for="p2-name">Nombre</label>
-                                <input id="p2-name" class="form-control bg-dark text-white border-secondary" placeholder="Jugador 2" maxlength="16" value="${initialP2Name}" />
-                                <label class="form-label text-white-50 small mb-1 mt-3" for="p2-skin">Skin</label>
-                                <select id="p2-skin" class="form-select bg-dark text-white border-secondary">
-                                    ${colorOptionsHtml(initialP2Color)}
-                                </select>
-                            </div>
+                            <div class="badge rounded-pill mt-3 px-3 py-2" style="background: rgba(56, 189, 248, 0.18); color: #fff; border: 1px solid rgba(56, 189, 248, 0.35); letter-spacing: 1px;">FLECHAS</div>
                         </div>
                     </div>
 
-                    <div class="d-flex justify-content-center mt-4">
-                        <button id="btn-create-local-game" class="btn btn-lg fw-bold text-white shadow"
-                            style="min-width: min(520px, 100%); padding: 14px 18px; background: linear-gradient(90deg, #DE1A58, #8F0177); border: 2px solid rgba(246, 125, 49, 0.85); border-radius: 14px; font-family: 'Montserrat', sans-serif;">
+                    <div class="w-100 d-flex justify-content-center mt-3">
+                        <button id="btn-create-local-game" class="btn btn-lg fw-bold text-white shadow rounded-pill"
+                            style="padding: 14px 18px; background: linear-gradient(90deg, #DE1A58, #8F0177); border: 2px solid rgba(246, 125, 49, 0.85); font-family: 'Montserrat', sans-serif; min-width: 280px; width: 60%;">
                             Crear Partida
                         </button>
                     </div>
@@ -140,9 +138,22 @@ export class LocalGameSetup extends Phaser.Scene {
             </div>
         `;
 
+        const getSkinImg = (skinId) => {
+            return `<img src="/snakesSets/${skinId}.png" style="max-width: 100%; max-height: 100%; object-fit: contain;" alt="${skinId}">`;
+        };
+
+        const updateSkins = () => {
+            const p1Container = document.getElementById('p1-skin-container');
+            if (p1Container) p1Container.innerHTML = getSkinImg(SNAKE_SKINS[p1SkinIndex]);
+            const p2Container = document.getElementById('p2-skin-container');
+            if (p2Container) p2Container.innerHTML = getSkinImg(SNAKE_SKINS[p2SkinIndex]);
+        };
+
         const container = document.getElementById('game-container');
         container.appendChild(menuDiv);
         this.overlayEl = menuDiv;
+        
+        updateSkins();
 
         const cleanup = () => {
             const el = this.overlayEl;
@@ -160,14 +171,20 @@ export class LocalGameSetup extends Phaser.Scene {
             const difficulty = String(document.getElementById('difficulty')?.value ?? DEFAULT_CONFIG.difficulty);
             const p1Name = safeName(document.getElementById('p1-name')?.value, DEFAULT_CONFIG.p1.name);
             const p2Name = safeName(document.getElementById('p2-name')?.value, DEFAULT_CONFIG.p2.name);
-            const p1Color = safeColorHex(document.getElementById('p1-skin')?.value, DEFAULT_CONFIG.p1.color);
-            const p2Color = safeColorHex(document.getElementById('p2-skin')?.value, DEFAULT_CONFIG.p2.color);
+            
+            // Provide a fallback color from the default array using modulo, since we have more skins than colors
+            const defaultColors = Array.isArray(PLAYER_COLORS) && PLAYER_COLORS.length ? PLAYER_COLORS : [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71];
+            const p1Color = defaultColors[p1SkinIndex % defaultColors.length];
+            const p2Color = defaultColors[p2SkinIndex % defaultColors.length];
+
+            const p1Skin = SNAKE_SKINS[p1SkinIndex];
+            const p2Skin = SNAKE_SKINS[p2SkinIndex];
 
             const payload = {
                 difficulty,
                 players: {
-                    p1: { name: p1Name, color: p1Color, skinId: 'p1' },
-                    p2: { name: p2Name, color: p2Color, skinId: 'p2' },
+                    p1: { name: p1Name, color: p1Color, skinId: p1Skin },
+                    p2: { name: p2Name, color: p2Color, skinId: p2Skin },
                 },
             };
 
@@ -180,6 +197,23 @@ export class LocalGameSetup extends Phaser.Scene {
         document.getElementById('btn-setup-back')?.addEventListener('click', goBack);
         document.getElementById('btn-create-local-game')?.addEventListener('click', startGame);
 
+        document.getElementById('p1-prev')?.addEventListener('click', () => {
+            p1SkinIndex = (p1SkinIndex - 1 + SNAKE_SKINS.length) % SNAKE_SKINS.length;
+            updateSkins();
+        });
+        document.getElementById('p1-next')?.addEventListener('click', () => {
+            p1SkinIndex = (p1SkinIndex + 1) % SNAKE_SKINS.length;
+            updateSkins();
+        });
+        document.getElementById('p2-prev')?.addEventListener('click', () => {
+            p2SkinIndex = (p2SkinIndex - 1 + SNAKE_SKINS.length) % SNAKE_SKINS.length;
+            updateSkins();
+        });
+        document.getElementById('p2-next')?.addEventListener('click', () => {
+            p2SkinIndex = (p2SkinIndex + 1) % SNAKE_SKINS.length;
+            updateSkins();
+        });
+
         const difficultyInput = document.getElementById('difficulty');
         const difficultyButtons = Array.from(menuDiv.querySelectorAll('[data-difficulty]'));
         const setDifficultyUi = (value) => {
@@ -188,13 +222,11 @@ export class LocalGameSetup extends Phaser.Scene {
 
             difficultyButtons.forEach((btn) => {
                 const isActive = btn.getAttribute('data-difficulty') === v;
-                btn.classList.toggle('btn-light', isActive);
-                btn.classList.toggle('text-dark', isActive);
-                btn.classList.toggle('btn-outline-light', !isActive);
-                btn.classList.toggle('text-white', !isActive);
-                btn.style.backgroundColor = isActive ? 'rgba(255, 255, 255, 0.88)' : 'transparent';
-                btn.style.borderColor = isActive ? 'rgba(255, 255, 255, 0.65)' : 'rgba(255,255,255,0.18)';
-                btn.style.boxShadow = isActive ? '0 10px 24px rgba(0,0,0,0.35)' : 'none';
+                if (isActive) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
             });
         };
 
