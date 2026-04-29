@@ -13,6 +13,18 @@ export class OnlineMenu extends Phaser.Scene {
   }
 
   create() {
+    const fondo = this.add.image(this.scale.width / 2, this.scale.height / 2, 'fondo_duelo');
+
+    const ajustarFondo = (width, height) => {
+        fondo.setPosition(width / 2, height / 2);
+        const escalaX = width / fondo.width;
+        const escalaY = height / fondo.height;
+        fondo.setScale(Math.max(escalaX, escalaY));
+    };
+
+    ajustarFondo(this.scale.width, this.scale.height);
+    this.scale.on('resize', (gameSize) => ajustarFondo(gameSize.width, gameSize.height));
+
     this.lobbyClient = createLobbyClient();
     this.prefs = loadOnlinePrefs();
     this.publicLobbies = [];
@@ -32,28 +44,37 @@ export class OnlineMenu extends Phaser.Scene {
   renderOverlay() {
     const overlay = document.createElement('div');
     overlay.id = 'online-menu-overlay';
-    overlay.className = 'position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center';
+    overlay.className = 'position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center';
     overlay.style.zIndex = '1100';
-    overlay.innerHTML = `
-      <div class="w-100 px-3" style="max-width: 960px;">
-        <div class="mx-auto p-4 p-md-5" style="background: rgba(30, 30, 30, 0.92); border: 12px solid rgba(255, 255, 255, 0.92); border-radius: 32px; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);">
-          <div class="mx-auto mb-4 text-center" style="max-width: 420px; padding: 16px 24px; background: #d8d8d8; border-radius: 28px;">
-            <h1 class="m-0" style="font-family: 'Teko', sans-serif; letter-spacing: 1px;">ONLINE</h1>
-          </div>
 
-          <div id="online-error-box" class="alert alert-danger d-none mb-3" role="alert"></div>
+    const btnStyleCrear = `width: 280px; padding: 12px; background-color: #DE1A58; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: transform 0.2s ease;`;
+    const btnStyleUnirse = `width: 280px; padding: 12px; background-color: #8F0177; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: transform 0.2s ease;`;
+    const btnStyleVolverMainMenu = `width: 280px; padding: 12px; background-color: #1A05A2; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: transform 0.2s ease;`;
+    const btnStyleAction = `padding: 10px; background-color: #DE1A58; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.1rem; transition: transform 0.2s ease;`;
+    const btnStyleVolver = `padding: 10px; background-color: #334155; border: 2px solid #94A3B8; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.1rem; transition: transform 0.2s ease;`;
+
+    overlay.innerHTML = `
+      <div class="text-center" style="margin-top: -40px; width: 100%; max-width: 960px;">
+        <h1 class="display-1 fw-bold text-white mb-4" style="font-family: 'Teko', sans-serif; text-shadow: 0px 4px 20px #F67D31, 0px 0px 10px #F67D31; letter-spacing: 2px;">
+            SNAKE CLASH
+        </h1>
+        
+        <div class="mx-auto p-4" style="background: rgba(15, 23, 42, 0.85); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 12px; backdrop-filter: blur(5px);">
+          <div id="online-error-box" class="alert alert-danger d-none mb-3" role="alert" style="font-family: 'Montserrat', sans-serif;"></div>
 
           <div id="online-home-view" class="d-flex flex-column gap-3 align-items-center">
-            <button id="btn-online-create" class="btn btn-light fw-bold" style="width: 280px;">CREAR PARTIDA</button>
-            <button id="btn-online-join" class="btn btn-light fw-bold" style="width: 280px;">UNIRSE A PARTIDA</button>
-            <button id="btn-online-back" class="btn btn-secondary fw-bold" style="width: 280px;">VOLVER</button>
+            <h2 class="text-white text-center fw-bold mb-3" style="font-family: 'Montserrat', sans-serif;">ONLINE</h2>
+            <button id="btn-online-create" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleCrear}">CREAR PARTIDA</button>
+            <button id="btn-online-join" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleUnirse}">UNIRSE A PARTIDA</button>
+            <button id="btn-online-back" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleVolverMainMenu}">VOLVER</button>
           </div>
 
-          <div id="online-create-view" class="d-none">
+          <div id="online-create-view" class="d-none text-start">
+            <h2 class="text-white text-center fw-bold mb-4" style="font-family: 'Montserrat', sans-serif;">CREAR PARTIDA</h2>
             <div class="row g-4 align-items-start">
               <div class="col-12">
-                <label class="form-label text-white">Tu nombre</label>
-                <input id="online-create-name" class="form-control" value="${this.escapeHtml(this.prefs.playerName)}" maxlength="24">
+                <label class="form-label text-white fw-semibold mb-1 small" style="font-family: 'Montserrat', sans-serif;">Tu nombre</label>
+                <input id="online-create-name" class="form-control bg-dark text-white border-secondary" value="${this.escapeHtml(this.prefs.playerName)}" maxlength="24">
               </div>
               <div class="col-12 col-md-4">
                 ${this.renderSelectBlock('Modo', 'online-create-mode', onlineOptionCatalogs.modes, this.prefs.gameMode)}
@@ -66,62 +87,63 @@ export class OnlineMenu extends Phaser.Scene {
               </div>
               <div class="col-12">
                 ${this.renderSelectBlock('Visibilidad', 'online-create-visibility', [
-                  { id: 'public', label: 'Publica' },
+                  { id: 'public', label: 'Pública' },
                   { id: 'private', label: 'Privada' },
                 ], this.prefs.visibility)}
               </div>
-              <div class="col-12 d-flex gap-3 justify-content-between">
-                <button id="btn-create-back" class="btn btn-secondary fw-bold">VOLVER</button>
-                <button id="btn-create-submit" class="btn btn-light fw-bold">CREAR PARTIDA</button>
+              <div class="col-12 d-flex gap-3 justify-content-between mt-4">
+                <button id="btn-create-back" class="btn text-white fw-bold shadow menu-btn flex-fill" style="${btnStyleVolver}">VOLVER</button>
+                <button id="btn-create-submit" class="btn text-white fw-bold shadow menu-btn flex-fill" style="${btnStyleAction}">CREAR PARTIDA</button>
               </div>
             </div>
           </div>
 
-          <div id="online-join-view" class="d-none">
+          <div id="online-join-view" class="d-none text-start">
+            <h2 class="text-white text-center fw-bold mb-4" style="font-family: 'Montserrat', sans-serif;">UNIRSE A PARTIDA</h2>
             <div class="row g-4">
               <div class="col-12">
-                <label class="form-label text-white">Tu nombre</label>
-                <input id="online-join-name" class="form-control" value="${this.escapeHtml(this.prefs.playerName)}" maxlength="24">
+                <label class="form-label text-white fw-semibold mb-1 small" style="font-family: 'Montserrat', sans-serif;">Tu nombre</label>
+                <input id="online-join-name" class="form-control bg-dark text-white border-secondary" value="${this.escapeHtml(this.prefs.playerName)}" maxlength="24">
               </div>
               <div class="col-12 col-md-6">
-                <div class="p-3 h-100" style="background: rgba(255,255,255,0.08); border-radius: 20px;">
+                <div class="p-3 h-100" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;">
                   <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="h5 text-white m-0">Salas publicas</h2>
-                    <button id="btn-refresh-public" class="btn btn-sm btn-outline-light">RECARGAR</button>
+                    <h2 class="h5 text-white m-0 fw-bold" style="font-family: 'Montserrat', sans-serif;">Salas públicas</h2>
+                    <button id="btn-refresh-public" class="btn btn-sm text-white menu-btn" style="background-color: #8F0177; border: 1px solid #F67D31;">RECARGAR</button>
                   </div>
-                  <div id="online-public-lobbies" class="d-flex flex-column gap-2"></div>
+                  <div id="online-public-lobbies" class="d-flex flex-column gap-2" style="max-height: 200px; overflow-y: auto;"></div>
                 </div>
               </div>
               <div class="col-12 col-md-6">
-                <div class="p-3 h-100" style="background: rgba(255,255,255,0.08); border-radius: 20px;">
-                  <h2 class="h5 text-white">Codigo privado</h2>
-                  <input id="online-private-code" class="form-control mt-3" placeholder="ABC123" maxlength="12">
-                  <button id="btn-private-join" class="btn btn-light fw-bold mt-3 w-100">ENTRAR CON CODIGO</button>
+                <div class="p-3 h-100" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px;">
+                  <h2 class="h5 text-white fw-bold" style="font-family: 'Montserrat', sans-serif;">Código privado</h2>
+                  <input id="online-private-code" class="form-control mt-3 bg-dark text-white border-secondary" placeholder="ABC123" maxlength="12">
+                  <button id="btn-private-join" class="btn text-white fw-bold shadow menu-btn mt-3 w-100" style="${btnStyleAction}">ENTRAR CON CÓDIGO</button>
                 </div>
               </div>
               <div class="col-12">
                 ${this.renderSelectBlock('Skin', 'online-join-skin', onlineOptionCatalogs.skins, this.prefs.guestSkinId)}
               </div>
-              <div class="col-12 d-flex gap-3 justify-content-between">
-                <button id="btn-join-back" class="btn btn-secondary fw-bold">VOLVER</button>
+              <div class="col-12 d-flex gap-3 justify-content-between mt-2">
+                <button id="btn-join-back" class="btn text-white fw-bold shadow menu-btn w-100" style="${btnStyleVolver}">VOLVER</button>
               </div>
             </div>
           </div>
 
-          <div id="online-waiting-view" class="d-none text-white">
-            <h2 class="text-center mb-3" style="font-family: 'Teko', sans-serif;">SALA DE ESPERA</h2>
+          <div id="online-waiting-view" class="d-none text-white text-start">
+            <h2 class="text-center mb-4 fw-bold" style="font-family: 'Montserrat', sans-serif;">SALA DE ESPERA</h2>
             <div class="row g-3 mb-4">
-              <div class="col-12 col-md-6"><div class="p-3 rounded-4" style="background: rgba(255,255,255,0.08);"><strong>Host:</strong> <span id="waiting-host-name">-</span></div></div>
-              <div class="col-12 col-md-6"><div class="p-3 rounded-4" style="background: rgba(255,255,255,0.08);"><strong>Invitado:</strong> <span id="waiting-guest-name">Esperando...</span></div></div>
-              <div class="col-12 col-md-4"><div class="p-3 rounded-4" style="background: rgba(255,255,255,0.08);"><strong>Modo:</strong> <span id="waiting-mode">-</span></div></div>
-              <div class="col-12 col-md-4"><div class="p-3 rounded-4" style="background: rgba(255,255,255,0.08);"><strong>Mapa:</strong> <span id="waiting-map">-</span></div></div>
-              <div class="col-12 col-md-4"><div class="p-3 rounded-4" style="background: rgba(255,255,255,0.08);"><strong>Visibilidad:</strong> <span id="waiting-visibility">-</span></div></div>
-              <div class="col-12 d-none" id="waiting-code-wrap"><div class="p-3 rounded-4 text-center" style="background: rgba(255,255,255,0.08);"><strong>Codigo:</strong> <span id="waiting-code">-</span></div></div>
+              <div class="col-12 col-md-6"><div class="p-3 rounded-3" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1);"><strong>Host:</strong> <span id="waiting-host-name" class="text-warning">-</span></div></div>
+              <div class="col-12 col-md-6"><div class="p-3 rounded-3" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1);"><strong>Invitado:</strong> <span id="waiting-guest-name" class="text-info">Esperando...</span></div></div>
+              <div class="col-12 col-md-4"><div class="p-3 rounded-3" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1);"><strong>Modo:</strong> <span id="waiting-mode">-</span></div></div>
+              <div class="col-12 col-md-4"><div class="p-3 rounded-3" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1);"><strong>Mapa:</strong> <span id="waiting-map">-</span></div></div>
+              <div class="col-12 col-md-4"><div class="p-3 rounded-3" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1);"><strong>Visibilidad:</strong> <span id="waiting-visibility">-</span></div></div>
+              <div class="col-12 d-none" id="waiting-code-wrap"><div class="p-3 rounded-3 text-center" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1);"><strong>Código:</strong> <span id="waiting-code" class="text-success fw-bold fs-5">-</span></div></div>
             </div>
-            <p id="waiting-status" class="text-center mb-4">Esperando jugador...</p>
+            <p id="waiting-status" class="text-center mb-4 fw-bold" style="font-family: 'Montserrat', sans-serif;">Esperando jugador...</p>
             <div class="d-flex justify-content-center gap-3">
-              <button id="btn-waiting-back" class="btn btn-secondary fw-bold">SALIR</button>
-              <button id="btn-waiting-start" class="btn btn-light fw-bold" disabled>INICIAR</button>
+              <button id="btn-waiting-back" class="btn text-white fw-bold shadow menu-btn flex-fill" style="${btnStyleVolver}">SALIR</button>
+              <button id="btn-waiting-start" class="btn text-white fw-bold shadow menu-btn flex-fill" style="${btnStyleAction}" disabled>INICIAR</button>
             </div>
           </div>
         </div>
@@ -148,6 +170,12 @@ export class OnlineMenu extends Phaser.Scene {
     overlay.querySelector('#btn-refresh-public').addEventListener('click', () => this.loadPublicLobbies());
     overlay.querySelector('#btn-private-join').addEventListener('click', () => this.handlePrivateJoin());
     overlay.querySelector('#btn-waiting-start').addEventListener('click', () => this.startMatch());
+
+    const buttons = overlay.querySelectorAll('.menu-btn');
+    buttons.forEach(btn => {
+        btn.addEventListener('mouseenter', () => btn.style.transform = 'scale(1.05)');
+        btn.addEventListener('mouseleave', () => btn.style.transform = 'scale(1)');
+    });
   }
 
   renderSelectBlock(label, id, options, selectedId) {
@@ -156,8 +184,8 @@ export class OnlineMenu extends Phaser.Scene {
       .join('');
 
     return `
-      <label class="form-label text-white">${this.escapeHtml(label)}</label>
-      <select id="${this.escapeHtml(id)}" class="form-select">
+      <label class="form-label text-white fw-semibold mb-1 small" style="font-family: 'Montserrat', sans-serif;">${this.escapeHtml(label)}</label>
+      <select id="${this.escapeHtml(id)}" class="form-select bg-dark text-white border-secondary">
         ${optionHtml}
       </select>
     `;
@@ -207,19 +235,21 @@ export class OnlineMenu extends Phaser.Scene {
     if (!this.publicLobbiesRoot) return;
 
     if (this.publicLobbies.length === 0) {
-      this.publicLobbiesRoot.innerHTML = '<p class="text-white-50 mb-0">No hay salas publicas disponibles.</p>';
+      this.publicLobbiesRoot.innerHTML = '<p class="text-white-50 mb-0">No hay salas públicas disponibles.</p>';
       return;
     }
 
     this.publicLobbiesRoot.innerHTML = this.publicLobbies.map((lobby) => `
-      <button class="btn btn-outline-light text-start w-100 lobby-join-btn" data-lobby-id="${this.escapeHtml(lobby.lobbyId)}">
+      <button class="btn text-white text-start w-100 lobby-join-btn menu-btn mb-2" data-lobby-id="${this.escapeHtml(lobby.lobbyId)}" style="background-color: #334155; border: 1px solid #94A3B8; border-radius: 8px; transition: transform 0.2s ease;">
         <div><strong>${this.escapeHtml(lobby.hostName || 'Host')}</strong></div>
-        <small>${this.escapeHtml(lobby.gameMode)} | ${this.escapeHtml(lobby.mapId)} | ${lobby.playerCount}/${lobby.maxPlayers}</small>
+        <small class="text-white-50">${this.escapeHtml(lobby.gameMode)} | ${this.escapeHtml(lobby.mapId)} | ${lobby.playerCount}/${lobby.maxPlayers}</small>
       </button>
     `).join('');
 
     this.publicLobbiesRoot.querySelectorAll('.lobby-join-btn').forEach((button) => {
       button.addEventListener('click', () => this.handlePublicJoin(button.dataset.lobbyId));
+      button.addEventListener('mouseenter', () => button.style.transform = 'scale(1.02)');
+      button.addEventListener('mouseleave', () => button.style.transform = 'scale(1)');
     });
   }
 
