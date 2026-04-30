@@ -10,6 +10,8 @@ build/
 .tscache/
 **/.tscache/
 *.tsbuildinfo
+superpowers/
+.worktrees/
 
 # --- Env files (do NOT commit secrets) ---
 .env

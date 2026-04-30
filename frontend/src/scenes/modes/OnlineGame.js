@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
-import { Client } from '@colyseus/sdk';
 import { MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
-import { SnakeBoardRenderer } from '../renderers/SnakeBoardRenderer.js';
+import { createLobbyClient } from '../../net/lobbyClient.js';
+import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 
 function normalizeHttpUrlToWebSocket(url) {
     const s = String(url ?? '').trim();
@@ -45,6 +45,11 @@ function getColyseusServerUrl() {
 export class OnlineGame extends Phaser.Scene {
     constructor() {
         super('OnlineGame');
+    }
+
+    init(data) {
+        this.matchRoomId = data?.matchRoomId ?? '';
+        this.playerSkinId = data?.skinId ?? '';
     }
 
     async create() {
@@ -227,8 +232,10 @@ export class OnlineGame extends Phaser.Scene {
 
     async connectToServer() {
         try {
-            const client = new Client(getColyseusServerUrl());
-            this.room = await client.joinOrCreate('snake_room');
+            const client = createLobbyClient();
+            this.room = this.matchRoomId
+                ? await client.joinSnakeRoomById(this.matchRoomId, { skinId: this.playerSkinId })
+                : await client.joinOrCreateSnakeRoom({ skinId: this.playerSkinId });
 
             this.room.onStateChange((state) => {
                 this.checkAudioEvents(state);
