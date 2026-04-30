@@ -39,3 +39,7 @@ docker-compose.override.yml
 Thumbs.db
 .vscode/
 .idea/
+
+# --- Server site changes (production) ---
+Caddyfile
+frontend/vite.config.js
