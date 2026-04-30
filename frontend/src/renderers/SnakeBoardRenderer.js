@@ -72,6 +72,11 @@ export class SnakeBoardRenderer {
 
         // Pool de sprites por jugador: snakeSpritePools[playerIndex] = []
         this.snakeSpritePools = [[], []];
+
+        this.previousStateSnapshot = null;
+        this.targetStateSnapshot = this._createStateSnapshot({ players: new Map(), food: [], obstacles: [] });
+        this.transitionStartMs = 0;
+        this.transitionDurationMs = 110;
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -163,7 +168,20 @@ export class SnakeBoardRenderer {
         this.snakeSpritePools.forEach(pool => pool.forEach(s => s.setVisible(false)));
     }
 
-    renderState(state) {
+    renderState(state, tickMs = this.transitionDurationMs) {
+        const now = performance.now();
+        const nextSnapshot = this._createStateSnapshot(state);
+        const currentSnapshot = this.targetStateSnapshot ?? nextSnapshot;
+
+        this.previousStateSnapshot = currentSnapshot;
+        this.targetStateSnapshot = nextSnapshot;
+        this.transitionStartMs = now;
+        this.transitionDurationMs = Math.max(40, Number(tickMs) || this.transitionDurationMs);
+
+        this.drawCurrentState(nextSnapshot);
+    }
+
+    drawCurrentState(state) {
         this.clearDynamicLayers();
         this.renderPlayers(state?.players);
         this.renderFood(state?.food);
@@ -192,7 +210,8 @@ export class SnakeBoardRenderer {
      */
     _renderPlayerSprites(player, playerIndex) {
         const segments  = player.segments;
-        if (!segments || segments.length === 0) return;
+        const layoutSegments = player.layoutSegments ?? segments;
+        if (!segments || segments.length === 0 || !layoutSegments || layoutSegments.length === 0) return;
 
         const keys      = PLAYER_SPRITE_KEYS[playerIndex] ?? PLAYER_SPRITE_KEYS[0];
         const useSprites = this._playerHasSprites(keys);
@@ -209,8 +228,8 @@ export class SnakeBoardRenderer {
         segments.forEach((seg, i) => {
             const isHead = i === 0;
             const isTail = i === segments.length - 1;
-            const spriteKey = this._selectSpriteKey(keys, segments, i, isHead, isTail);
-            const angle     = this._computeAngle(segments, i, isHead, isTail, player.direction);
+            const spriteKey = this._selectSpriteKey(keys, layoutSegments, i, isHead, isTail);
+            const angle     = this._computeAngle(layoutSegments, i, isHead, isTail, player.direction);
 
             const sprite = this._getSnakeSprite(playerIndex, i, spriteKey);
             this._placeSprite(sprite, seg, angle);
@@ -298,6 +317,12 @@ export class SnakeBoardRenderer {
         return delta;
     }
 
+    _wrapCoordinate(value, span) {
+        let wrapped = value % span;
+        if (wrapped < 0) wrapped += span;
+        return wrapped;
+    }
+
     _directionBetween(fromSeg, toSeg) {
         const dx = this._normalizeDelta(toSeg.x - fromSeg.x, BOARD_WIDTH_PX);
         const dy = this._normalizeDelta(toSeg.y - fromSeg.y, BOARD_HEIGHT_PX);
@@ -369,16 +394,47 @@ export class SnakeBoardRenderer {
      * Posiciona y rota un sprite en una celda del tablero.
      */
     _placeSprite(sprite, segment, angle) {
-        const col     = Math.floor(segment.x / GRID_SIZE);
-        const row     = Math.floor(segment.y / GRID_SIZE);
-        const centerX = this.boardOffsetX + col * this.cellSize + this.cellSize * 0.5;
-        const centerY = this.boardOffsetY + row * this.cellSize + this.cellSize * 0.5;
+        const logicalX = segment.x / GRID_SIZE;
+        const logicalY = segment.y / GRID_SIZE;
+        const centerX = this.boardOffsetX + logicalX * this.cellSize + this.cellSize * 0.5;
+        const centerY = this.boardOffsetY + logicalY * this.cellSize + this.cellSize * 0.5;
 
         sprite
             .setPosition(centerX, centerY)
             .setDisplaySize(this.cellSize, this.cellSize)
             .setRotation(angle)
             .setVisible(true);
+    }
+
+    _createStateSnapshot(state) {
+        const players = new Map();
+        state?.players?.forEach?.((player, id) => {
+            const layoutSegments = Array.from(player?.segments ?? [], (segment) => ({
+                x: Number(segment?.x ?? 0),
+                y: Number(segment?.y ?? 0),
+            }));
+
+            players.set(id, {
+                id,
+                alive: Boolean(player?.alive),
+                color: player?.color ?? 0xffffff,
+                direction: player?.direction ?? 'right',
+                segments: layoutSegments.map((segment) => ({ ...segment })),
+                layoutSegments,
+            });
+        });
+
+        return {
+            players,
+            food: Array.from(state?.food ?? [], (item) => ({
+                x: Number(item?.x ?? 0),
+                y: Number(item?.y ?? 0),
+            })),
+            obstacles: Array.from(state?.obstacles ?? [], (item) => ({
+                x: Number(item?.x ?? 0),
+                y: Number(item?.y ?? 0),
+            })),
+        };
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -518,10 +574,8 @@ export class SnakeBoardRenderer {
     }
 
     drawBoardCell(layer, x, y, color) {
-        const col     = Math.floor(x / GRID_SIZE);
-        const row     = Math.floor(y / GRID_SIZE);
-        const px      = this.boardOffsetX + col * this.cellSize;
-        const py      = this.boardOffsetY + row * this.cellSize;
+        const px      = this.boardOffsetX + (x / GRID_SIZE) * this.cellSize;
+        const py      = this.boardOffsetY + (y / GRID_SIZE) * this.cellSize;
         const padding = Math.max(1, Math.floor(this.cellSize * 0.08));
         layer.fillStyle(color, 1);
         layer.fillRect(px + padding, py + padding,

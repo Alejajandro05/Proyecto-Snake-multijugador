@@ -110,7 +110,7 @@ Valores base actuales del motor:
 
 - Grid: `32 x 24`
 - Tamano de celda: `32`
-- Tick normal: `150 ms`
+- Tick normal: `110 ms`
 - Comida inicial: `10`
 - Longitud inicial de serpiente: `3`
 - Vidas maximas: `3`

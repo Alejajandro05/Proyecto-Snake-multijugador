@@ -1,7 +1,7 @@
 export const GRID_COLS = 32;
 export const GRID_ROWS = 24;
 export const GRID_SIZE = 32;
-export const TICK_MS = 150;
+export const TICK_MS = 110;
 export const FOOD_COUNT = 10;
 export const INITIAL_SNAKE_LENGTH = 3;
 export const RESPAWN_DELAY_MS = 3000;
@@ -12,7 +12,7 @@ export const PLAYER_COLORS = [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71];
 const DEFAULT_DIFFICULTY = 'normal';
 const DIFFICULTY_PRESETS = {
     easy: {
-        tickMs: 180,
+        tickMs: 135,
         foodCount: 10,
         obstaclesPerQuadrant: 6,
     },
@@ -22,7 +22,7 @@ const DIFFICULTY_PRESETS = {
         obstaclesPerQuadrant: 8,
     },
     hard: {
-        tickMs: 110,
+        tickMs: 90,
         foodCount: 5,
         obstaclesPerQuadrant: 10,
     },

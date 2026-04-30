@@ -248,7 +248,8 @@ export class LocalGame extends Phaser.Scene {
     }
 
     renderState(state) {
-        this.boardRenderer.renderState(state);
+        const runtimeConfig = this.engine.getConfig?.() ?? {};
+        this.boardRenderer.renderState(state, runtimeConfig.tickMs ?? TICK_MS);
         const p1 = state.players.get(P1_ID);
         const p2 = state.players.get(P2_ID);
         if (p1 && this.hudJ1ScoreBig) this.hudJ1ScoreBig.textContent = `${p1.score}`;
@@ -258,6 +259,10 @@ export class LocalGame extends Phaser.Scene {
 
         if (p1.score >= WIN_SCORE || p2.score >= WIN_SCORE) this.gameOver(true);
         if (p1.lives <= 0 || p2.lives <= 0) this.gameOver(false);
+    }
+
+    update() {
+        this.boardRenderer?.update?.();
     }
 
     gameOver(reason) {

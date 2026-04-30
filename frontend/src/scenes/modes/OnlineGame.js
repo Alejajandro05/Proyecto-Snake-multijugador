@@ -92,7 +92,7 @@ export class OnlineGame extends Phaser.Scene {
         this.updateLayout(this.scale.width, this.scale.height);
 
         this.latestState = null;
-        this.renderState({ players: new Map(), food: [], obstacles: [] });
+        this.renderState({ players: new Map(), food: [], obstacles: [], tickMs: 110 });
 
         this.userMusicVol = localStorage.getItem('musicVolume') !== null ? parseFloat(localStorage.getItem('musicVolume')) : 0.2;
         this.userSfxVol = localStorage.getItem('sfxVolume') !== null ? parseFloat(localStorage.getItem('sfxVolume')) : 0.7;
@@ -333,7 +333,7 @@ export class OnlineGame extends Phaser.Scene {
         if (!state) return;
 
         this.latestState = state;
-        this.boardRenderer.renderState(state);
+        this.boardRenderer.renderState(state, state.tickMs ?? 110);
 
         const { firstPlayer, secondPlayer } = this.syncHudFromPlayers(state);
 
@@ -347,6 +347,10 @@ export class OnlineGame extends Phaser.Scene {
                 this.gameOver(false);
             }
         }
+    }
+
+    update() {
+        this.boardRenderer?.update?.();
     }
 
     gameOver(reason) {
