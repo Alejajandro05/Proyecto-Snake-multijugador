@@ -49,6 +49,7 @@ export class OnlineMenu extends Phaser.Scene {
 
     const btnStyleCrear = `width: 280px; padding: 12px; background-color: #DE1A58; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: transform 0.2s ease;`;
     const btnStyleUnirse = `width: 280px; padding: 12px; background-color: #8F0177; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: transform 0.2s ease;`;
+    const btnStyleLogin = `width: 280px; padding: 12px; background-color: #DE1A58; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: transform 0.2s ease;`;
     const btnStyleVolverMainMenu = `width: 280px; padding: 12px; background-color: #1A05A2; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: transform 0.2s ease;`;
     const btnStyleAction = `padding: 10px; background-color: #DE1A58; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.1rem; transition: transform 0.2s ease;`;
     const btnStyleVolver = `padding: 10px; background-color: #334155; border: 2px solid #94A3B8; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.1rem; transition: transform 0.2s ease;`;
@@ -66,6 +67,7 @@ export class OnlineMenu extends Phaser.Scene {
             <h2 class="text-white text-center fw-bold mb-3" style="font-family: 'Montserrat', sans-serif;">ONLINE</h2>
             <button id="btn-online-create" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleCrear}">CREAR PARTIDA</button>
             <button id="btn-online-join" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleUnirse}">UNIRSE A PARTIDA</button>
+            <button id="btn-join-login" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleLogin}">LOGIN</button>
             <button id="btn-online-back" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleVolverMainMenu}">VOLVER</button>
           </div>
 
@@ -165,6 +167,7 @@ export class OnlineMenu extends Phaser.Scene {
     overlay.querySelector('#btn-online-back').addEventListener('click', () => this.scene.start('MainMenu'));
     overlay.querySelector('#btn-create-back').addEventListener('click', () => this.showView('home'));
     overlay.querySelector('#btn-join-back').addEventListener('click', () => this.showView('home'));
+    overlay.querySelector('#btn-join-login').addEventListener('click', () => this.scene.start('Registration'));
     overlay.querySelector('#btn-waiting-back').addEventListener('click', () => this.leaveLobbyRoom());
     overlay.querySelector('#btn-create-submit').addEventListener('click', () => this.handleCreateSubmit());
     overlay.querySelector('#btn-refresh-public').addEventListener('click', () => this.loadPublicLobbies());
