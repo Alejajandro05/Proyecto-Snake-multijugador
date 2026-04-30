@@ -64,7 +64,7 @@ export class MainMenu extends Phaser.Scene {
                     <div id="btn-time-attack" class="card shadow-lg bg-transparent arcade-card" style="border: 3px solid #F67D31; border-radius: 16px; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; overflow: hidden;">
                         <div style="height: 180px; background-color: #0B081A; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
                             
-                            <img src="assets/time_attack.jpg" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.85; transition: opacity 0.3s ease;" class="arcade-img">
+                            <img src="/time_attack.jpg" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.85; transition: opacity 0.3s ease;" class="arcade-img">
                             
                             <div class="position-absolute bottom-0 start-0 w-100" style="height: 50%; background: linear-gradient(to top, rgba(12,18,42,1), transparent);"></div>
                         </div>
