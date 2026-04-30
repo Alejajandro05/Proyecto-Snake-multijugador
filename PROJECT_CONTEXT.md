@@ -89,6 +89,8 @@ El backend expone ademas estos endpoints HTTP:
 - `/api/lobbies`
 - `/api/lobbies/resolve`
 
+En produccion, Caddy debe reenviar `/api*` y `/ws*` al backend Colyseus.
+
 ### Shared Domain
 
 La carpeta `shared/src/domain` contiene la logica que no depende de Phaser ni de Colyseus:
@@ -220,6 +222,8 @@ Archivos utiles:
 - Mapa, baldosas y obstaculos.
 - Sprites de frutas.
 
+Nota de despliegue: con `vite build`, los archivos de `publicDir: 'assets'` se copian al raiz de `frontend/dist`, asi que `time_attack.jpg` se sirve como `/time_attack.jpg` en produccion.
+
 ## Configuracion Y Entorno
 
 ### Desarrollo local
@@ -233,6 +237,8 @@ Archivos utiles:
 - `docker-compose.prod.yml` levanta backend + Caddy.
 - Caddy sirve el frontend compilado desde `frontend/dist`.
 - WebSocket publico por defecto en `/ws`.
+- El proxy HTTP para el frontend online usa `/api/lobbies` y `/api/lobbies/resolve` contra el backend.
+- El flujo correcto de despliegue en el VPS es `scripts/pull-git-and-restart-docker.sh`, no `scripts/deploy.sh`.
 
 ### Variables relevantes del frontend
 
@@ -284,3 +290,5 @@ Cuando haga falta tocar funcionalidad, los archivos mas probables a revisar prim
 - `frontend/src/scenes/OnlineMenu.js`
 - `frontend/src/scenes/LocalGameSetup.js`
 - `frontend/src/renderers/SnakeBoardRenderer.js`
+- `Caddyfile`
+- `scripts/pull-git-and-restart-docker.sh`
