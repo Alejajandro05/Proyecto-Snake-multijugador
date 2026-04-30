@@ -7,6 +7,7 @@ import { MainMenu } from './scenes/MainMenu.js';
 import { LocalGame } from './scenes/modes/LocalGame.js';
 import { OnlineMenu } from './scenes/OnlineMenu.js';
 import { Registration } from './scenes/Registration.js';
+import { Login } from './scenes/Login.js';
 import { OnlineGame } from './scenes/modes/OnlineGame.js';
 import { TimeAttackGame } from './scenes/modes/TimeAttackGame.js';
 import { Pause } from './scenes/Pause.js';
@@ -50,6 +51,7 @@ const config = {
         MainMenu,
         OnlineMenu,
         Registration,
+        Login,
         LocalGameSetup,
         LocalGame,
         OnlineGame,

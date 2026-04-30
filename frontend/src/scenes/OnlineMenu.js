@@ -167,7 +167,7 @@ export class OnlineMenu extends Phaser.Scene {
     overlay.querySelector('#btn-online-back').addEventListener('click', () => this.scene.start('MainMenu'));
     overlay.querySelector('#btn-create-back').addEventListener('click', () => this.showView('home'));
     overlay.querySelector('#btn-join-back').addEventListener('click', () => this.showView('home'));
-    overlay.querySelector('#btn-join-login').addEventListener('click', () => this.scene.start('Registration'));
+    overlay.querySelector('#btn-join-login').addEventListener('click', () => this.scene.start('Login'));
     overlay.querySelector('#btn-waiting-back').addEventListener('click', () => this.leaveLobbyRoom());
     overlay.querySelector('#btn-create-submit').addEventListener('click', () => this.handleCreateSubmit());
     overlay.querySelector('#btn-refresh-public').addEventListener('click', () => this.loadPublicLobbies());
