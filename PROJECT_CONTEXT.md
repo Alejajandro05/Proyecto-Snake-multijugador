@@ -1,7 +1,7 @@
 # Snake Project Context
 
-Este archivo resume el proyecto para tener contexto rapido al empezar una sesion nueva.
-La idea es que sirva como mapa de referencia del codigo, la arquitectura y el flujo de ejecucion.
+Este archivo resume el estado actual del proyecto para tener contexto rapido al arrancar una sesion nueva.
+La idea es que funcione como mapa de referencia del codigo, la arquitectura y los flujos principales.
 
 ## Resumen
 
@@ -13,10 +13,12 @@ Proyecto de Snake multijugador con:
 - Desarrollo local con Docker.
 - Despliegue pensado para Docker + Caddy en produccion.
 
-El juego tiene dos modos principales:
+El proyecto tiene varios modos y superficies de juego:
 
-1. `LocalGame`: partida local 1vs1, sin servidor.
-2. `OnlineGame`: partida online 1vs1 sincronizada con Colyseus.
+- `LocalGame`: partida local usando `SnakeEngine`.
+- `OnlineGame`: partida online sincronizada con `snake_room`.
+- `TimeAttackGame`: modo especial incluido en las escenas del frontend.
+- `LobbyRoom`: flujo de salas/lobbies para organizar partidas online.
 
 ## Estructura General
 
@@ -24,22 +26,23 @@ El juego tiene dos modos principales:
 - `backend/`: servidor Colyseus, rooms, estado sincronizado y tests del backend.
 - `shared/`: logica de dominio reutilizable entre cliente y servidor.
 - `docs/`: documentacion del proyecto.
-- `deploy/`: ejemplos y materiales de despliegue.
-- `scripts/`: scripts de despliegue y reinicio.
+- `deploy/`: materiales y ayudas de despliegue.
+- `scripts/`: scripts de soporte.
 
-La raiz contiene archivos de orquestacion:
+La raiz contiene archivos de orquestacion y apoyo:
 
 - `docker-compose.yml`
 - `docker-compose.prod.yml`
 - `Caddyfile`
 - `DEPLOY.md`
 - `README.md`
+- `PROJECT_CONTEXT.md`
 
 ## Stack
 
 - Frontend: Phaser, Vite, JavaScript.
 - Backend: TypeScript, Colyseus, Express.
-- Shared domain: TypeScript con salidas `.js` en el mismo arbol.
+- Shared domain: TypeScript y JavaScript coexistiendo en el mismo arbol.
 - Contenedores: Docker y Docker Compose.
 - Proxy/produccion: Caddy.
 
@@ -54,50 +57,54 @@ La raiz contiene archivos de orquestacion:
 
 ### Frontend
 
-El cliente arranca Phaser y registra escenas:
+El cliente arranca Phaser y registra estas escenas:
 
 - `Boot`
 - `Preloader`
 - `MainMenu`
+- `OnlineMenu`
+- `LocalGameSetup`
 - `LocalGame`
 - `OnlineGame`
 - `Game`
+- `TimeAttackGame`
 - `GameOver`
 - `Pause`
 
-La escena `Preloader` carga audio, fondo, sprites de serpiente, mapa y frutas.
-`MainMenu` crea una capa DOM sobre el canvas para arrancar modo local, modo online y ajustes de audio.
+`Preloader` carga assets, audio y sprites.
+`MainMenu` y `OnlineMenu` actuan como puntos de entrada al juego.
+`LocalGameSetup` prepara la partida local antes de entrar a `LocalGame`.
 
 ### Backend
 
-El servidor usa Colyseus con dos rooms registradas:
+El servidor registra estas rooms de Colyseus:
 
-- `snake_room`: room real del juego.
+- `snake_room`: room principal del juego.
 - `my_room`: room de plantilla / ejemplo.
+- `lobby_room`: room para lobby y organizacion de partidas.
 
-El backend expone ademas:
+El backend expone ademas estos endpoints HTTP:
 
-- `/hi`
 - `/api/hello`
-- `/monitor`
-- playground de Colyseus en desarrollo
+- `/api/lobbies`
+- `/api/lobbies/resolve`
 
 ### Shared Domain
 
 La carpeta `shared/src/domain` contiene la logica que no depende de Phaser ni de Colyseus:
 
-- `GameConfig.ts`: constantes y presets de dificultad.
-- `types.ts`: tipos de estado del juego.
-- `SnakeEngine.ts`: motor puro de simulacion.
+- `GameConfig.ts` y `GameConfig.js`: constantes y presets de dificultad.
+- `types.ts` y `types.js`: tipos y estructuras del estado del juego.
+- `SnakeEngine.ts` y `SnakeEngine.js`: motor puro de simulacion.
 
 Este motor lo usa:
 
-- `LocalGame` directamente.
+- `LocalGame` directamente en cliente.
 - `SnakeRoom` en el servidor para simular la partida autoritativa.
 
 ## Reglas Del Juego
 
-Valores base actuales:
+Valores base actuales del motor:
 
 - Grid: `32 x 24`
 - Tamano de celda: `32`
@@ -141,7 +148,19 @@ La room admite opciones de creacion como:
 - `difficulty`
 - `mapId`
 
+### Lobby
+
+`backend/src/rooms/LobbyRoom.ts` y sus schemas asociados gestionan lobbies publicos y resolucion de codigos de invitacion.
+
+Schemas relevantes:
+
+- `LobbyRoomState`
+- `LobbyPlayer`
+- `PublicLobbySummary`
+
 ### Schema
+
+Schemas principales del juego:
 
 - `SnakeRoomState`: estado global de la sala.
 - `Player`: estado individual del jugador.
@@ -151,8 +170,8 @@ La room admite opciones de creacion como:
 
 ### `MyRoom`
 
-`backend/src/rooms/MyRoom.ts` y `backend/test/MyRoom.test.ts` son material base de plantilla.
-No forman parte del flujo real principal del juego, pero siguen presentes como referencia de Colyseus.
+`backend/src/rooms/MyRoom.ts` y `backend/test/MyRoom.test.ts` siguen como material base de plantilla.
+No forman parte del flujo principal del juego, pero siguen presentes como referencia de Colyseus.
 
 ## Frontend Detallado
 
@@ -160,12 +179,15 @@ No forman parte del flujo real principal del juego, pero siguen presentes como r
 
 - `Boot`: carga inicial minima.
 - `Preloader`: carga assets y audio.
-- `MainMenu`: menu principal con botones y ajustes.
+- `MainMenu`: menu principal.
+- `OnlineMenu`: menu para flujo online y lobby.
+- `LocalGameSetup`: configuracion previa al modo local.
 - `LocalGame`: modo local 1vs1 usando `SnakeEngine`.
 - `OnlineGame`: modo online sincronizado con `snake_room`.
 - `Game`: escena simple de prueba / legado.
-- `GameOver`: overlay DOM de resultado final.
-- `Pause`: overlay DOM de pausa en modo local.
+- `TimeAttackGame`: modo especial de tiempo.
+- `GameOver`: overlay o escena de resultado final.
+- `Pause`: overlay o escena de pausa.
 
 ### Renderer
 
@@ -179,6 +201,15 @@ Hace:
 - Render de comida y obstaculos.
 - Fallback a rectangulos si faltan assets.
 
+### Configuracion de juego y red
+
+Archivos utiles:
+
+- `frontend/src/config/assetManifest.js`: lista de assets cargables.
+- `frontend/src/net/lobbyClient.js`: cliente para lobby y resolucion de salas.
+- `frontend/src/utils/localGameSettings.js`: ajustes del modo local.
+- `frontend/src/utils/onlineStorage.js`: persistencia local de opciones online.
+
 ### Assets
 
 `frontend/assets/` incluye:
@@ -188,8 +219,6 @@ Hace:
 - Sprites de serpientes por jugador.
 - Mapa, baldosas y obstaculos.
 - Sprites de frutas.
-
-`frontend/src/config/assetManifest.js` define que se carga y que aun esta preparado como futuro.
 
 ## Configuracion Y Entorno
 
@@ -230,14 +259,15 @@ En `frontend/package.json`:
 
 Hay tests en `backend/test/`:
 
-- `SnakeEngine.test.ts`: cubre movimiento, giro, comida, colision, wrap, respawn y limpieza.
+- `SnakeEngine.test.ts`: movimiento, giro, comida, colision, wrap, respawn y limpieza.
 - `MyRoom.test.ts`: test basico de ejemplo de Colyseus.
 
 ## Notas Importantes
 
 - La raiz no tiene `package.json`; cada subproyecto maneja sus dependencias.
 - En `shared/src/domain` hay archivos `.ts` y `.js`; conviene mantenerlos alineados.
-- El modo online usa `snake_room`, no `my_room`.
+- El modo online principal usa `snake_room`; `lobby_room` soporta el flujo de lobby.
+- El frontend mezcla escenas de juego, menu y configuracion en una sola app Phaser.
 - El renderer del tablero esta preparado para funcionar incluso si faltan algunos assets.
 
 ## Si Hay Que Seguir Trabajando
@@ -247,7 +277,10 @@ Cuando haga falta tocar funcionalidad, los archivos mas probables a revisar prim
 - `shared/src/domain/SnakeEngine.ts`
 - `shared/src/domain/GameConfig.ts`
 - `backend/src/rooms/SnakeRoom.ts`
-- `frontend/src/scenes/LocalGame.js`
-- `frontend/src/scenes/OnlineGame.js`
+- `backend/src/rooms/LobbyRoom.ts`
+- `backend/src/app.config.ts`
+- `frontend/src/scenes/modes/LocalGame.js`
+- `frontend/src/scenes/modes/OnlineGame.js`
+- `frontend/src/scenes/OnlineMenu.js`
+- `frontend/src/scenes/LocalGameSetup.js`
 - `frontend/src/renderers/SnakeBoardRenderer.js`
-
