@@ -46,6 +46,20 @@ describe("SnakeEngine – domain logic", () => {
     assert.strictEqual(engine.getState().players.get("p1")!.direction, "up");
   });
 
+  it("buffers rapid turn sequences across consecutive ticks", () => {
+    const engine = createEngine();
+    engine.addPlayer("p1");
+
+    engine.setNextDirection("p1", "up");
+    engine.setNextDirection("p1", "left");
+
+    engine.tick();
+    assert.strictEqual(engine.getState().players.get("p1")!.direction, "up");
+
+    engine.tick();
+    assert.strictEqual(engine.getState().players.get("p1")!.direction, "left");
+  });
+
   it("increments score and grows snake when eating food", () => {
     const engine = createEngine();
     engine.addPlayer("p1");

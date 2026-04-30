@@ -26,6 +26,7 @@ export interface AddPlayerOptions {
 export class SnakeEngine {
   private readonly config: GameRuntimeConfig;
   private players = new Map<string, PlayerState>();
+  private inputQueues = new Map<string, Direction[]>();
   private food: FoodState[] = [];
   private obstacles: ObstacleState[] = [];
   private respawnQueue = new Map<string, number>(); // playerId → respawn tick
@@ -77,20 +78,34 @@ export class SnakeEngine {
     };
 
     this.players.set(id, player);
+    this.inputQueues.set(id, []);
     return player;
   }
 
   removePlayer(id: string): void {
     this.players.delete(id);
+    this.inputQueues.delete(id);
     this.respawnQueue.delete(id);
   }
 
   setNextDirection(playerId: string, direction: Direction): void {
     const player = this.players.get(playerId);
     if (!player || !player.alive) return;
-    if (OPPOSITE[player.direction] !== direction) {
-      player.nextDirection = direction;
+
+    const queue = this.inputQueues.get(playerId) ?? [];
+    const lastPlannedDirection = queue[queue.length - 1] ?? player.nextDirection ?? player.direction;
+
+    if (direction === lastPlannedDirection || OPPOSITE[lastPlannedDirection] === direction) {
+      return;
     }
+
+    if (queue.length >= 3) {
+      return;
+    }
+
+    queue.push(direction);
+    this.inputQueues.set(playerId, queue);
+    player.nextDirection = queue[0] ?? player.direction;
   }
 
   /** Advance the simulation by one step and return the resulting game state. */
@@ -124,7 +139,7 @@ export class SnakeEngine {
   // ─── Private helpers ──────────────────────────────────────────────────────
 
   private movePlayer(player: PlayerState): void {
-    player.direction = player.nextDirection;
+    player.direction = this.consumePlannedDirection(player);
 
     const head = player.segments[0];
     let newX = head.x;
@@ -207,6 +222,8 @@ export class SnakeEngine {
   private killPlayer(player: PlayerState): void {
     player.alive = false;
     player.lives -= 1;
+    this.inputQueues.set(player.id, []);
+    player.nextDirection = player.direction;
     if(player.lives > 0){
       this.respawnQueue.set(player.id, this.tickCount + this.respawnTicks);
     }
@@ -234,7 +251,20 @@ export class SnakeEngine {
     }
     player.direction = 'right';
     player.nextDirection = 'right';
+    this.inputQueues.set(id, []);
     player.alive = true;
+  }
+
+  private consumePlannedDirection(player: PlayerState): Direction {
+    const queue = this.inputQueues.get(player.id);
+    if (!queue || queue.length === 0) {
+      player.nextDirection = player.direction;
+      return player.direction;
+    }
+
+    const nextDirection = queue.shift()!;
+    player.nextDirection = queue[0] ?? nextDirection;
+    return nextDirection;
   }
 
   private getSnakesPosition(): Position[] {
