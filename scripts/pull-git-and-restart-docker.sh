@@ -10,5 +10,5 @@ git pull --ff-only
 echo ">>> frontend: npm ci && npm run build (genera frontend/dist para Caddy)"
 (cd "$ROOT/frontend" && npm ci && npm run build)
 
-echo ">>> docker compose -f docker-compose.prod.yml up -d --build"
-docker compose -f docker-compose.prod.yml up -d --build
+echo ">>> docker compose -f docker-compose.prod.yml up -d --build --force-recreate"
+docker compose -f docker-compose.prod.yml up -d --build --force-recreate
