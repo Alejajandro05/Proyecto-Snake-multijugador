@@ -6,7 +6,7 @@
   "type": "module",
   "main": "build/backend/src/index.js",
   "engines": {
-    "node": ">= 20.9.0"
+    "node": ">= 22.x"
   },
   "scripts": {
     "start": "tsx watch src/index.ts",
