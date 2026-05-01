@@ -180,14 +180,14 @@ export class MainMenu extends Phaser.Scene {
             el.addEventListener('mouseenter', () => {
                 el.style.transform = 'scale(1.05)';
                 if (el.classList.contains('arcade-card')) {
-                    el.style.boxShadow = '0 0 30px rgba(246, 125, 49, 0.4) !important';
+                    el.style.setProperty('box-shadow', '0 0 30px rgba(246, 125, 49, 0.4)', 'important');
                     el.querySelector('.arcade-img').style.opacity = '1';
                 }
             });
             el.addEventListener('mouseleave', () => {
                 el.style.transform = 'scale(1)';
                 if (el.classList.contains('arcade-card')) {
-                    el.style.boxShadow = 'var(--bs-box-shadow-lg) !important';
+                    el.style.setProperty('box-shadow', 'var(--bs-box-shadow-lg)', 'important');
                     el.querySelector('.arcade-img').style.opacity = '0.85';
                 }
             });

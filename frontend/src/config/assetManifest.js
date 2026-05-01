@@ -1,4 +1,6 @@
 // frontend/src/config/assetManifest.js
+import { fruitAssets, getAllMapImageAssets, getAllSnakeImageAssets } from './gameAssetRegistry.js';
+
 export const ASSET_KEYS = Object.freeze({
     MENU_BACKGROUND: 'fondo_duelo',
     MAP_BOARD_BACKGROUND: 'map-board-background',
@@ -6,15 +8,15 @@ export const ASSET_KEYS = Object.freeze({
     MAP_FLOOR_TILE: 'map-floor-tile',
     MAP_OBSTACLE_ROCK: 'map-obstacle-rock',
     MAP_DECOR_CORNER_LEAF: 'map-decor-corner-leaf',
-    FOOD_FRUITS_SHEET: 'food-fruits-sheet',
-    SNAKE_P1_HEAD: 'snake-p1-head',
-    SNAKE_P1_BODY: 'snake-p1-body',
-    SNAKE_P1_TURN: 'snake-p1-turn',
-    SNAKE_P1_TAIL: 'snake-p1-tail',
-    SNAKE_P2_HEAD: 'snake-p2-head',
-    SNAKE_P2_BODY: 'snake-p2-body',
-    SNAKE_P2_TURN: 'snake-p2-turn',
-    SNAKE_P2_TAIL: 'snake-p2-tail',
+    FOOD_FRUITS_SHEET: fruitAssets.spritesheet.key,
+    SNAKE_P1_HEAD: 'snake-player1-head',
+    SNAKE_P1_BODY: 'snake-player1-body',
+    SNAKE_P1_TURN: 'snake-player1-turn',
+    SNAKE_P1_TAIL: 'snake-player1-tail',
+    SNAKE_P2_HEAD: 'snake-player2-head',
+    SNAKE_P2_BODY: 'snake-player2-body',
+    SNAKE_P2_TURN: 'snake-player2-turn',
+    SNAKE_P2_TAIL: 'snake-player2-tail',
 });
 
 const CORE_IMAGE_ASSETS = [
@@ -22,28 +24,16 @@ const CORE_IMAGE_ASSETS = [
 ];
 
 const PLANNED_IMAGE_ASSETS = [
-    { key: ASSET_KEYS.MAP_BOARD_BACKGROUND, path: 'map/backgrounds/board_background.png', enabled: false },
-    { key: ASSET_KEYS.MAP_BOARD_FRAME,      path: 'map/borders/board_frame.png',          enabled: false },
-    { key: ASSET_KEYS.MAP_FLOOR_TILE,       path: 'map/tiles/floor_tile.png',             enabled: true  },
-    { key: ASSET_KEYS.MAP_OBSTACLE_ROCK,    path: 'map/obstacles/obstacle_rock.png',      enabled: true  },
-    { key: ASSET_KEYS.MAP_DECOR_CORNER_LEAF,path: 'map/decor/corner_leaf.png',            enabled: false },
-    // ── Serpientes — ahora todos enabled: true ──────────────────────────
-    { key: ASSET_KEYS.SNAKE_P1_HEAD, path: 'snakes/player1/head.png', enabled: true },
-    { key: ASSET_KEYS.SNAKE_P1_BODY, path: 'snakes/player1/body.png', enabled: true },
-    { key: ASSET_KEYS.SNAKE_P1_TURN, path: 'snakes/player1/turn.png', enabled: true },
-    { key: ASSET_KEYS.SNAKE_P1_TAIL, path: 'snakes/player1/tail.png', enabled: true },
-    { key: ASSET_KEYS.SNAKE_P2_HEAD, path: 'snakes/player2/head.png', enabled: true },
-    { key: ASSET_KEYS.SNAKE_P2_BODY, path: 'snakes/player2/body.png', enabled: true },
-    { key: ASSET_KEYS.SNAKE_P2_TURN, path: 'snakes/player2/turn.png', enabled: true },
-    { key: ASSET_KEYS.SNAKE_P2_TAIL, path: 'snakes/player2/tail.png', enabled: true },
+    { key: ASSET_KEYS.MAP_FLOOR_TILE, path: 'map/tiles/floor_tile.png', enabled: true },
+    ...getAllMapImageAssets().map((asset) => ({ ...asset, enabled: true })),
+    ...getAllSnakeImageAssets().map((asset) => ({ ...asset, enabled: true })),
 ];
 
 const SPRITESHEET_ASSETS = [
-    // 192x64 sprite sheet (6x2) de frutas, con frames de 32x32.
     {
-        key: ASSET_KEYS.FOOD_FRUITS_SHEET,
-        path: 'Fruits/Fruits/Fruits_Spritesheet.png',
-        frameConfig: { frameWidth: 32, frameHeight: 32 },
+        key: fruitAssets.spritesheet.key,
+        path: fruitAssets.spritesheet.path,
+        frameConfig: fruitAssets.spritesheet.frameConfig,
         enabled: true,
     },
 ];

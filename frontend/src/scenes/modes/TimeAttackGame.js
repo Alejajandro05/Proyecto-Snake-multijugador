@@ -1,3 +1,4 @@
+import Phaser from 'phaser';
 import { SnakeEngine } from '@shared/SnakeEngine';
 import { TICK_MS } from '@shared/GameConfig';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
@@ -204,7 +205,9 @@ export class TimeAttackGame extends Phaser.Scene {
             winner: winner,
             p1Score: score1,
             p2Score: score2,
-            reason: this.isTiebreaker ? 'tiebreaker' : 'time'
+            reason: this.isTiebreaker ? 'tiebreaker' : 'time',
+            mode: 'timeAttack',
+            rematchScene: 'TimeAttackGame'
         });
     }
 
