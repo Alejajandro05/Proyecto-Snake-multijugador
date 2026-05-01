@@ -216,7 +216,9 @@ export class TimeAttackGame extends Phaser.Scene {
             winner: winner,
             p1Score: score1,
             p2Score: score2,
-            reason: this.isTiebreaker ? 'tiebreaker' : 'time'
+            reason: this.isTiebreaker ? 'tiebreaker' : 'time',
+            mode: 'timeAttack',
+            rematchScene: 'TimeAttackGame'
         });
     }
 

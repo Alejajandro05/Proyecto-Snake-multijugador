@@ -146,9 +146,22 @@ export class MainMenu extends Phaser.Scene {
             }
         });
 
-        document.querySelectorAll('.menu-btn').forEach(el => {
-            el.addEventListener('mouseenter', () => { el.style.transform = 'scale(1.05)'; });
-            el.addEventListener('mouseleave', () => { el.style.transform = 'scale(1)'; });
+        const elementsToHover = document.querySelectorAll('.menu-btn, .arcade-card');
+        elementsToHover.forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                el.style.transform = 'scale(1.05)';
+                if (el.classList.contains('arcade-card')) {
+                    el.style.setProperty('box-shadow', '0 0 30px rgba(246, 125, 49, 0.4)', 'important');
+                    el.querySelector('.arcade-img').style.opacity = '1';
+                }
+            });
+            el.addEventListener('mouseleave', () => {
+                el.style.transform = 'scale(1)';
+                if (el.classList.contains('arcade-card')) {
+                    el.style.setProperty('box-shadow', 'var(--bs-box-shadow-lg)', 'important');
+                    el.querySelector('.arcade-img').style.opacity = '0.85';
+                }
+            });
         });
 
         const musicSelect = document.getElementById('music-select');

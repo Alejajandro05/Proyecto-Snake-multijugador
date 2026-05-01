@@ -317,6 +317,7 @@ export class OnlineMenu extends Phaser.Scene {
         this.scene.start('OnlineGame', {
           matchRoomId: state.matchRoomId,
           skinId,
+          mapId: state.mapId,
         });
       }
     });

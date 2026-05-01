@@ -1,6 +1,7 @@
 // frontend/src/renderers/SnakeBoardRenderer.js
 import { GRID_COLS, GRID_ROWS, GRID_SIZE } from '@shared/GameConfig';
 import { ASSET_KEYS } from '../config/assetManifest.js';
+import { getMapAsset, getSnakeAsset } from '../config/gameAssetRegistry.js';
 
 const FOOD_COLOR     = 0xffff00;
 const OBSTACLE_COLOR = 0x888888;
@@ -18,25 +19,11 @@ const DIR_ANGLE = {
 const BOARD_WIDTH_PX = GRID_COLS * GRID_SIZE;
 const BOARD_HEIGHT_PX = GRID_ROWS * GRID_SIZE;
 
-// Mapa playerIndex → keys de sus sprites
-const PLAYER_SPRITE_KEYS = [
-    {
-        head: ASSET_KEYS.SNAKE_P1_HEAD,
-        body: ASSET_KEYS.SNAKE_P1_BODY,
-        turn: ASSET_KEYS.SNAKE_P1_TURN,
-        tail: ASSET_KEYS.SNAKE_P1_TAIL,
-    },
-    {
-        head: ASSET_KEYS.SNAKE_P2_HEAD,
-        body: ASSET_KEYS.SNAKE_P2_BODY,
-        turn: ASSET_KEYS.SNAKE_P2_TURN,
-        tail: ASSET_KEYS.SNAKE_P2_TAIL,
-    },
-];
-
 export class SnakeBoardRenderer {
-    constructor(scene) {
+    constructor(scene, options = {}) {
         this.scene = scene;
+        this.mapAsset = getMapAsset(options.mapId);
+        this.activeMapId = this.mapAsset.id;
         this.outerPadding = 14;
         this.boardOffsetX = 0;
         this.boardOffsetY = 0;
@@ -45,7 +32,7 @@ export class SnakeBoardRenderer {
         this.boardHeight = GRID_ROWS * GRID_SIZE;
 
         this.scene.cameras.main.roundPixels = true;
-        this.scene.cameras.main.setBackgroundColor(0x1a1a2e);
+        this.scene.cameras.main.setBackgroundColor(this.mapAsset.theme.backgroundColor);
 
         this.backgroundImage = this.scene.add.image(
             this.scene.scale.width  * 0.5,
@@ -54,8 +41,8 @@ export class SnakeBoardRenderer {
         ).setAlpha(0.22).setDepth(-50);
 
         this.boardBackgroundGraphics = this.scene.add.graphics().setDepth(-20);
-        this.floorTileSprite = this.scene.textures.exists(ASSET_KEYS.MAP_FLOOR_TILE)
-            ? this.scene.add.tileSprite(0, 0, 1, 1, ASSET_KEYS.MAP_FLOOR_TILE)
+        this.floorTileSprite = this.scene.textures.exists(this.mapAsset.floor.key)
+            ? this.scene.add.tileSprite(0, 0, 1, 1, this.mapAsset.floor.key)
                 .setOrigin(0).setAlpha(0.96).setDepth(-15)
             : null;
         this.gridGraphics    = this.scene.add.graphics().setDepth(-10);
@@ -72,6 +59,29 @@ export class SnakeBoardRenderer {
 
         // Pool de sprites por jugador: snakeSpritePools[playerIndex] = []
         this.snakeSpritePools = [[], []];
+    }
+
+    setMapId(mapId) {
+        const nextMap = getMapAsset(mapId);
+        if (nextMap.id === this.activeMapId) return;
+
+        this.mapAsset = nextMap;
+        this.activeMapId = nextMap.id;
+        this.scene.cameras.main.setBackgroundColor(nextMap.theme.backgroundColor);
+
+        if (this.floorTileSprite && this.scene.textures.exists(nextMap.floor.key)) {
+            this.floorTileSprite.setTexture(nextMap.floor.key);
+        } else if (!this.floorTileSprite && this.scene.textures.exists(nextMap.floor.key)) {
+            this.floorTileSprite = this.scene.add.tileSprite(0, 0, 1, 1, nextMap.floor.key)
+                .setOrigin(0)
+                .setAlpha(0.96)
+                .setDepth(-15);
+        }
+
+        this.obstacleSprites.forEach((sprite) => sprite.setVisible(false));
+        this.updateFloorTileLayer();
+        this.drawBoardFrame();
+        this.drawGrid();
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -126,7 +136,12 @@ export class SnakeBoardRenderer {
 
     updateFloorTileLayer() {
         if (!this.floorTileSprite) return;
-        const textureFrame = this.scene.textures.get(ASSET_KEYS.MAP_FLOOR_TILE).get();
+        const floorKey = this.mapAsset.floor.key;
+        if (!this.scene.textures.exists(floorKey)) return;
+        if (this.floorTileSprite.texture.key !== floorKey) {
+            this.floorTileSprite.setTexture(floorKey);
+        }
+        const textureFrame = this.scene.textures.get(floorKey).get();
         const scaleX = this.cellSize / textureFrame.realWidth;
         const scaleY = this.cellSize / textureFrame.realHeight;
         this.floorTileSprite
@@ -164,6 +179,7 @@ export class SnakeBoardRenderer {
     }
 
     renderState(state) {
+        if (state?.mapId) this.setMapId(state.mapId);
         this.clearDynamicLayers();
         this.renderPlayers(state?.players);
         this.renderFood(state?.food);
@@ -194,7 +210,8 @@ export class SnakeBoardRenderer {
         const segments  = player.segments;
         if (!segments || segments.length === 0) return;
 
-        const keys      = PLAYER_SPRITE_KEYS[playerIndex] ?? PLAYER_SPRITE_KEYS[0];
+        const snakeAsset = getSnakeAsset(player.skinId);
+        const keys = snakeAsset.parts;
         const useSprites = this._playerHasSprites(keys);
 
         if (!useSprites) {
@@ -210,7 +227,7 @@ export class SnakeBoardRenderer {
             const isHead = i === 0;
             const isTail = i === segments.length - 1;
             const spriteKey = this._selectSpriteKey(keys, segments, i, isHead, isTail);
-            const angle     = this._computeAngle(segments, i, isHead, isTail, player.direction);
+            const angle     = this._computeAngle(segments, i, isHead, isTail, player.direction, snakeAsset);
 
             const sprite = this._getSnakeSprite(playerIndex, i, spriteKey);
             this._placeSprite(sprite, seg, angle);
@@ -220,8 +237,8 @@ export class SnakeBoardRenderer {
     /** Devuelve true si todos los sprites básicos (head + body) están cargados */
     _playerHasSprites(keys) {
         return (
-            this.scene.textures.exists(keys.head) &&
-            this.scene.textures.exists(keys.body)
+            this.scene.textures.exists(keys.head.key) &&
+            this.scene.textures.exists(keys.body.key)
         );
     }
 
@@ -233,14 +250,14 @@ export class SnakeBoardRenderer {
      *   - intermedio recto   → body
      */
     _selectSpriteKey(keys, segments, i, isHead, isTail) {
-        if (isHead) return keys.head;
+        if (isHead) return keys.head.key;
 
         if (isTail) {
-            return this.scene.textures.exists(keys.tail) ? keys.tail : keys.body;
+            return this.scene.textures.exists(keys.tail.key) ? keys.tail.key : keys.body.key;
         }
 
         // Detectar giro: el segmento anterior y el siguiente no están en la misma línea
-        if (this.scene.textures.exists(keys.turn)) {
+        if (this.scene.textures.exists(keys.turn.key)) {
             const prev = segments[i - 1];
             const curr = segments[i];
             const next = segments[i + 1];
@@ -249,11 +266,11 @@ export class SnakeBoardRenderer {
                 const currToNext = this._directionBetween(curr, next);
                 // Es un giro si cambia de eje (horizontal ↔ vertical)
                 const isTurn = this._isTurnByDirections(currToPrev, currToNext);
-                if (isTurn) return keys.turn;
+                if (isTurn) return keys.turn.key;
             }
         }
 
-        return keys.body;
+        return keys.body.key;
     }
 
     /**
@@ -261,7 +278,7 @@ export class SnakeBoardRenderer {
      * Para la cabeza usa player.direction.
      * Para los demás segmentos calcula la dirección entre prev → current.
      */
-    _computeAngle(segments, i, isHead, isTail, playerDirection) {
+    _computeAngle(segments, i, isHead, isTail, playerDirection, snakeAsset) {
         if (isHead) {
             return DIR_ANGLE[playerDirection] ?? 0;
         }
@@ -273,8 +290,8 @@ export class SnakeBoardRenderer {
         const currentToPrev = this._directionBetween(current, prev);
 
         if (isTail) {
-            const dir = this._oppositeDirection(currentToPrev);
-            return DIR_ANGLE[dir] ?? 0;
+            const baseConnection = snakeAsset?.tailConnectionDirection ?? 'right';
+            return (DIR_ANGLE[currentToPrev] ?? 0) - (DIR_ANGLE[baseConnection] ?? 0);
         }
 
         const next = segments[i + 1];
@@ -344,6 +361,9 @@ export class SnakeBoardRenderer {
      * Usa object pooling para no crear/destruir objetos en cada tick.
      */
     _getSnakeSprite(playerIndex, segmentIndex, textureKey) {
+        if (!this.snakeSpritePools[playerIndex]) {
+            this.snakeSpritePools[playerIndex] = [];
+        }
         const pool = this.snakeSpritePools[playerIndex];
 
         if (pool[segmentIndex]) {
@@ -435,7 +455,8 @@ export class SnakeBoardRenderer {
     }
 
     renderObstacles(obstacles) {
-        if (!this.scene.textures.exists(ASSET_KEYS.MAP_OBSTACLE_ROCK)) {
+        const obstacleKey = this.mapAsset.obstacle?.key ?? ASSET_KEYS.MAP_OBSTACLE_ROCK;
+        if (!this.scene.textures.exists(obstacleKey)) {
             obstacles?.forEach?.((obstacle) => {
                 this.drawBoardCell(this.obstacleGraphics, obstacle.x, obstacle.y, OBSTACLE_COLOR);
             });
@@ -450,6 +471,10 @@ export class SnakeBoardRenderer {
             const py       = this.boardOffsetY + row * this.cellSize;
             const padding  = Math.max(1, Math.floor(this.cellSize * 0.04));
 
+            if (sprite.texture.key !== obstacleKey) {
+                sprite.setTexture(obstacleKey);
+            }
+
             sprite
                 .setPosition(px + padding, py + padding)
                 .setDisplaySize(
@@ -462,7 +487,7 @@ export class SnakeBoardRenderer {
 
     getObstacleSprite(index) {
         if (this.obstacleSprites[index]) return this.obstacleSprites[index];
-        const sprite = this.scene.add.image(0, 0, ASSET_KEYS.MAP_OBSTACLE_ROCK)
+        const sprite = this.scene.add.image(0, 0, this.mapAsset.obstacle?.key ?? ASSET_KEYS.MAP_OBSTACLE_ROCK)
             .setOrigin(0).setDepth(12).setVisible(false);
         this.obstacleSprites[index] = sprite;
         return sprite;
@@ -478,7 +503,7 @@ export class SnakeBoardRenderer {
 
     drawBoardFrame() {
         this.boardBackgroundGraphics.clear();
-        this.boardBackgroundGraphics.fillStyle(0x0f172a, 0.86);
+        this.boardBackgroundGraphics.fillStyle(this.mapAsset.theme.boardColor, 0.86);
         this.boardBackgroundGraphics.fillRoundedRect(
             this.boardOffsetX - this.outerPadding,
             this.boardOffsetY - this.outerPadding,
@@ -487,7 +512,7 @@ export class SnakeBoardRenderer {
             18
         );
         if (!this.boardFrameSprite) {
-            this.boardBackgroundGraphics.lineStyle(3, 0x22d3ee, 0.55);
+            this.boardBackgroundGraphics.lineStyle(3, this.mapAsset.theme.borderColor, 0.72);
             this.boardBackgroundGraphics.strokeRoundedRect(
                 this.boardOffsetX - this.outerPadding,
                 this.boardOffsetY - this.outerPadding,
@@ -500,7 +525,7 @@ export class SnakeBoardRenderer {
 
     drawGrid() {
         this.gridGraphics.clear();
-        this.gridGraphics.lineStyle(1, 0xffffff, 0.08);
+        this.gridGraphics.lineStyle(1, this.mapAsset.theme.gridColor, 0.1);
         for (let col = 0; col <= GRID_COLS; col++) {
             const x = this.boardOffsetX + col * this.cellSize;
             this.gridGraphics.beginPath();

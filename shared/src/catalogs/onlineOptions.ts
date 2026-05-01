@@ -13,13 +13,25 @@ export const onlineModes = freezeOptions([
 ]);
 
 export const onlineMaps = freezeOptions([
-  { id: "classic", label: "Classic" },
-  { id: "canyon", label: "Canyon" },
+  { id: "arena01", label: "Arena 01" },
+  { id: "arena02", label: "Arena 02" },
+  { id: "arena03", label: "Arena 03" },
+  { id: "arena04", label: "Arena 04" },
+  { id: "arena05", label: "Arena 05" },
+  { id: "arena06", label: "Arena 06" },
 ]);
 
 export const onlineSkins = freezeOptions([
-  { id: "skin-1", label: "Skin 1" },
-  { id: "skin-2", label: "Skin 2" },
+  { id: "player1", label: "Player 1" },
+  { id: "player2", label: "Player 2" },
+  { id: "snake3", label: "Snake 3" },
+  { id: "snake4", label: "Snake 4" },
+  { id: "snake5", label: "Snake 5" },
+  { id: "snake6", label: "Snake 6" },
+  { id: "snake7", label: "Snake 7" },
+  { id: "snake8", label: "Snake 8" },
+  { id: "snake9", label: "Snake 9" },
+  { id: "snake10", label: "Snake 10" },
 ]);
 
 export const onlineOptionCatalogs = Object.freeze({

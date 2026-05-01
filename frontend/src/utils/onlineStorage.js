@@ -2,10 +2,10 @@ const ONLINE_PREFS_KEY = 'snake-online-prefs';
 
 const DEFAULT_ONLINE_PREFS = Object.freeze({
   playerName: '',
-  hostSkinId: 'skin-1',
-  guestSkinId: 'skin-1',
+  hostSkinId: 'player1',
+  guestSkinId: 'player1',
   gameMode: 'classic',
-  mapId: 'classic',
+  mapId: 'arena01',
   visibility: 'public',
 });
 

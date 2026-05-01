@@ -43,10 +43,10 @@ export class SnakeEngine {
     this.config = resolveGameRuntimeConfig(configInput);
     this.respawnTicks = Math.max(1, Math.round(this.config.respawnDelayMs / this.config.tickMs));
 
+    this.generateObstacles();
     for (let i = 0; i < this.config.foodCount; i++) {
       this.food.push(this.randomFood());
     }
-    this.generateObstacles();
   }
 
   getConfig(): GameRuntimeConfig {
@@ -281,7 +281,10 @@ export class SnakeEngine {
         x: Math.floor(Math.random() * this.config.gridCols) * this.config.gridSize,
         y: Math.floor(Math.random() * this.config.gridRows) * this.config.gridSize,
       };
-    }while (playerSegments.some(s => s.x === pos.x && s.y === pos.y));
+    }while (
+      playerSegments.some(s => s.x === pos.x && s.y === pos.y) ||
+      this.obstacles.some(o => o.x === pos.x && o.y === pos.y)
+    );
     return pos;
   }
 

@@ -3,6 +3,7 @@ import { SnakeEngine } from '@shared/SnakeEngine';
 import { MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
+import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
@@ -21,7 +22,7 @@ export class LocalGame extends Phaser.Scene {
     }
 
     create() {
-        this.boardRenderer = new SnakeBoardRenderer(this);
+        this.boardRenderer = new SnakeBoardRenderer(this, { mapId: this.matchSettings?.mapId });
 
         this.cacheHudElements();
         this.toggleHud(true);
@@ -132,6 +133,7 @@ export class LocalGame extends Phaser.Scene {
 
     applyHudIdentity() {
         const difficulty = String(this.matchSettings?.difficulty ?? 'normal');
+        const mapId = this.matchSettings?.mapId ?? 'arena01';
         const p1Name = this.matchSettings?.players?.p1?.name ?? 'J1';
         const p2Name = this.matchSettings?.players?.p2?.name ?? 'J2';
         const p1Color = this.matchSettings?.players?.p1?.color;
@@ -154,7 +156,7 @@ export class LocalGame extends Phaser.Scene {
 
         if (this.hudHelp) {
             const label = difficulty === 'easy' ? 'Easy' : difficulty === 'hard' ? 'Difficult' : 'Medium';
-            this.hudHelp.textContent = `${label} | ${p1Name} (WASD) vs ${p2Name} (Flechas) — ESC: Menu`;
+            this.hudHelp.textContent = `${label} | ${mapId} | ${p1Name} (WASD) vs ${p2Name} (Flechas) — ESC: Menu`;
         }
     }
 
@@ -266,10 +268,12 @@ export class LocalGame extends Phaser.Scene {
         const p1 = state.players.get(P1_ID);
         const p2 = state.players.get(P2_ID);
         this.scene.start('GameOver', {
-            winner: reason ? (p1.score > p2.score ? 'J1' : 'J2') : (p1.lives > 0 ? 'J1' : 'J2'),
+            winner: reason ? getScoreWinner(p1.score, p2.score) : getLivesWinner(p1.lives, p2.lives),
             p1Score: p1.score, p1Lives: p1.lives,
             p2Score: p2.score, p2Lives: p2.lives,
-            reason: reason ? 'score' : 'lives'
+            reason: reason ? 'score' : 'lives',
+            mode: 'local',
+            rematchScene: 'LocalGame'
         });
     }
 }

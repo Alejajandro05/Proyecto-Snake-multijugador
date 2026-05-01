@@ -10,13 +10,17 @@ import { onlineOptionCatalogs as onlineOptionCatalogsTs } from "../../shared/src
 import { onlineOptionCatalogs } from "../../shared/src/catalogs/onlineOptions.js";
 
 describe("shared online option catalogs", () => {
-  it("exposes at least one mode, one map, and skin-1 and skin-2", () => {
+  it("exposes real snake and arena ids for online selection", () => {
     assert.ok(onlineOptionCatalogs.modes.length > 0);
     assert.ok(onlineOptionCatalogs.maps.length > 0);
 
     const skinIds = onlineOptionCatalogs.skins.map((skin) => skin.id);
-    assert.ok(skinIds.includes("skin-1"));
-    assert.ok(skinIds.includes("skin-2"));
+    const mapIds = onlineOptionCatalogs.maps.map((map) => map.id);
+    assert.ok(skinIds.includes("player1"));
+    assert.ok(skinIds.includes("player2"));
+    assert.ok(skinIds.includes("snake10"));
+    assert.ok(mapIds.includes("arena01"));
+    assert.ok(mapIds.includes("arena06"));
   });
 
   it("keeps the TS and JS catalogs in sync and frozen", () => {
@@ -41,7 +45,7 @@ describe("LobbyRoomState", () => {
     assert.equal(state.visibility, "public");
     assert.equal(state.inviteCode, "");
     assert.equal(state.gameMode, "classic");
-    assert.equal(state.mapId, "classic");
+    assert.equal(state.mapId, "arena01");
     assert.equal(state.maxPlayers, 2);
     assert.equal(state.host.sessionId, "");
     assert.equal(state.host.playerName, "");
@@ -58,14 +62,14 @@ describe("LobbyRoomState", () => {
     const host = new LobbyPlayer();
     host.sessionId = "host-session";
     host.playerName = "Host";
-    host.skinId = "skin-1";
+    host.skinId = "player1";
     host.isHost = true;
     host.connected = true;
 
     const guest = new LobbyPlayer();
     guest.sessionId = "guest-session";
     guest.playerName = "Guest";
-    guest.skinId = "skin-2";
+    guest.skinId = "player2";
     guest.connected = false;
 
     state.lobbyId = "lobby-123";
@@ -76,18 +80,18 @@ describe("LobbyRoomState", () => {
 
     assert.equal(state.host.sessionId, "host-session");
     assert.equal(state.host.playerName, "Host");
-    assert.equal(state.host.skinId, "skin-1");
+    assert.equal(state.host.skinId, "player1");
     assert.equal(state.host.isHost, true);
     assert.equal(state.host.connected, true);
     assert.equal(state.guest.sessionId, "guest-session");
     assert.equal(state.guest.playerName, "Guest");
-    assert.equal(state.guest.skinId, "skin-2");
+    assert.equal(state.guest.skinId, "player2");
     assert.equal(state.guest.isHost, false);
     assert.equal(state.guest.connected, false);
     assert.equal(initialSummary.lobbyId, "lobby-123");
     assert.equal(initialSummary.hostName, "Host");
     assert.equal(initialSummary.gameMode, "classic");
-    assert.equal(initialSummary.mapId, "classic");
+    assert.equal(initialSummary.mapId, "arena01");
     assert.equal(initialSummary.playerCount, 1);
     assert.equal(initialSummary.maxPlayers, 2);
 
@@ -106,14 +110,14 @@ describe("LobbyRoomState", () => {
     const updatedSummary = state.buildPublicLobbySummary();
 
     assert.equal(state.host.playerName, "Host Updated");
-    assert.equal(state.host.skinId, "skin-1");
+    assert.equal(state.host.skinId, "player1");
     assert.equal(updatedSummary.hostName, "Host Updated");
     assert.equal(updatedSummary.playerCount, 2);
 
     const third = new LobbyPlayer();
     third.sessionId = "third-session";
     third.playerName = "Third";
-    third.skinId = "skin-1";
+    third.skinId = "player1";
 
     state.upsertPlayer(third);
 
@@ -126,7 +130,7 @@ describe("LobbyRoomState", () => {
 
     assert.equal(state.host.sessionId, "guest-session");
     assert.equal(state.host.playerName, "Guest");
-    assert.equal(state.host.skinId, "skin-2");
+    assert.equal(state.host.skinId, "player2");
     assert.equal(state.host.isHost, true);
     assert.equal(state.host.connected, true);
     assert.equal(state.players.get("guest-session")?.isHost, true);
@@ -207,7 +211,7 @@ describe("LobbyRoom", () => {
     const room = await colyseus.createRoom<LobbyRoomState>("lobby_room", {
       visibility: "public",
       gameMode: "duel",
-      mapId: "canyon",
+      mapId: "arena02",
     });
 
     const hostClient = await colyseus.connectTo(room);
@@ -226,8 +230,8 @@ describe("LobbyRoom", () => {
 
     const snakeRoom = colyseus.getRoomById(room.state.matchRoomId);
     assert.equal(room.state.gameMode, "duel");
-    assert.equal(room.state.mapId, "canyon");
-    assert.equal(snakeRoom.state.mapId, "canyon");
+    assert.equal(room.state.mapId, "arena02");
+    assert.equal(snakeRoom.state.mapId, "arena02");
     assert.equal(snakeRoom.metadata?.gameMode, "duel");
     assert.equal(snakeRoom.metadata?.lobbyId, room.roomId);
 
