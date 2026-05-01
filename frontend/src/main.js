@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import { Boot } from './scenes/Boot.js';
-import { Game } from './scenes/Game.js';
 import { GameOver } from './scenes/GameOver.js';
 import { Preloader } from './scenes/Preloader.js';
 import { MainMenu } from './scenes/MainMenu.js';
@@ -51,7 +50,6 @@ const config = {
         LocalGameSetup,
         LocalGame,
         OnlineGame,
-        Game,
         TimeAttackGame,
         GameOver,
         Pause

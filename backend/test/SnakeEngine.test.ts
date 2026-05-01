@@ -78,6 +78,24 @@ describe("SnakeEngine – domain logic", () => {
     assert.strictEqual(playerAfter.segments.length, lenBefore + 1);
   });
 
+  it("does not spawn replacement food on obstacles", () => {
+    const engine = createEngine();
+    // @ts-ignore - controlled obstacle placement for deterministic domain test
+    engine["obstacles"] = [{ x: 0, y: 0 }];
+
+    const originalRandom = Math.random;
+    const randomValues = [0, 0, 0.5, 0.5];
+    Math.random = () => randomValues.shift() ?? 0.5;
+
+    try {
+      // @ts-ignore - exercise private helper through the public engine instance
+      const food = engine["randomFood"]();
+      assert.notDeepStrictEqual(food, { x: 0, y: 0 });
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
+
   it("kills a player on self collision and schedules respawn", () => {
     const engine = createEngine();
     engine.addPlayer("p1");
