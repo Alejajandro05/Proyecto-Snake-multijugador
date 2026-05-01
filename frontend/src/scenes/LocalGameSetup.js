@@ -392,7 +392,7 @@ export class LocalGameSetup extends Phaser.Scene {
                 id: 'kingOfTheHill',
                 title: 'REY DE LA COLINA',
                 desc: 'La zona (naranja) cambia cada 6 s. Gana quien llegue antes a 100 puntos o quien conserve vidas cuando el rival se quede sin ellas.',
-                img: '/map/arena04/tile053.png',
+                img: '/ModoReyColina.png',
                 label: 'Rey de la colina',
             },
         ];

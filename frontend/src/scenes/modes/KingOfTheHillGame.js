@@ -232,8 +232,6 @@ export class KingOfTheHillGame extends Phaser.Scene {
     }
 
     applyHudIdentity() {
-        const difficulty = String(this.matchSettings?.difficulty ?? 'normal');
-        const mapId = this.matchSettings?.mapId ?? 'arena01';
         const p1Name = this.matchSettings?.players?.p1?.name ?? 'J1';
         const p2Name = this.matchSettings?.players?.p2?.name ?? 'J2';
         const p1Color = this.matchSettings?.players?.p1?.color;
@@ -255,8 +253,7 @@ export class KingOfTheHillGame extends Phaser.Scene {
         }
 
         if (this.hudHelp) {
-            const label = difficulty === 'easy' ? 'Easy' : difficulty === 'hard' ? 'Difficult' : 'Medium';
-            this.hudHelp.textContent = `Rey de la colina | ${label} | ${mapId} | ${p1Name} vs ${p2Name} — Meta ${HILL_WIN_SCORE} pts o ganar por vidas — Zona +${HILL_POINTS_PER_TICK}/tick, cada ${HILL_ZONE_SHIFT_MS / 1000}s — ESC`;
+            this.hudHelp.textContent = `Meta ${HILL_WIN_SCORE} pts o ganar por vidas · ESC`;
         }
     }
 
