@@ -108,8 +108,8 @@ export class LocalGameSetup extends Phaser.Scene {
                 .mode-arrow:hover { transform: scale(1.04); background: rgba(255,255,255,0.1); border-color: rgba(246, 125, 49, 0.55); }
 
                 .mode-card { border-radius: 16px; overflow: hidden; border: 3px solid #F67D31; box-shadow: 0 18px 60px rgba(0,0,0,0.35); background: rgba(11, 8, 26, 1); }
-                .mode-card-img { height: 220px; background: #0B081A; position: relative; overflow: hidden; }
-                .mode-card-img img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; transform: scale(1.02); }
+                .mode-card-img { aspect-ratio: 16 / 9; min-height: 220px; background: radial-gradient(circle at center, rgba(29, 43, 88, 0.5), #0B081A 70%); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+                .mode-card-img img { width: 100%; height: 100%; object-fit: contain; object-position: center; opacity: 0.96; }
                 .mode-card-img::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(12,18,42,1), rgba(12,18,42,0.15)); }
                 .mode-card-body { padding: 16px 16px 18px; background: rgba(12, 18, 42, 0.98); }
                 .mode-card-title { margin: 0 0 6px; color: white; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; font-family: 'Montserrat', sans-serif; }
@@ -364,7 +364,7 @@ export class LocalGameSetup extends Phaser.Scene {
                 id: 'normal',
                 title: 'NORMAL GAME',
                 desc: 'El modo clasico local: si chocas contra una pared, pierdes una vida.',
-                img: '/fondo_duelo.png',
+                img: '/normal_game.png',
                 label: 'Normal Game',
             },
             {
@@ -378,7 +378,7 @@ export class LocalGameSetup extends Phaser.Scene {
                 id: 'timeAttack',
                 title: 'CONTRARRELOJ',
                 desc: '1 minuto, vidas infinitas y Muerte súbita en empate.',
-                img: '/time_attack.jpg',
+                img: '/time_attack.png',
                 label: 'Contrarreloj',
             },
             {
