@@ -22,7 +22,7 @@ export class LocalGame extends Phaser.Scene {
     }
 
     create() {
-        this.boardRenderer = new SnakeBoardRenderer(this);
+        this.boardRenderer = new SnakeBoardRenderer(this, { mapId: this.matchSettings?.mapId });
 
         this.cacheHudElements();
         this.toggleHud(true);
@@ -133,6 +133,7 @@ export class LocalGame extends Phaser.Scene {
 
     applyHudIdentity() {
         const difficulty = String(this.matchSettings?.difficulty ?? 'normal');
+        const mapId = this.matchSettings?.mapId ?? 'arena01';
         const p1Name = this.matchSettings?.players?.p1?.name ?? 'J1';
         const p2Name = this.matchSettings?.players?.p2?.name ?? 'J2';
         const p1Color = this.matchSettings?.players?.p1?.color;
@@ -155,7 +156,7 @@ export class LocalGame extends Phaser.Scene {
 
         if (this.hudHelp) {
             const label = difficulty === 'easy' ? 'Easy' : difficulty === 'hard' ? 'Difficult' : 'Medium';
-            this.hudHelp.textContent = `${label} | ${p1Name} (WASD) vs ${p2Name} (Flechas) — ESC: Menu`;
+            this.hudHelp.textContent = `${label} | ${mapId} | ${p1Name} (WASD) vs ${p2Name} (Flechas) — ESC: Menu`;
         }
     }
 

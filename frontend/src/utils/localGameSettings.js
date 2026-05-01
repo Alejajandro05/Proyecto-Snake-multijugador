@@ -1,12 +1,14 @@
 import { PLAYER_COLORS } from '@shared/GameConfig';
+import { DEFAULT_MAP_ID, DEFAULT_SNAKE_SKIN_ID, getMapAsset, getSnakeAsset } from '../config/gameAssetRegistry.js';
 
 const STORAGE_KEY = 'localGameSettings.v1';
 
 const DEFAULTS = {
     difficulty: 'normal', // easy | normal | hard
+    mapId: DEFAULT_MAP_ID,
     players: {
-        p1: { name: 'Jugador 1', color: PLAYER_COLORS?.[0] ?? 0xe74c3c, skinId: 'p1' },
-        p2: { name: 'Jugador 2', color: PLAYER_COLORS?.[1] ?? 0x3498db, skinId: 'p2' },
+        p1: { name: 'Jugador 1', color: PLAYER_COLORS?.[0] ?? 0xe74c3c, skinId: DEFAULT_SNAKE_SKIN_ID },
+        p2: { name: 'Jugador 2', color: PLAYER_COLORS?.[1] ?? 0x3498db, skinId: 'player2' },
     },
 };
 
@@ -56,22 +58,24 @@ export function saveLocalGameSettings(settings) {
 export function normalizeLocalGameSettings(input) {
     const base = getDefaultLocalGameSettings();
     const difficulty = normalizeDifficulty(input?.difficulty ?? base.difficulty);
+    const mapId = getMapAsset(input?.mapId ?? base.mapId).id;
 
     const p1 = input?.players?.p1 ?? input?.p1 ?? {};
     const p2 = input?.players?.p2 ?? input?.p2 ?? {};
 
     return {
         difficulty,
+        mapId,
         players: {
             p1: {
                 name: safeName(p1?.name, base.players.p1.name),
                 color: safeColorHex(p1?.color, base.players.p1.color),
-                skinId: String(p1?.skinId ?? base.players.p1.skinId),
+                skinId: getSnakeAsset(p1?.skinId ?? base.players.p1.skinId).id,
             },
             p2: {
                 name: safeName(p2?.name, base.players.p2.name),
                 color: safeColorHex(p2?.color, base.players.p2.color),
-                skinId: String(p2?.skinId ?? base.players.p2.skinId),
+                skinId: getSnakeAsset(p2?.skinId ?? base.players.p2.skinId).id,
             },
         },
     };

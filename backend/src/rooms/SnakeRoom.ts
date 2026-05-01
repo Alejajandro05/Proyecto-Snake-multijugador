@@ -41,9 +41,9 @@ function toDifficulty(value: unknown): GameDifficulty | undefined {
 }
 
 function toMapId(value: unknown): string {
-  if (typeof value !== "string") return "classic";
+  if (typeof value !== "string") return "arena01";
   const normalized = value.trim();
-  return normalized.length > 0 ? normalized.slice(0, 32) : "classic";
+  return normalized.length > 0 ? normalized.slice(0, 32) : "arena01";
 }
 
 function toSkinId(value: unknown, fallback: string): string {

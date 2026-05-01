@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { PLAYER_COLORS } from '@shared/GameConfig';
 import { loadLocalGameSettings, saveLocalGameSettings } from '../utils/localGameSettings.js';
+import { DEFAULT_MAP_ID, DEFAULT_SNAKE_SKIN_ID, getMapAsset, getSnakeAsset, mapAssets, snakeAssets } from '../config/gameAssetRegistry.js';
 
 function safeName(value, fallback) {
     const s = String(value ?? '').trim();
@@ -8,21 +9,11 @@ function safeName(value, fallback) {
     return s.slice(0, 16);
 }
 
-function safeColorHex(value, fallbackHex) {
-    const n = Number(value);
-    if (Number.isFinite(n)) return n;
-    const s = String(value ?? '').trim();
-    if (s.startsWith('0x')) {
-        const parsed = Number(s);
-        if (Number.isFinite(parsed)) return parsed;
-    }
-    return fallbackHex;
-}
-
 const DEFAULT_CONFIG = {
     difficulty: 'normal', // easy | normal | hard
-    p1: { name: 'Jugador 1', color: PLAYER_COLORS?.[0] ?? 0xe74c3c, skinId: 'p1' },
-    p2: { name: 'Jugador 2', color: PLAYER_COLORS?.[1] ?? 0x3498db, skinId: 'p2' },
+    mapId: DEFAULT_MAP_ID,
+    p1: { name: 'Jugador 1', color: PLAYER_COLORS?.[0] ?? 0xe74c3c, skinId: DEFAULT_SNAKE_SKIN_ID },
+    p2: { name: 'Jugador 2', color: PLAYER_COLORS?.[1] ?? 0x3498db, skinId: 'player2' },
 };
 
 export class LocalGameSetup extends Phaser.Scene {
@@ -47,29 +38,22 @@ export class LocalGameSetup extends Phaser.Scene {
         const initialDifficulty = String(saved?.difficulty ?? DEFAULT_CONFIG.difficulty);
         const initialP1Name = safeName(saved?.players?.p1?.name, DEFAULT_CONFIG.p1.name);
         const initialP2Name = safeName(saved?.players?.p2?.name, DEFAULT_CONFIG.p2.name);
-        const initialP1Color = safeColorHex(saved?.players?.p1?.color, DEFAULT_CONFIG.p1.color);
-        const initialP2Color = safeColorHex(saved?.players?.p2?.color, DEFAULT_CONFIG.p2.color);
 
         const menuDiv = document.createElement('div');
         menuDiv.id = 'local-game-setup-overlay';
         menuDiv.className = 'position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center';
         menuDiv.style.zIndex = '1000';
 
-        const SNAKE_SKINS = [
-            'snake000', 'snake001', 'snake002', 'snake003', 'snake004',
-            'snake005', 'snake006', 'snake007', 'snake008', 'snake009',
-            'snake010', 'snake011', 'snake012', 'snake013', 'snake014',
-            'snake015', 'snake016', 'snake017', 'snake018', 'snake019',
-            'snake020', 'snake022'
-        ];
-
         let p1SkinIndex = 0;
         let p2SkinIndex = 1;
+        let mapIndex = 0;
 
-        const prevP1Skin = saved?.players?.p1?.skinId;
-        const prevP2Skin = saved?.players?.p2?.skinId;
-        if (prevP1Skin && SNAKE_SKINS.includes(prevP1Skin)) p1SkinIndex = SNAKE_SKINS.indexOf(prevP1Skin);
-        if (prevP2Skin && SNAKE_SKINS.includes(prevP2Skin)) p2SkinIndex = SNAKE_SKINS.indexOf(prevP2Skin);
+        const prevP1Skin = getSnakeAsset(saved?.players?.p1?.skinId).id;
+        const prevP2Skin = getSnakeAsset(saved?.players?.p2?.skinId).id;
+        const prevMap = getMapAsset(saved?.mapId).id;
+        p1SkinIndex = Math.max(0, snakeAssets.findIndex((skin) => skin.id === prevP1Skin));
+        p2SkinIndex = Math.max(0, snakeAssets.findIndex((skin) => skin.id === prevP2Skin));
+        mapIndex = Math.max(0, mapAssets.findIndex((map) => map.id === prevMap));
 
         menuDiv.innerHTML = `
             <style>
@@ -82,6 +66,9 @@ export class LocalGameSetup extends Phaser.Scene {
                 #btn-create-local-game:hover { transform: scale(1.02); }
                 input.custom-input:focus { border-bottom: 2px solid rgba(255,255,255,0.5) !important; outline: none; box-shadow: none; }
                 input.custom-input { border-bottom: 2px solid transparent !important; border-radius: 0; }
+                .map-option { border: 2px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.06); color: white; transition: all 0.2s; }
+                .map-option:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.4); }
+                .map-option.active { border-color: #F67D31; box-shadow: 0 0 0 2px rgba(246,125,49,0.2), 0 12px 28px rgba(0,0,0,0.25); }
             </style>
             <div class="w-100 px-3 d-flex flex-column align-items-center" style="max-width: 900px;">
                 <button id="btn-setup-back" class="btn btn-sm btn-outline-light fw-semibold align-self-start mb-3" type="button" style="border-radius: 999px; padding: 8px 14px;">
@@ -128,6 +115,13 @@ export class LocalGameSetup extends Phaser.Scene {
                         </div>
                     </div>
 
+                    <div class="w-75 border-bottom border-secondary opacity-50 mb-4"></div>
+
+                    <div class="w-100 mb-4">
+                        <h2 class="h6 text-white text-center fw-bold mb-3" style="font-family: 'Montserrat', sans-serif; letter-spacing: 1px;">MAPA / ARENA</h2>
+                        <div id="local-map-options" class="d-flex gap-2 justify-content-center flex-wrap"></div>
+                    </div>
+
                     <div class="w-100 d-flex justify-content-center mt-3">
                         <button id="btn-create-local-game" class="btn btn-lg fw-bold text-white shadow rounded-pill"
                             style="padding: 14px 18px; background: linear-gradient(90deg, #DE1A58, #8F0177); border: 2px solid rgba(246, 125, 49, 0.85); font-family: 'Montserrat', sans-serif; min-width: 280px; width: 60%;">
@@ -138,15 +132,39 @@ export class LocalGameSetup extends Phaser.Scene {
             </div>
         `;
 
-        const getSkinImg = (skinId) => {
-            return `<img src="/snakesSets/${skinId}.png" style="max-width: 100%; max-height: 100%; object-fit: contain;" alt="${skinId}">`;
+        const getSkinImg = (skin) => {
+            return `
+                <div class="d-flex flex-column align-items-center gap-2">
+                    <img src="/${skin.preview.path}" style="width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated;" alt="${skin.label}">
+                    <span class="text-white-50 small">${skin.label}</span>
+                </div>
+            `;
         };
 
         const updateSkins = () => {
             const p1Container = document.getElementById('p1-skin-container');
-            if (p1Container) p1Container.innerHTML = getSkinImg(SNAKE_SKINS[p1SkinIndex]);
+            if (p1Container) p1Container.innerHTML = getSkinImg(snakeAssets[p1SkinIndex]);
             const p2Container = document.getElementById('p2-skin-container');
-            if (p2Container) p2Container.innerHTML = getSkinImg(SNAKE_SKINS[p2SkinIndex]);
+            if (p2Container) p2Container.innerHTML = getSkinImg(snakeAssets[p2SkinIndex]);
+        };
+
+        const renderMapOptions = () => {
+            const root = document.getElementById('local-map-options');
+            if (!root) return;
+
+            root.innerHTML = mapAssets.map((map, index) => `
+                <button type="button" class="map-option rounded-3 p-2 text-center ${index === mapIndex ? 'active' : ''}" data-map-index="${index}" style="width: 112px;">
+                    <span class="d-block rounded-2 mb-2" style="height: 42px; background: url('/${map.floor.path}') center/32px 32px repeat; image-rendering: pixelated;"></span>
+                    <span class="small fw-semibold">${map.label}</span>
+                </button>
+            `).join('');
+
+            root.querySelectorAll('[data-map-index]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    mapIndex = Number(button.getAttribute('data-map-index')) || 0;
+                    renderMapOptions();
+                });
+            });
         };
 
         const container = document.getElementById('game-container');
@@ -154,6 +172,7 @@ export class LocalGameSetup extends Phaser.Scene {
         this.overlayEl = menuDiv;
         
         updateSkins();
+        renderMapOptions();
 
         const cleanup = () => {
             const el = this.overlayEl;
@@ -177,11 +196,13 @@ export class LocalGameSetup extends Phaser.Scene {
             const p1Color = defaultColors[p1SkinIndex % defaultColors.length];
             const p2Color = defaultColors[p2SkinIndex % defaultColors.length];
 
-            const p1Skin = SNAKE_SKINS[p1SkinIndex];
-            const p2Skin = SNAKE_SKINS[p2SkinIndex];
+            const p1Skin = snakeAssets[p1SkinIndex].id;
+            const p2Skin = snakeAssets[p2SkinIndex].id;
+            const mapId = mapAssets[mapIndex].id;
 
             const payload = {
                 difficulty,
+                mapId,
                 players: {
                     p1: { name: p1Name, color: p1Color, skinId: p1Skin },
                     p2: { name: p2Name, color: p2Color, skinId: p2Skin },
@@ -198,19 +219,19 @@ export class LocalGameSetup extends Phaser.Scene {
         document.getElementById('btn-create-local-game')?.addEventListener('click', startGame);
 
         document.getElementById('p1-prev')?.addEventListener('click', () => {
-            p1SkinIndex = (p1SkinIndex - 1 + SNAKE_SKINS.length) % SNAKE_SKINS.length;
+            p1SkinIndex = (p1SkinIndex - 1 + snakeAssets.length) % snakeAssets.length;
             updateSkins();
         });
         document.getElementById('p1-next')?.addEventListener('click', () => {
-            p1SkinIndex = (p1SkinIndex + 1) % SNAKE_SKINS.length;
+            p1SkinIndex = (p1SkinIndex + 1) % snakeAssets.length;
             updateSkins();
         });
         document.getElementById('p2-prev')?.addEventListener('click', () => {
-            p2SkinIndex = (p2SkinIndex - 1 + SNAKE_SKINS.length) % SNAKE_SKINS.length;
+            p2SkinIndex = (p2SkinIndex - 1 + snakeAssets.length) % snakeAssets.length;
             updateSkins();
         });
         document.getElementById('p2-next')?.addEventListener('click', () => {
-            p2SkinIndex = (p2SkinIndex + 1) % SNAKE_SKINS.length;
+            p2SkinIndex = (p2SkinIndex + 1) % snakeAssets.length;
             updateSkins();
         });
 
