@@ -82,7 +82,7 @@ export class SnakeEngine {
 
     this.ticksTicksDurationMs = Math.ceil(this.speedDurationMs / this.config.tickMs);
 
-    //this.generateObstacles();
+    this.generateObstacles();
 
     for (let i = 0; i < this.config.foodCount; i++) {
       this.food.push(this.randomFood());
