@@ -302,7 +302,14 @@ export class LocalGameSetup extends Phaser.Scene {
             saveLocalGameSettings(payload);
 
             cleanup();
-            const sceneKey = gameMode === 'timeAttack' ? 'TimeAttackGame' : gameMode === 'chaos' ? 'ChaosGame' : 'LocalGame';
+            const sceneKey =
+                gameMode === 'timeAttack'
+                    ? 'TimeAttackGame'
+                    : gameMode === 'chaos'
+                      ? 'ChaosGame'
+                      : gameMode === 'kingOfTheHill'
+                        ? 'KingOfTheHillGame'
+                        : 'LocalGame';
             this.scene.start(sceneKey, payload);
         };
 
@@ -381,6 +388,13 @@ export class LocalGameSetup extends Phaser.Scene {
                 img: '/assets/ModoCaos2.png',
                 label: 'Modo Caos',
             },
+            {
+                id: 'kingOfTheHill',
+                title: 'REY DE LA COLINA',
+                desc: 'La zona (naranja) cambia cada 6 s. Gana quien llegue antes a 100 puntos o quien conserve vidas cuando el rival se quede sin ellas.',
+                img: '/map/arena04/tile053.png',
+                label: 'Rey de la colina',
+            },
         ];
 
         let modeIndex = Math.max(0, MODES.findIndex((m) => m.id === initialGameMode));
@@ -391,6 +405,7 @@ export class LocalGameSetup extends Phaser.Scene {
             let safe = 'classic';
             if (modeId === 'timeAttack') safe = 'timeAttack';
             else if (modeId === 'chaos') safe = 'chaos';
+            else if (modeId === 'kingOfTheHill') safe = 'kingOfTheHill';
             if (gameModeInput) gameModeInput.value = safe;
             const current = MODES.find((m) => m.id === safe);
             if (modeSelectedLabel) modeSelectedLabel.textContent = current ? `Seleccionado: ${current.label}` : 'Seleccionado: -';

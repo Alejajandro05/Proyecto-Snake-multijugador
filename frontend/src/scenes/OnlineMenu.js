@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { onlineOptionCatalogs } from '../../../shared/src/catalogs/onlineOptions.js';
 import { createLobbyClient } from '../net/lobbyClient.js';
+import { getMapAsset, getSnakeAsset } from '../config/gameAssetRegistry.js';
 import { loadOnlinePrefs, saveOnlinePrefs } from '../utils/onlineStorage.js';
 
 export class OnlineMenu extends Phaser.Scene {
@@ -44,8 +45,14 @@ export class OnlineMenu extends Phaser.Scene {
   renderOverlay() {
     const overlay = document.createElement('div');
     overlay.id = 'online-menu-overlay';
-    overlay.className = 'position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center';
-    overlay.style.zIndex = '1100';
+    overlay.className = 'position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center';
+    overlay.style.zIndex = '10050';
+    overlay.style.overflow = 'hidden';
+    overlay.style.boxSizing = 'border-box';
+    overlay.style.paddingTop = 'max(0.75rem, env(safe-area-inset-top, 0px))';
+    overlay.style.paddingBottom = 'max(0.75rem, env(safe-area-inset-bottom, 0px))';
+    overlay.style.paddingLeft = 'max(12px, env(safe-area-inset-left, 0px))';
+    overlay.style.paddingRight = 'max(12px, env(safe-area-inset-right, 0px))';
 
     const btnStyleCrear = `width: 280px; padding: 12px; background-color: #DE1A58; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: transform 0.2s ease;`;
     const btnStyleUnirse = `width: 280px; padding: 12px; background-color: #8F0177; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: transform 0.2s ease;`;
@@ -54,12 +61,59 @@ export class OnlineMenu extends Phaser.Scene {
     const btnStyleVolver = `padding: 10px; background-color: #334155; border: 2px solid #94A3B8; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.1rem; transition: transform 0.2s ease;`;
 
     overlay.innerHTML = `
-      <div class="text-center" style="margin-top: -40px; width: 100%; max-width: 960px;">
-        <h1 class="display-1 fw-bold text-white mb-4" style="font-family: 'Teko', sans-serif; text-shadow: 0px 4px 20px #F67D31, 0px 0px 10px #F67D31; letter-spacing: 2px;">
+      <div class="w-100 px-2 px-sm-3 d-flex flex-column align-items-center" style="max-width: 960px; min-height: 0;">
+        <div class="online-menu-card w-100 rounded-4 text-center p-3 p-md-4 d-flex flex-column align-items-stretch">
+        <h1 class="fw-bold text-white mb-3 mb-md-4 online-menu-title">
             SNAKE CLASH
         </h1>
-        
-        <div class="mx-auto p-4" style="background: rgba(15, 23, 42, 0.85); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 12px; backdrop-filter: blur(5px);">
+          <style>
+            #online-menu-overlay .online-skin-arrow { transition: transform 0.2s; cursor: pointer; }
+            #online-menu-overlay .online-skin-arrow:hover { transform: scale(1.2); }
+            #online-menu-overlay .online-map-option { border: 2px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.06); color: white; transition: all 0.2s; }
+            #online-menu-overlay .online-map-option:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.4); }
+            #online-menu-overlay .online-map-option.active { border-color: #F67D31; box-shadow: 0 0 0 2px rgba(246,125,49,0.2), 0 12px 28px rgba(0,0,0,0.25); }
+            #online-menu-overlay .online-create-appearance-block {
+              background: rgba(255,255,255,0.05);
+              border: 1px solid rgba(255,255,255,0.12);
+              border-radius: 12px;
+            }
+            @media (min-width: 768px) {
+              #online-menu-overlay .online-create-split-map {
+                border-left: 1px solid rgba(255,255,255,0.18);
+                padding-left: 1.25rem;
+              }
+            }
+            @media (max-width: 767.98px) {
+              #online-menu-overlay .online-create-split-map {
+                border-top: 1px solid rgba(255,255,255,0.18);
+                padding-top: 1rem;
+                margin-top: 0.25rem;
+              }
+            }
+            #online-menu-overlay .online-menu-title {
+              font-family: 'Teko', sans-serif;
+              text-shadow: 0px 4px 20px #F67D31, 0px 0px 10px #F67D31;
+              letter-spacing: 2px;
+              font-size: clamp(2.1rem, 9vw, 4.75rem);
+              line-height: 1.05;
+            }
+            #online-menu-overlay .online-menu-card {
+              flex: 0 1 auto;
+              min-height: 0;
+              max-height: min(88vh, calc(100vh - 7.25rem));
+              max-height: min(88vh, calc(100dvh - 7.25rem));
+              overflow-y: auto;
+              overflow-x: hidden;
+              -webkit-overflow-scrolling: touch;
+              background: rgba(15, 23, 42, 0.86);
+              border: 1px solid rgba(255,255,255,0.14);
+              backdrop-filter: blur(6px);
+              box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+            }
+            #online-menu-overlay .online-menu-card::-webkit-scrollbar { width: 8px; }
+            #online-menu-overlay .online-menu-card::-webkit-scrollbar-thumb { background: rgba(246, 125, 49, 0.45); border-radius: 999px; }
+            #online-menu-overlay .online-menu-card::-webkit-scrollbar-track { background: rgba(255,255,255,0.06); border-radius: 999px; }
+          </style>
           <div id="online-error-box" class="alert alert-danger d-none mb-3" role="alert" style="font-family: 'Montserrat', sans-serif;"></div>
 
           <div id="online-home-view" class="d-flex flex-column gap-3 align-items-center">
@@ -76,14 +130,31 @@ export class OnlineMenu extends Phaser.Scene {
                 <label class="form-label text-white fw-semibold mb-1 small" style="font-family: 'Montserrat', sans-serif;">Tu nombre</label>
                 <input id="online-create-name" class="form-control bg-dark text-white border-secondary" value="${this.escapeHtml(this.prefs.playerName)}" maxlength="24">
               </div>
-              <div class="col-12 col-md-4">
+              <div class="col-12 col-md-6 col-lg-4">
                 ${this.renderSelectBlock('Modo', 'online-create-mode', onlineOptionCatalogs.modes, this.prefs.gameMode)}
               </div>
-              <div class="col-12 col-md-4">
-                ${this.renderSelectBlock('Skin', 'online-create-skin', onlineOptionCatalogs.skins, this.prefs.hostSkinId)}
+              <div class="col-12">
+                <div class="w-100 border-bottom border-secondary opacity-50 my-1"></div>
               </div>
-              <div class="col-12 col-md-4">
-                ${this.renderSelectBlock('Mapa', 'online-create-map', onlineOptionCatalogs.maps, this.prefs.mapId)}
+              <div class="col-12">
+                <div class="online-create-appearance-block p-3 p-md-4">
+                  <div class="row g-3 g-md-4 align-items-start">
+                    <div class="col-12 col-md-6">
+                      <label class="form-label text-white fw-semibold mb-2 small text-center text-md-start d-block" style="font-family: 'Montserrat', sans-serif;">Skin</label>
+                      <div class="d-flex align-items-center justify-content-center gap-2 gap-md-3 flex-wrap">
+                        <button type="button" id="online-create-skin-prev" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 online-skin-arrow" style="line-height: 1;" aria-label="Skin anterior">&lsaquo;</button>
+                        <div id="online-create-skin-preview" class="rounded-4 d-flex align-items-center justify-content-center shadow-sm" style="width: 160px; height: 160px; background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.2); padding: 10px;"></div>
+                        <button type="button" id="online-create-skin-next" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 online-skin-arrow" style="line-height: 1;" aria-label="Skin siguiente">&rsaquo;</button>
+                      </div>
+                      <input type="hidden" id="online-create-skin" value="${this.escapeHtml(this.prefs.hostSkinId)}">
+                    </div>
+                    <div class="col-12 col-md-6 online-create-split-map">
+                      <h3 class="h6 text-white text-center text-md-start fw-bold mb-3 mb-md-2" style="font-family: 'Montserrat', sans-serif; letter-spacing: 1px;">MAPA / ARENA</h3>
+                      <div id="online-create-map-options" class="d-flex gap-2 justify-content-center justify-content-md-start flex-wrap"></div>
+                      <input type="hidden" id="online-create-map" value="${this.escapeHtml(this.prefs.mapId)}">
+                    </div>
+                  </div>
+                </div>
               </div>
               <div class="col-12">
                 ${this.renderSelectBlock('Visibilidad', 'online-create-visibility', [
@@ -122,7 +193,13 @@ export class OnlineMenu extends Phaser.Scene {
                 </div>
               </div>
               <div class="col-12">
-                ${this.renderSelectBlock('Skin', 'online-join-skin', onlineOptionCatalogs.skins, this.prefs.guestSkinId)}
+                <label class="form-label text-white fw-semibold mb-2 small" style="font-family: 'Montserrat', sans-serif;">Skin</label>
+                <div class="d-flex align-items-center justify-content-center gap-3 flex-wrap">
+                  <button type="button" id="online-join-skin-prev" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 online-skin-arrow" style="line-height: 1;" aria-label="Skin anterior">&lsaquo;</button>
+                  <div id="online-join-skin-preview" class="rounded-4 d-flex align-items-center justify-content-center shadow-sm" style="width: 160px; height: 160px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); padding: 10px;"></div>
+                  <button type="button" id="online-join-skin-next" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 online-skin-arrow" style="line-height: 1;" aria-label="Skin siguiente">&rsaquo;</button>
+                </div>
+                <input type="hidden" id="online-join-skin" value="${this.escapeHtml(this.prefs.guestSkinId)}">
               </div>
               <div class="col-12 d-flex gap-3 justify-content-between mt-2">
                 <button id="btn-join-back" class="btn text-white fw-bold shadow menu-btn w-100" style="${btnStyleVolver}">VOLVER</button>
@@ -176,6 +253,107 @@ export class OnlineMenu extends Phaser.Scene {
         btn.addEventListener('mouseenter', () => btn.style.transform = 'scale(1.05)');
         btn.addEventListener('mouseleave', () => btn.style.transform = 'scale(1)');
     });
+
+    this.wireOnlineCreateVisualPickers(overlay);
+    this.wireOnlineJoinSkinPicker(overlay);
+  }
+
+  wireOnlineCreateVisualPickers(overlay) {
+    const snakes = onlineOptionCatalogs.skins.map((o) => getSnakeAsset(o.id));
+    const maps = onlineOptionCatalogs.maps.map((o) => getMapAsset(o.id));
+    if (!snakes.length || !maps.length) return;
+
+    let skinIndex = Math.max(0, snakes.findIndex((s) => s.id === this.prefs.hostSkinId));
+    let mapIndex = Math.max(0, maps.findIndex((m) => m.id === this.prefs.mapId));
+
+    const skinHidden = overlay.querySelector('#online-create-skin');
+    const mapHidden = overlay.querySelector('#online-create-map');
+    const preview = overlay.querySelector('#online-create-skin-preview');
+    const mapRoot = overlay.querySelector('#online-create-map-options');
+    const prevBtn = overlay.querySelector('#online-create-skin-prev');
+    const nextBtn = overlay.querySelector('#online-create-skin-next');
+
+    if (!skinHidden || !mapHidden || !preview || !mapRoot || !prevBtn || !nextBtn) return;
+
+    const renderSkin = () => {
+      const skin = snakes[skinIndex];
+      skinHidden.value = skin.id;
+      preview.innerHTML = `
+        <div class="d-flex flex-column align-items-center gap-2">
+          <img src="/${skin.preview.path}" alt="" style="width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated;">
+          <span class="text-white-50 small">${this.escapeHtml(skin.label)}</span>
+        </div>
+      `;
+    };
+
+    const renderMaps = () => {
+      mapHidden.value = maps[mapIndex].id;
+      mapRoot.innerHTML = maps
+        .map(
+          (map, index) => `
+        <button type="button" class="online-map-option rounded-3 p-2 text-center ${index === mapIndex ? 'active' : ''}" data-online-map-index="${index}" style="width: 112px;">
+          <span class="d-block rounded-2 mb-2" style="height: 42px; background: url('/${map.floor.path}') center/32px 32px repeat; image-rendering: pixelated;"></span>
+          <span class="small fw-semibold">${this.escapeHtml(map.label)}</span>
+        </button>
+      `,
+        )
+        .join('');
+
+      mapRoot.querySelectorAll('[data-online-map-index]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          mapIndex = Number(btn.getAttribute('data-online-map-index')) || 0;
+          renderMaps();
+        });
+      });
+    };
+
+    prevBtn.addEventListener('click', () => {
+      skinIndex = (skinIndex - 1 + snakes.length) % snakes.length;
+      renderSkin();
+    });
+    nextBtn.addEventListener('click', () => {
+      skinIndex = (skinIndex + 1) % snakes.length;
+      renderSkin();
+    });
+
+    renderSkin();
+    renderMaps();
+  }
+
+  wireOnlineJoinSkinPicker(overlay) {
+    const snakes = onlineOptionCatalogs.skins.map((o) => getSnakeAsset(o.id));
+    if (!snakes.length) return;
+
+    let skinIndex = Math.max(0, snakes.findIndex((s) => s.id === this.prefs.guestSkinId));
+
+    const skinHidden = overlay.querySelector('#online-join-skin');
+    const preview = overlay.querySelector('#online-join-skin-preview');
+    const prevBtn = overlay.querySelector('#online-join-skin-prev');
+    const nextBtn = overlay.querySelector('#online-join-skin-next');
+
+    if (!skinHidden || !preview || !prevBtn || !nextBtn) return;
+
+    const renderSkin = () => {
+      const skin = snakes[skinIndex];
+      skinHidden.value = skin.id;
+      preview.innerHTML = `
+        <div class="d-flex flex-column align-items-center gap-2">
+          <img src="/${skin.preview.path}" alt="" style="width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated;">
+          <span class="text-white-50 small">${this.escapeHtml(skin.label)}</span>
+        </div>
+      `;
+    };
+
+    prevBtn.addEventListener('click', () => {
+      skinIndex = (skinIndex - 1 + snakes.length) % snakes.length;
+      renderSkin();
+    });
+    nextBtn.addEventListener('click', () => {
+      skinIndex = (skinIndex + 1) % snakes.length;
+      renderSkin();
+    });
+
+    renderSkin();
   }
 
   renderSelectBlock(label, id, options, selectedId) {
