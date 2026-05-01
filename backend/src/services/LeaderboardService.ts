@@ -14,10 +14,10 @@ interface LeaderboardCreateData {
 }
 
 const firebaseConfig = () => {
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+  if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON_B64) {
     return {
       credential: admin.credential.cert(
-        JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON),
+        JSON.parse(Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_JSON, 'base64')),
       ),
     };
   }
