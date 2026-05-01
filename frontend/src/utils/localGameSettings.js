@@ -1,10 +1,11 @@
 import { PLAYER_COLORS } from '@shared/GameConfig';
 import { DEFAULT_MAP_ID, DEFAULT_SNAKE_SKIN_ID, getMapAsset, getSnakeAsset } from '../config/gameAssetRegistry.js';
+import { normalizeLocalGameMode } from '../scenes/localModeHelpers.js';
 
 const STORAGE_KEY = 'localGameSettings.v1';
 
 const DEFAULTS = {
-    gameMode: 'classic', // classic | timeAttack | chaos | kingOfTheHill
+    gameMode: 'normal', // normal | infinite | timeAttack | chaos | kingOfTheHill
     difficulty: 'normal', // easy | normal | hard
     mapId: DEFAULT_MAP_ID,
     players: {
@@ -14,9 +15,7 @@ const DEFAULTS = {
 };
 
 function normalizeGameMode(value) {
-    return value === 'classic' || value === 'timeAttack' || value === 'chaos' || value === 'kingOfTheHill'
-        ? value
-        : DEFAULTS.gameMode;
+    return normalizeLocalGameMode(value);
 }
 
 function normalizeDifficulty(value) {

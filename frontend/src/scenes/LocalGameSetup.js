@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { PLAYER_COLORS } from '@shared/GameConfig';
 import { loadLocalGameSettings, saveLocalGameSettings } from '../utils/localGameSettings.js';
 import { DEFAULT_MAP_ID, DEFAULT_SNAKE_SKIN_ID, getMapAsset, getSnakeAsset, mapAssets, snakeAssets } from '../config/gameAssetRegistry.js';
+import { normalizeLocalGameMode, resolveLocalSceneKey } from './localModeHelpers.js';
 
 function safeName(value, fallback) {
     const s = String(value ?? '').trim();
@@ -40,7 +41,7 @@ export class LocalGameSetup extends Phaser.Scene {
         this.scale.on('resize', (gameSize) => ajustarFondo(gameSize.width, gameSize.height));
 
         const saved = loadLocalGameSettings();
-        const initialGameMode = String(this.presetMode ?? saved?.gameMode ?? 'classic');
+        const initialGameMode = normalizeLocalGameMode(this.presetMode ?? saved?.gameMode ?? 'normal');
         const initialDifficulty = String(saved?.difficulty ?? DEFAULT_CONFIG.difficulty);
         const initialP1Name = safeName(saved?.players?.p1?.name, DEFAULT_CONFIG.p1.name);
         const initialP2Name = safeName(saved?.players?.p2?.name, DEFAULT_CONFIG.p2.name);
@@ -107,8 +108,8 @@ export class LocalGameSetup extends Phaser.Scene {
                 .mode-arrow:hover { transform: scale(1.04); background: rgba(255,255,255,0.1); border-color: rgba(246, 125, 49, 0.55); }
 
                 .mode-card { border-radius: 16px; overflow: hidden; border: 3px solid #F67D31; box-shadow: 0 18px 60px rgba(0,0,0,0.35); background: rgba(11, 8, 26, 1); }
-                .mode-card-img { aspect-ratio: 16 / 9; min-height: 220px; background: radial-gradient(circle at center, rgba(29, 43, 88, 0.5), #0B081A 70%); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-                .mode-card-img img { width: 100%; height: 100%; object-fit: contain; object-position: center; opacity: 0.96; }
+                .mode-card-img { height: 220px; background: #0B081A; position: relative; overflow: hidden; }
+                .mode-card-img img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; transform: scale(1.02); }
                 .mode-card-img::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(12,18,42,1), rgba(12,18,42,0.15)); }
                 .mode-card-body { padding: 16px 16px 18px; background: rgba(12, 18, 42, 0.98); }
                 .mode-card-title { margin: 0 0 6px; color: white; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; font-family: 'Montserrat', sans-serif; }
@@ -275,7 +276,7 @@ export class LocalGameSetup extends Phaser.Scene {
         };
 
         const startGame = () => {
-            const gameMode = String(document.getElementById('gameMode')?.value ?? 'classic');
+            const gameMode = normalizeLocalGameMode(document.getElementById('gameMode')?.value ?? 'normal');
             const difficulty = String(document.getElementById('difficulty')?.value ?? DEFAULT_CONFIG.difficulty);
             const p1Name = safeName(document.getElementById('p1-name')?.value, DEFAULT_CONFIG.p1.name);
             const p2Name = safeName(document.getElementById('p2-name')?.value, DEFAULT_CONFIG.p2.name);
@@ -302,15 +303,7 @@ export class LocalGameSetup extends Phaser.Scene {
             saveLocalGameSettings(payload);
 
             cleanup();
-            const sceneKey =
-                gameMode === 'timeAttack'
-                    ? 'TimeAttackGame'
-                    : gameMode === 'chaos'
-                      ? 'ChaosGame'
-                      : gameMode === 'kingOfTheHill'
-                        ? 'KingOfTheHillGame'
-                        : 'LocalGame';
-            this.scene.start(sceneKey, payload);
+            this.scene.start(resolveLocalSceneKey(gameMode), payload);
         };
 
         document.getElementById('btn-setup-back')?.addEventListener('click', goBack);
@@ -368,17 +361,24 @@ export class LocalGameSetup extends Phaser.Scene {
 
         const MODES = [
             {
-                id: 'classic',
-                title: 'CLÁSICO',
-                desc: 'Duelo 1 vs 1 con vidas y puntuación. El primero en ganar se lo lleva.',
-                img: '/normal_game.png',
-                label: 'Clásico (1vs1)',
+                id: 'normal',
+                title: 'NORMAL GAME',
+                desc: 'El modo clasico local: si chocas contra una pared, pierdes una vida.',
+                img: '/fondo_duelo.png',
+                label: 'Normal Game',
+            },
+            {
+                id: 'infinite',
+                title: 'INFINITE MODE',
+                desc: 'Tablero infinito: al salir por un borde reapareces por el lado opuesto.',
+                img: '/assets/infinite_mode.png',
+                label: 'Infinite Mode',
             },
             {
                 id: 'timeAttack',
                 title: 'CONTRARRELOJ',
                 desc: '1 minuto, vidas infinitas y Muerte súbita en empate.',
-                img: '/time_attack.png',
+                img: '/time_attack.jpg',
                 label: 'Contrarreloj',
             },
             {
@@ -399,13 +399,10 @@ export class LocalGameSetup extends Phaser.Scene {
 
         let modeIndex = Math.max(0, MODES.findIndex((m) => m.id === initialGameMode));
         if (modeIndex === -1) modeIndex = 0;
-        let pendingModeId = MODES[modeIndex]?.id ?? 'classic';
+        let pendingModeId = MODES[modeIndex]?.id ?? 'normal';
 
         const setGameModeValue = (modeId) => {
-            let safe = 'classic';
-            if (modeId === 'timeAttack') safe = 'timeAttack';
-            else if (modeId === 'chaos') safe = 'chaos';
-            else if (modeId === 'kingOfTheHill') safe = 'kingOfTheHill';
+            const safe = normalizeLocalGameMode(modeId);
             if (gameModeInput) gameModeInput.value = safe;
             const current = MODES.find((m) => m.id === safe);
             if (modeSelectedLabel) modeSelectedLabel.textContent = current ? `Seleccionado: ${current.label}` : 'Seleccionado: -';

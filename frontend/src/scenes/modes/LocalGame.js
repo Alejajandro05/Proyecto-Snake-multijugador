@@ -4,13 +4,27 @@ import { MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
 import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
+import { shouldDieAtWall } from '../localModeHelpers.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
 
 export class LocalGame extends Phaser.Scene {
-    constructor() {
-        super('LocalGame');
+    constructor(sceneKey = 'LocalGame') {
+        super(sceneKey);
+        this.sceneKey = sceneKey;
+    }
+
+    getSceneKey() {
+        return this.sceneKey;
+    }
+
+    getRematchSceneKey() {
+        return this.getSceneKey();
+    }
+
+    hasWallCollisionMode() {
+        return false;
     }
 
     init(data) {
@@ -54,7 +68,7 @@ export class LocalGame extends Phaser.Scene {
             this.scene.pause();
             // Usamos la clave 'Pause' y pasamos el caller para que sepa volver
             this.scene.launch('Pause', {
-                caller: 'LocalGame',
+                caller: this.getSceneKey(),
                 p1Score: p1.score ?? 0,
                 p2Score: p2.score ?? 0,
                 p1Lives: p1.lives ?? 0,
@@ -225,6 +239,8 @@ export class LocalGame extends Phaser.Scene {
         const lives1 = p1Old?.lives || 0;
         const lives2 = p2Old?.lives || 0;
 
+        this.applyWallDeaths(oldState);
+
         // 2. Actualizar el motor
         const state = this.engine.tick();
 
@@ -246,6 +262,23 @@ export class LocalGame extends Phaser.Scene {
     handleInput() {
         [P1_ID, P2_ID].forEach(id => {
             if (this.inputBuffers[id].length > 0) this.engine.setNextDirection(id, this.inputBuffers[id].shift());
+        });
+    }
+
+    applyWallDeaths(state) {
+        if (!this.hasWallCollisionMode()) return;
+
+        const config = this.engine.getConfig?.();
+        if (!config) return;
+
+        [P1_ID, P2_ID].forEach((playerId) => {
+            const player = state.players.get(playerId);
+            if (!player?.alive || !player.segments?.length) return;
+
+            const direction = player.nextDirection ?? player.direction;
+            if (shouldDieAtWall(player.segments[0], direction, config)) {
+                this.engine.killPlayer(player);
+            }
         });
     }
 
@@ -273,7 +306,7 @@ export class LocalGame extends Phaser.Scene {
             p2Score: p2.score, p2Lives: p2.lives,
             reason: reason ? 'score' : 'lives',
             mode: 'local',
-            rematchScene: 'LocalGame'
+            rematchScene: this.getRematchSceneKey()
         });
     }
 }

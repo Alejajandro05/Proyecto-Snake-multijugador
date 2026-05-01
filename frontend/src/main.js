@@ -4,6 +4,7 @@ import { GameOver } from './scenes/GameOver.js';
 import { Preloader } from './scenes/Preloader.js';
 import { MainMenu } from './scenes/MainMenu.js';
 import { LocalGame } from './scenes/modes/LocalGame.js';
+import { NormalLocalGame } from './scenes/modes/NormalLocalGame.js';
 import { OnlineMenu } from './scenes/OnlineMenu.js';
 import { OnlineGame } from './scenes/modes/OnlineGame.js';
 import { TimeAttackGame } from './scenes/modes/TimeAttackGame.js';
@@ -51,6 +52,7 @@ const config = {
         OnlineMenu,
         LocalGameSetup,
         LocalGame,
+        NormalLocalGame,
         OnlineGame,
         TimeAttackGame,
         ChaosGame,

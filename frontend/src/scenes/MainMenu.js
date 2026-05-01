@@ -105,7 +105,7 @@ export class MainMenu extends Phaser.Scene {
         document.getElementById('btn-local').addEventListener('click', () => {
             detenerAudioPrueba();
             clearMenu();
-            this.scene.start('LocalGameSetup', { gameMode: 'classic' });
+            this.scene.start('LocalGameSetup', { gameMode: 'normal' });
         });
 
         document.getElementById('btn-online').addEventListener('click', () => {
