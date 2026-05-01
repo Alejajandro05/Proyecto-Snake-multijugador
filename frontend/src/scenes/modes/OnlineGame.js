@@ -364,15 +364,15 @@ export class OnlineGame extends Phaser.Scene {
         }
     }
 
-    async gameOver(reason) {
+    gameOver(reason) {
         if (this.isLeavingRoom) return;
         this.isLeavingRoom = true;
         const currentSessionId = this.room?.sessionId;
         this.cleanupRoom();
 
-        const players = this.getOrderedPlayers(this.latestState);
-        const p1 = players[0];
-        const p2 = players[1];
+        const playerEntries = this.getOrderedPlayerEntries(this.latestState);
+        const [p1SessionId, p1] = playerEntries[0] ?? [];
+        const [p2SessionId, p2] = playerEntries[1] ?? [];
 
         if (!p1 || !p2) {
             this.scene.start('MainMenu');
@@ -384,11 +384,9 @@ export class OnlineGame extends Phaser.Scene {
             : (p1.lives > 0 ? 'J1' : 'J2');
         const winnerSessionId = winner === 'J1' ? p1SessionId : p2SessionId;
 
-        try {
-            await this.recordWinIfCurrentUserWon(currentSessionId, winnerSessionId);
-        } catch (error) {
+        this.recordWinIfCurrentUserWon(currentSessionId, winnerSessionId).catch((error) => {
             console.error('Leaderboard win update failed:', error);
-        }
+        });
 
         if (reason) {
             this.scene.start('GameOver', {
@@ -411,7 +409,8 @@ export class OnlineGame extends Phaser.Scene {
 
     getUserNameFromFirebaseUser(user) {
         const emailUserName = String(user?.email ?? '').split('@')[0]?.trim();
-        return String(user?.displayName ?? emailUserName ?? '').trim();
+        const displayName = String(user?.displayName ?? '').trim();
+        return displayName || emailUserName || '';
     }
 
     async recordWinIfCurrentUserWon(currentSessionId, winnerSessionId) {
