@@ -18,26 +18,39 @@ function getPublicWsPathSuffix() {
   return value.startsWith('/') ? value : `/${value}`;
 }
 
-export function getColyseusServerUrl() {
-  const explicitWs = String(import.meta.env.VITE_COLYSEUS_URL ?? '').trim();
+function getSameOriginWebSocketUrl(location) {
+  const { protocol, host } = location;
+  const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${wsProtocol}//${host}`;
+}
+
+export function resolveColyseusServerUrl(env, location) {
+  const explicitWs = String(env.VITE_COLYSEUS_URL ?? '').trim();
   if (explicitWs) return explicitWs;
 
-  const fromHttpEnv = normalizeHttpUrlToWebSocket(import.meta.env.VITE_SERVER_URL ?? '');
+  const fromHttpEnv = normalizeHttpUrlToWebSocket(env.VITE_SERVER_URL ?? '');
   if (fromHttpEnv) return fromHttpEnv;
 
-  if (import.meta.env.DEV) {
-    return 'ws://localhost:2567';
+  if (env.DEV) {
+    const proxyTarget = String(env.VITE_API_PROXY_TARGET ?? '').trim();
+    return proxyTarget ? getSameOriginWebSocketUrl(location) : 'ws://localhost:2567';
   }
 
-  const { protocol, host } = window.location;
-  const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${wsProtocol}//${host}${getPublicWsPathSuffix()}`;
+  return `${getSameOriginWebSocketUrl(location)}${getPublicWsPathSuffix()}`;
+}
+
+export function resolveServerHttpUrl(env, location) {
+  const explicitHttp = String(env.VITE_SERVER_URL ?? '').trim();
+  if (explicitHttp) return explicitHttp.replace(/\/$/, '');
+  return location.origin;
+}
+
+export function getColyseusServerUrl() {
+  return resolveColyseusServerUrl(import.meta.env, window.location);
 }
 
 export function getServerHttpUrl() {
-  const explicitHttp = String(import.meta.env.VITE_SERVER_URL ?? '').trim();
-  if (explicitHttp) return explicitHttp.replace(/\/$/, '');
-  return window.location.origin;
+  return resolveServerHttpUrl(import.meta.env, window.location);
 }
 
 export function createLobbyClient() {
