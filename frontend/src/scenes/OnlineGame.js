@@ -1,43 +1,7 @@
-import Phaser from 'phaser';
-import { MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
-import { createLobbyClient } from '../../net/lobbyClient.js';
-import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
-import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
+import { Client } from '@colyseus/sdk';
+import { GRID_COLS, GRID_ROWS, GRID_SIZE, MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
 
-function normalizeHttpUrlToWebSocket(url) {
-    const s = String(url ?? '').trim();
-    if (!s) return '';
-    if (s.startsWith('https://')) return `wss://${s.slice('https://'.length)}`;
-    if (s.startsWith('http://')) return `ws://${s.slice('http://'.length)}`;
-    return s;
-}
-
-/** Path público del WebSocket detrás del proxy (p. ej. Caddy handle /ws* → strip_prefix /ws → backend). */
-function getPublicWsPathSuffix() {
-    const raw = import.meta.env.VITE_WS_PATH;
-    if (raw === '') return '';
-    if (raw === undefined || raw === null) return '/ws';
-    const p = String(raw).trim();
-    if (!p) return '/ws';
-    return p.startsWith('/') ? p : `/${p}`;
-}
-
-function getColyseusServerUrl() {
-    const explicitWs = String(import.meta.env.VITE_COLYSEUS_URL ?? '').trim();
-    if (explicitWs) return explicitWs;
-
-    const fromHttpEnv = normalizeHttpUrlToWebSocket(import.meta.env.VITE_SERVER_URL ?? '');
-    if (fromHttpEnv) return fromHttpEnv;
-
-    if (import.meta.env.DEV) {
-        return 'ws://localhost:2567';
-    }
-
-    const { protocol, host } = window.location;
-    const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
-    const pathSuffix = getPublicWsPathSuffix();
-    return `${wsProtocol}//${host}${pathSuffix}`;
-}
+const SERVER_URL = 'ws://localhost:2567';
 
 /**
  * Online multiplayer game use case.
@@ -48,17 +12,27 @@ export class OnlineGame extends Phaser.Scene {
         super('OnlineGame');
     }
 
-    init(data) {
-        this.matchRoomId = data?.matchRoomId ?? '';
-        this.playerSkinId = data?.skinId ?? '';
-        this.mapId = data?.mapId ?? '';
-    }
-
     async create() {
-        this.boardRenderer = new SnakeBoardRenderer(this, { mapId: this.mapId });
+        this.cameras.main.roundPixels = true;
+        this.cameras.main.setBackgroundColor(0x1a1a2e);
+        this.backgroundImage = this.add.image(this.scale.width * 0.5, this.scale.height * 0.5, 'background')
+            .setAlpha(0.22)
+            .setDepth(-50);
+
+        this.worldWidth = GRID_COLS * GRID_SIZE;
+        this.worldHeight = GRID_ROWS * GRID_SIZE;
+        this.boardOffsetX = 0;
+        this.boardOffsetY = 0;
+        this.cellSize = GRID_SIZE;
 
         this.cacheHudElements();
         this.toggleHud(true);
+
+        this.boardBackgroundGraphics = this.add.graphics();
+        this.gridGraphics = this.add.graphics();
+        this.snakeGraphics = this.add.graphics();
+        this.foodGraphics = this.add.graphics();
+        this.obstacleGraphics = this.add.graphics();
 
         this.cursors = this.input.keyboard.createCursorKeys();
         this.wasd = this.input.keyboard.addKeys({ up: 'W', left: 'A', down: 'S', right: 'D' });
@@ -96,22 +70,6 @@ export class OnlineGame extends Phaser.Scene {
         this.latestState = null;
         this.renderState({ players: new Map(), food: [], obstacles: [] });
 
-        this.userMusicVol = localStorage.getItem('musicVolume') !== null ? parseFloat(localStorage.getItem('musicVolume')) : 0.2;
-        this.userSfxVol = localStorage.getItem('sfxVolume') !== null ? parseFloat(localStorage.getItem('sfxVolume')) : 0.7;
-
-        const musicKey = localStorage.getItem('selectedMusic') || 'musica_in_game';
-        this.music = this.sound.add(musicKey, { loop: true, volume: this.userMusicVol });
-        this.music.play();
-
-        this.events.on('shutdown', () => { if (this.music) this.music.stop(); });
-        this.events.on('pause', () => { if (this.music) this.music.pause(); });
-        this.events.on('resume', () => {
-            this.isPaused = false;
-            if (this.music) this.music.resume();
-        });
-
-        this.audioStateCache = new Map();
-
         await this.connectToServer();
     }
 
@@ -148,25 +106,29 @@ export class OnlineGame extends Phaser.Scene {
         const sidePanelWidthLeft = this.hudLeftPlayer ? this.hudLeftPlayer.offsetWidth : 0;
         const sidePanelWidthRight = this.hudRightPlayer ? this.hudRightPlayer.offsetWidth : 0;
         const sideGap = 22;
-        this.applyBoardMetrics(this.boardRenderer.updateLayout({
-            viewportWidth,
-            viewportHeight,
-            safePadding,
-            sideGap,
-            topGap,
-            sidePanelWidthLeft,
-            sidePanelWidthRight,
-        }));
+        const availableWidth = Math.max(320, viewportWidth - safePadding * 2 - sidePanelWidthLeft - sidePanelWidthRight - sideGap * 2);
+        const availableHeight = Math.max(240, viewportHeight - topGap - safePadding);
+
+        this.cellSize = Math.max(12, Math.floor(Math.min(availableWidth / GRID_COLS, availableHeight / GRID_ROWS)));
+        this.boardWidth = this.cellSize * GRID_COLS;
+        this.boardHeight = this.cellSize * GRID_ROWS;
+
+        this.boardOffsetX = Math.floor((viewportWidth - this.boardWidth) * 0.5);
+        this.boardOffsetY = Math.floor(topGap + (availableHeight - this.boardHeight) * 0.5);
+
+        this.backgroundImage
+            .setPosition(viewportWidth * 0.5, viewportHeight * 0.5)
+            .setDisplaySize(viewportWidth, viewportHeight);
+
+        [this.gridGraphics, this.snakeGraphics, this.foodGraphics, this.obstacleGraphics].forEach((layer) => {
+            layer.setPosition(0, 0);
+            layer.setScale(1);
+        });
 
         this.positionHudElements(viewportWidth, viewportHeight, sidePanelWidthLeft, sidePanelWidthRight, sideGap, safePadding, helpHeight);
-    }
 
-    applyBoardMetrics(metrics) {
-        this.boardOffsetX = metrics.boardOffsetX;
-        this.boardOffsetY = metrics.boardOffsetY;
-        this.boardWidth = metrics.boardWidth;
-        this.boardHeight = metrics.boardHeight;
-        this.cellSize = metrics.cellSize;
+        this.drawBoardFrame(this.boardWidth, this.boardHeight);
+        this.drawGrid();
     }
 
     positionHudElements(viewportWidth, viewportHeight, sidePanelWidthLeft, sidePanelWidthRight, sideGap, safePadding, helpHeight) {
@@ -202,6 +164,41 @@ export class OnlineGame extends Phaser.Scene {
         }
     }
 
+    drawBoardFrame(boardWidthScaled, boardHeightScaled) {
+        this.boardBackgroundGraphics.clear();
+
+        const outerPadding = 14;
+        this.boardBackgroundGraphics.fillStyle(0x0f172a, 0.86);
+o(x, this.boardOffsetY);
+            this.gridGraphics.lineTo(x, this.boardOffsetY + this.boardHeight);
+            this.gridGraphics.strokePath();
+        }
+
+        for (let row = 0; row <= GRID_ROWS; row += 1) {
+            const y = this.boardOffsetY + row * this.cellSize;
+            this.gridGraphics.beginPath();
+            this.gridGraphics.moveTo(this.boardOffsetX, y);
+            this.gridGraphics.lineTo(this.boardOffsetX + this.boardWidth, y);
+            this.gridGraphics.strokePath();
+        }
+    }
+
+    drawBoardCell(layer, x, y, color) {
+        const col = Math.floor(x / GRID_SIZE);
+        const row = Math.floor(y / GRID_SIZE);
+        const px = this.boardOffsetX + col * this.cellSize;
+        const py = this.boardOffsetY + row * this.cellSize;
+        const padding = Math.max(1, Math.floor(this.cellSize * 0.08));
+
+        layer.fillStyle(color, 1);
+        layer.fillRect(
+            px + padding,
+            py + padding,
+            Math.max(1, this.cellSize - padding * 2),
+            Math.max(1, this.cellSize - padding * 2)
+        );
+    }
+
     updateLivesHud(targetElement, lives) {
         if (!targetElement) return;
 
@@ -234,13 +231,10 @@ export class OnlineGame extends Phaser.Scene {
 
     async connectToServer() {
         try {
-            const client = createLobbyClient();
-            this.room = this.matchRoomId
-                ? await client.joinSnakeRoomById(this.matchRoomId, { skinId: this.playerSkinId })
-                : await client.joinOrCreateSnakeRoom({ skinId: this.playerSkinId });
+            const client = new Client(SERVER_URL);
+            this.room = await client.joinOrCreate('snake_room');
 
             this.room.onStateChange((state) => {
-                this.checkAudioEvents(state);
                 this.latestState = state;
                 this.renderState(state);
             });
@@ -263,40 +257,6 @@ export class OnlineGame extends Phaser.Scene {
             this.cleanupRoom();
             this.scene.start('MainMenu');
         }
-    }
-
-    checkAudioEvents(state) {
-        if (!state || !state.players || !this.room) return;
-
-        const mySessionId = this.room.sessionId; // Así sabemos cuál es nuestra serpiente
-
-        state.players.forEach((player, sessionId) => {
-            // Recuperamos cómo estaba este jugador hace un milisegundo
-            const oldData = this.audioStateCache.get(sessionId) || { score: 0, lives: MAX_LIVES };
-
-            const isMe = (sessionId === mySessionId);
-
-            // --- Lógica de Comer Manzana ---
-            if (player.score > oldData.score) {
-                // Si soy yo, volumen normal. Si es el enemigo, volumen muy bajito.
-                const vol = isMe ? 0.7 : 0.15;
-                this.sound.play('eat_apple', { volume: vol });
-            }
-
-            // --- Lógica de Choque / Perder Vida ---
-            if (player.lives < oldData.lives) {
-                const vol = isMe ? 0.9 : 0.2;
-                this.sound.play('sonido_choque', { volume: vol });
-
-                // Solo paramos la música si YO muero definitivamente
-                if (isMe && player.lives <= 0 && this.music) {
-                    this.music.stop();
-                }
-            }
-
-            // Actualizamos la caché para la próxima comprobación
-            this.audioStateCache.set(sessionId, { score: player.score, lives: player.lives });
-        });
     }
 
     sendDirection(direction) {
@@ -335,9 +295,27 @@ export class OnlineGame extends Phaser.Scene {
         if (!state) return;
 
         this.latestState = state;
-        this.boardRenderer.renderState(state);
+        this.snakeGraphics.clear();
+        this.foodGraphics.clear();
+        this.obstacleGraphics.clear();
 
         const { firstPlayer, secondPlayer } = this.syncHudFromPlayers(state);
+
+        state.players.forEach((player) => {
+            if (!player.alive) return;
+
+            player.segments.forEach((seg) => {
+                this.drawBoardCell(this.snakeGraphics, seg.x, seg.y, player.color);
+            });
+        });
+
+        state.food.forEach((food) => {
+            this.drawBoardCell(this.foodGraphics, food.x, food.y, 0xffff00);
+        });
+
+        state.obstacles.forEach((obstacle) => {
+            this.drawBoardCell(this.obstacleGraphics, obstacle.x, obstacle.y, 0x888888);
+        });
 
         if (firstPlayer && secondPlayer) {
             if (firstPlayer.score >= WIN_SCORE || secondPlayer.score >= WIN_SCORE) {
@@ -367,25 +345,21 @@ export class OnlineGame extends Phaser.Scene {
 
         if (reason) {
             this.scene.start('GameOver', {
-                winner: getScoreWinner(p1.score, p2.score),
+                winner: p1.score > p2.score ? 'J1' : 'J2',
                 p1Score: p1.score,
                 p1Lives: p1.lives,
                 p2Score: p2.score,
                 p2Lives: p2.lives,
-                reason: 'score',
-                mode: 'online',
-                rematchScene: 'OnlineMenu'
+                reason: 'score'
             });
         } else {
             this.scene.start('GameOver', {
-                winner: getLivesWinner(p1.lives, p2.lives),
+                winner: p1.lives > 0 ? 'J1' : 'J2',
                 p1Score: p1.score,
                 p1Lives: p1.lives,
                 p2Score: p2.score,
                 p2Lives: p2.lives,
-                reason: 'lives',
-                mode: 'online',
-                rematchScene: 'OnlineMenu'
+                reason: 'lives'
             });
         }
     }

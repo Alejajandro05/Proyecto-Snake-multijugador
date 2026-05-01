@@ -1,29 +1,52 @@
-# Welcome to Colyseus!
+# Snake Backend
 
-This project has been created using [⚔️ `create-colyseus-app`](https://github.com/colyseus/create-colyseus-app/) - an npm init template for kick starting a Colyseus project in TypeScript.
+Servidor Colyseus del proyecto Snake Clash. Expone las salas online, el lobby y los endpoints HTTP que usa el frontend Phaser.
 
-[Documentation](http://docs.colyseus.io/)
+## Uso
 
-## :crossed_swords: Usage
-
-```
+```bash
+npm install
 npm start
 ```
 
-## Structure
+El servidor escucha por defecto en `http://localhost:2567`.
 
-- `index.ts`: main entry point, register an empty room handler and attach [`@colyseus/monitor`](https://github.com/colyseus/colyseus-monitor)
-- `src/rooms/MyRoom.ts`: an empty room handler for you to implement your logic
-- `src/rooms/schema/MyRoomState.ts`: an empty schema used on your room's state.
-- `loadtest/example.ts`: scriptable client for the loadtest tool (see `npm run loadtest`)
-- `package.json`:
-    - `scripts`:
-        - `npm start`: runs `ts-node-dev index.ts`
-        - `npm test`: runs mocha test suite
-        - `npm run loadtest`: runs the [`@colyseus/loadtest`](https://github.com/colyseus/colyseus-loadtest/) tool for testing the connection, using the `loadtest/example.ts` script.
-- `tsconfig.json`: TypeScript configuration file
+## Scripts
 
+- `npm start`: arranca el backend en modo desarrollo con `tsx watch src/index.ts`.
+- `npm run build`: limpia y compila TypeScript con `tsc`.
+- `npm test`: ejecuta la suite Mocha con `tsx`.
+- `npm run loadtest`: ejecuta el cliente de carga de Colyseus.
 
-## License
+## Estructura
 
-MIT
+- `src/index.ts`: punto de entrada del servidor.
+- `src/app.config.ts`: registro de rooms, monitor y rutas HTTP.
+- `src/rooms/SnakeRoom.ts`: partida Snake online autoritativa.
+- `src/rooms/LobbyRoom.ts`: lobbies publicos, codigos de invitacion y resolucion de partidas.
+- `src/rooms/MyRoom.ts`: room de ejemplo heredada de la plantilla.
+- `src/rooms/schema/`: schemas sincronizados por Colyseus.
+- `test/`: pruebas de rooms y motor compartido.
+
+## Rooms
+
+- `snake_room`: room principal de juego.
+- `lobby_room`: flujo de lobby y emparejamiento.
+- `my_room`: room legacy de ejemplo, no forma parte del flujo principal.
+
+## Shared Domain
+
+La logica de simulacion vive en `../shared/src/domain`. El TypeScript es la fuente canonica y los `.js` junto a los `.ts` son artefactos runtime generados para los imports ESM actuales.
+
+Cuando cambies `shared/src/domain/*.ts`, ejecuta:
+
+```bash
+npm run build:runtime --prefix ../shared
+```
+
+## Verificacion
+
+```bash
+npm test
+npm run build
+```

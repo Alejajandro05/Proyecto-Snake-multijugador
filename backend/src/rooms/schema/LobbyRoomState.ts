@@ -8,7 +8,7 @@ export class LobbyRoomState extends Schema {
   @type("string") visibility: string = "public";
   @type("string") inviteCode: string = "";
   @type("string") gameMode: string = "classic";
-  @type("string") mapId: string = "classic";
+  @type("string") mapId: string = "arena01";
   @type("string") matchRoomId: string = "";
   @type("number") maxPlayers: number = 2;
   @type(LobbyPlayer) host = new LobbyPlayer();

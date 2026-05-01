@@ -10,24 +10,24 @@ const OPPOSITE = {
  * All game logic (movement, collision detection, food spawning, respawn) lives here.
  */
 export class SnakeEngine {
+    config;
+    players = new Map();
+    inputQueues = new Map();
+    food = [];
+    obstacles = [];
+    respawnQueue = new Map(); // playerId → respawn tick
+    tickCount = 0;
+    respawnTicks;
     constructor(initialFoodOrConfig, configOverrides) {
-        this.players = new Map();
-        this.inputQueues = new Map();
-        this.food = [];
-        this.obstacles = [];
-        this.respawnQueue = new Map(); // playerId → respawn tick
-        this.tickCount = 0;
         const configInput = typeof initialFoodOrConfig === 'number'
             ? { ...configOverrides, foodCount: initialFoodOrConfig }
             : initialFoodOrConfig;
         this.config = resolveGameRuntimeConfig(configInput);
         this.respawnTicks = Math.max(1, Math.round(this.config.respawnDelayMs / this.config.tickMs));
-
         this.generateObstacles();
         for (let i = 0; i < this.config.foodCount; i++) {
             this.food.push(this.randomFood());
         }
-
     }
     getConfig() {
         return { ...this.config };
@@ -244,10 +244,8 @@ export class SnakeEngine {
                 x: Math.floor(Math.random() * this.config.gridCols) * this.config.gridSize,
                 y: Math.floor(Math.random() * this.config.gridRows) * this.config.gridSize,
             };
-        } while (
-        playerSegments.some(s => s.x === pos.x && s.y === pos.y) ||
-        this.obstacles.some(o => o.x === pos.x && o.y === pos.y)
-            );
+        } while (playerSegments.some(s => s.x === pos.x && s.y === pos.y) ||
+            this.obstacles.some(o => o.x === pos.x && o.y === pos.y));
         return pos;
     }
     randomObstacleInQuadrant(quadrant) {
@@ -290,6 +288,11 @@ export class SnakeEngine {
                 this.obstacles.push(obs);
             }
         });
+    }
+    /** Re-roll obstacle positions (e.g. chaos mode). Snakes are avoided; food is not moved. */
+    regenerateObstacles() {
+        this.obstacles.length = 0;
+        this.generateObstacles();
     }
     isSafeSpawn(col, row) {
         return this.obstacles.every(ob => {

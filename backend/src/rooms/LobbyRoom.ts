@@ -6,6 +6,9 @@ import { onlineOptionCatalogs } from "../../../shared/src/catalogs/onlineOptions
 import { LobbyPlayer } from "./schema/LobbyPlayer.js";
 import { LobbyRoomState } from "./schema/LobbyRoomState.js";
 
+const DEFAULT_SKIN_ID = onlineOptionCatalogs.skins[0]?.id ?? "player1";
+const DEFAULT_GUEST_SKIN_ID = onlineOptionCatalogs.skins[1]?.id ?? DEFAULT_SKIN_ID;
+
 interface LobbyRoomCreateOptions {
   visibility?: unknown;
   gameMode?: unknown;
@@ -150,7 +153,7 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
   async onJoin(client: Client, options?: LobbyRoomJoinOptions) {
     const player = this.state.players.get(client.sessionId) ?? this.createPlayer(client.sessionId, options);
     player.playerName = toPlayerName(options?.playerName, player.playerName || `Jugador ${this.state.players.size}`);
-    player.skinId = toSkinId(options?.skinId, player.skinId || "skin-1");
+    player.skinId = toSkinId(options?.skinId, player.skinId || DEFAULT_SKIN_ID);
     player.connected = true;
     this.state.upsertPlayer(player);
     await this.refreshLobbyState();
@@ -171,7 +174,7 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
     const player = new LobbyPlayer();
     player.sessionId = sessionId;
     player.playerName = toPlayerName(options?.playerName, `Jugador ${this.state.players.size + 1}`);
-    player.skinId = toSkinId(options?.skinId, this.state.players.size === 0 ? "skin-1" : "skin-2");
+    player.skinId = toSkinId(options?.skinId, this.state.players.size === 0 ? DEFAULT_SKIN_ID : DEFAULT_GUEST_SKIN_ID);
     player.connected = true;
     return player;
   }

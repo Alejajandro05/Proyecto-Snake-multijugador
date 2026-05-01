@@ -1,46 +1,74 @@
 import Phaser from 'phaser';
 import { SnakeEngine } from '@shared/SnakeEngine';
-import { MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig';
+import { TICK_MS } from '@shared/GameConfig';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
-import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
 
-export class LocalGame extends Phaser.Scene {
+const OPPOSITE = {
+    up: 'down',
+    down: 'up',
+    left: 'right',
+    right: 'left',
+};
+
+const CHAOS_DURATION_MS = 6000;
+const CHAOS_MIN_GAP_MS = 7000;
+const CHAOS_MAX_GAP_MS = 14000;
+const CHAOS_FIRST_MS = 5000;
+const CHAOS_MAX_LIVES = 5;
+
+/** @typedef {'speed' | 'invert' | 'invertLR' | 'obstacles'} ChaosEffectId */
+
+export class ChaosGame extends Phaser.Scene {
     constructor() {
-        super('LocalGame');
+        super('ChaosGame');
     }
 
     init(data) {
-        // Recuperamos los nombres y skins que eligieron en el menú previo
         const fromStorage = loadLocalGameSettings();
-        const merged = normalizeLocalGameSettings({ ...fromStorage, ...(data ?? {}) });
+        const merged = normalizeLocalGameSettings({ ...fromStorage, ...(data ?? {}), gameMode: 'chaos' });
         this.matchSettings = merged;
         saveLocalGameSettings(merged);
     }
 
     create() {
-        this.boardRenderer = new SnakeBoardRenderer(this, { mapId: this.matchSettings?.mapId });
+        this.boardRenderer = new SnakeBoardRenderer(this);
 
         this.cacheHudElements();
         this.toggleHud(true);
 
-        // 1. MOTOR: Usamos la dificultad elegida por el compañero
         const difficulty = this.matchSettings?.difficulty ?? 'normal';
         const p1Cfg = this.matchSettings?.players?.p1 ?? {};
         const p2Cfg = this.matchSettings?.players?.p2 ?? {};
 
-        this.engine = new SnakeEngine({ difficulty });
+        this.engine = new SnakeEngine({ difficulty, maxLives: CHAOS_MAX_LIVES });
 
-        // Aplicamos los colores y skins del menú
         this.engine.addPlayer(P1_ID, { color: p1Cfg.color, skinId: p1Cfg.skinId, startCol: 8, startRow: 12 });
         this.engine.addPlayer(P2_ID, { color: p2Cfg.color, skinId: p2Cfg.skinId, startCol: 24, startRow: 12 });
 
-        // 2. CONTROLES Y PAUSA (Corregido con 'Pause' y 'caller')
-        this.cursors = this.input.keyboard.createCursorKeys();
-        this.wasd = this.input.keyboard.addKeys({ up: 'W', left: 'A', down: 'S', right: 'D' });
+        const runtimeConfig = this.engine.getConfig?.() ?? {};
+        this.baseTickMs = runtimeConfig.tickMs ?? TICK_MS;
+
+        this.chaosInvert = false;
+        this.chaosInvertLR = false;
+        this.chaosFast = false;
+        /** @type {ChaosEffectId | null} */
+        this.activeChaosId = null;
+
+        this.inputBuffers = { [P1_ID]: [], [P2_ID]: [] };
+
+        this.input.keyboard.on('keydown-W', () => this.onP1Input('up'));
+        this.input.keyboard.on('keydown-A', () => this.onP1Input('left'));
+        this.input.keyboard.on('keydown-S', () => this.onP1Input('down'));
+        this.input.keyboard.on('keydown-D', () => this.onP1Input('right'));
+
+        this.input.keyboard.on('keydown-UP', () => this.onP2Input('up'));
+        this.input.keyboard.on('keydown-LEFT', () => this.onP2Input('left'));
+        this.input.keyboard.on('keydown-DOWN', () => this.onP2Input('down'));
+        this.input.keyboard.on('keydown-RIGHT', () => this.onP2Input('right'));
 
         this.isPaused = false;
         this.input.keyboard.on('keydown-ESC', () => {
@@ -52,43 +80,24 @@ export class LocalGame extends Phaser.Scene {
             const p2 = state.players.get(P2_ID);
 
             this.scene.pause();
-            // Usamos la clave 'Pause' y pasamos el caller para que sepa volver
             this.scene.launch('Pause', {
-                caller: 'LocalGame',
+                caller: 'ChaosGame',
                 p1Score: p1.score ?? 0,
                 p2Score: p2.score ?? 0,
                 p1Lives: p1.lives ?? 0,
-                p2Lives: p2.lives ?? 0
+                p2Lives: p2.lives ?? 0,
             });
         });
 
-        // 3. ENTRADA ASÍNCRONA (Inputs que no se pierden)
-        this.inputBuffers = { [P1_ID]: [], [P2_ID]: [] };
-        this.input.keyboard.on('keydown-W', () => this.pushDirection(P1_ID, 'up'));
-        this.input.keyboard.on('keydown-A', () => this.pushDirection(P1_ID, 'left'));
-        this.input.keyboard.on('keydown-S', () => this.pushDirection(P1_ID, 'down'));
-        this.input.keyboard.on('keydown-D', () => this.pushDirection(P1_ID, 'right'));
-
-        this.input.keyboard.on('keydown-UP', () => this.pushDirection(P2_ID, 'up'));
-        this.input.keyboard.on('keydown-LEFT', () => this.pushDirection(P2_ID, 'left'));
-        this.input.keyboard.on('keydown-DOWN', () => this.pushDirection(P2_ID, 'down'));
-        this.input.keyboard.on('keydown-RIGHT', () => this.pushDirection(P2_ID, 'right'));
-
-        // 4. BUCLE Y LAYOUT
-        const runtimeConfig = this.engine.getConfig?.() ?? {};
-        this.gameTimer = this.time.addEvent({
-            delay: runtimeConfig.tickMs ?? TICK_MS,
-            loop: true,
-            callback: this.gameTick,
-            callbackScope: this,
-        });
+        this.ensureChaosHud();
+        this.refreshGameTimer();
+        this.scheduleFirstChaos();
 
         this.resizeHandler = (gameSize) => this.updateLayout(gameSize.width, gameSize.height);
         this.scale.on('resize', this.resizeHandler);
 
         this.updateLayout(this.scale.width, this.scale.height);
 
-        // 5. AUDIO CORREGIDO
         this.userMusicVol = parseFloat(localStorage.getItem('musicVolume')) || 0.2;
         this.userSfxVol = parseFloat(localStorage.getItem('sfxVolume')) || 0.7;
 
@@ -96,11 +105,12 @@ export class LocalGame extends Phaser.Scene {
         this.music = this.sound.add(musicKey, { loop: true, volume: this.userMusicVol });
         this.music.play();
 
-        // Limpieza al cerrar
         this.events.on('shutdown', () => {
             if (this.music) this.music.stop();
             this.scale.off('resize', this.resizeHandler);
-            this.toggleHud(false); // Ocultar nombres al salir
+            this.toggleHud(false);
+            if (this.chaosFxEl?.parentNode) this.chaosFxEl.parentNode.removeChild(this.chaosFxEl);
+            this.chaosFxEl = null;
         });
 
         this.events.on('pause', () => { if (this.music) this.music.pause(); });
@@ -110,6 +120,115 @@ export class LocalGame extends Phaser.Scene {
         });
 
         this.renderState(this.engine.getState());
+    }
+
+    ensureChaosHud() {
+        if (this.hudHelpWrap && !document.getElementById('chaos-fx-line')) {
+            const el = document.createElement('div');
+            el.id = 'chaos-fx-line';
+            el.className = 'text-warning fw-bold small mt-1';
+            el.style.textShadow = '0 0 12px rgba(250, 204, 21, 0.45)';
+            this.hudHelpWrap.appendChild(el);
+            this.chaosFxEl = el;
+        }
+    }
+
+    mapDirection(dir) {
+        let d = dir;
+        if (this.chaosInvertLR) {
+            if (d === 'left') d = 'right';
+            else if (d === 'right') d = 'left';
+        }
+        if (this.chaosInvert) {
+            d = OPPOSITE[d] ?? d;
+        }
+        return d;
+    }
+
+    onP1Input(dir) {
+        this.pushDirection(P1_ID, this.mapDirection(dir));
+    }
+
+    onP2Input(dir) {
+        this.pushDirection(P2_ID, this.mapDirection(dir));
+    }
+
+    refreshGameTimer() {
+        if (this.gameTimer) {
+            this.gameTimer.remove();
+            this.gameTimer = null;
+        }
+        const delay = this.chaosFast
+            ? Math.max(50, Math.floor(this.baseTickMs * 0.52))
+            : this.baseTickMs;
+        this.gameTimer = this.time.addEvent({
+            delay,
+            loop: true,
+            callback: this.gameTick,
+            callbackScope: this,
+        });
+    }
+
+    scheduleFirstChaos() {
+        this.time.delayedCall(CHAOS_FIRST_MS, () => this.triggerRandomChaos());
+    }
+
+    scheduleNextChaos() {
+        const gap = Phaser.Math.Between(CHAOS_MIN_GAP_MS, CHAOS_MAX_GAP_MS);
+        this.time.delayedCall(gap, () => this.triggerRandomChaos());
+    }
+
+    triggerRandomChaos() {
+        this.clearChaosEffects();
+        /** @type {ChaosEffectId[]} */
+        const pool = ['speed', 'invert', 'invertLR', 'obstacles'];
+        const id = pool[Phaser.Math.Between(0, pool.length - 1)];
+        this.activeChaosId = id;
+
+        if (id === 'speed') {
+            this.chaosFast = true;
+            this.refreshGameTimer();
+        }
+        if (id === 'invert') this.chaosInvert = true;
+        if (id === 'invertLR') this.chaosInvertLR = true;
+        if (id === 'obstacles') this.engine.regenerateObstacles();
+
+        this.updateChaosBanner();
+        this.time.delayedCall(CHAOS_DURATION_MS, () => this.endChaosWave());
+    }
+
+    endChaosWave() {
+        this.clearChaosEffects();
+        this.activeChaosId = null;
+        this.updateChaosBanner();
+        this.scheduleNextChaos();
+    }
+
+    clearChaosEffects() {
+        const hadFast = this.chaosFast;
+        this.chaosInvert = false;
+        this.chaosInvertLR = false;
+        this.chaosFast = false;
+        if (hadFast) this.refreshGameTimer();
+    }
+
+    chaosLabel(id) {
+        if (id === 'speed') return 'Velocidad aumentada';
+        if (id === 'invert') return 'Controles al revés (↑↓ ←→)';
+        if (id === 'invertLR') return 'Izquierda y derecha invertidas';
+        if (id === 'obstacles') return 'Obstáculos reubicados';
+        return '';
+    }
+
+    updateChaosBanner() {
+        if (!this.chaosFxEl) return;
+        if (this.activeChaosId) {
+            this.chaosFxEl.textContent = `⚡ ${this.chaosLabel(this.activeChaosId)}`;
+            this.chaosFxEl.style.display = '';
+        } else {
+            this.chaosFxEl.textContent = '';
+            this.chaosFxEl.style.display = 'none';
+        }
     }
 
     cacheHudElements() {
@@ -125,15 +244,14 @@ export class LocalGame extends Phaser.Scene {
         this.hudLeftPlayer = document.getElementById('hud-left-player');
         this.hudRightPlayer = document.getElementById('hud-right-player');
 
-        this.applyHudIdentity(); // Mostrar los nombres elegidos
+        this.applyHudIdentity();
 
-        this.updateLivesHud(this.hudJ1Lives, MAX_LIVES);
-        this.updateLivesHud(this.hudJ2Lives, MAX_LIVES);
+        this.updateLivesHud(this.hudJ1Lives, CHAOS_MAX_LIVES);
+        this.updateLivesHud(this.hudJ2Lives, CHAOS_MAX_LIVES);
     }
 
     applyHudIdentity() {
         const difficulty = String(this.matchSettings?.difficulty ?? 'normal');
-        const mapId = this.matchSettings?.mapId ?? 'arena01';
         const p1Name = this.matchSettings?.players?.p1?.name ?? 'J1';
         const p2Name = this.matchSettings?.players?.p2?.name ?? 'J2';
         const p1Color = this.matchSettings?.players?.p1?.color;
@@ -156,12 +274,10 @@ export class LocalGame extends Phaser.Scene {
 
         if (this.hudHelp) {
             const label = difficulty === 'easy' ? 'Easy' : difficulty === 'hard' ? 'Difficult' : 'Medium';
-            this.hudHelp.textContent = `${label} | ${mapId} | ${p1Name} (WASD) vs ${p2Name} (Flechas) — ESC: Menu`;
+            this.hudHelp.textContent = `Modo Caos | ${label} | ${p1Name} (WASD) vs ${p2Name} (Flechas) — ESC: Menu`;
         }
     }
 
-    // El resto de funciones (toggleHud, updateLayout, gameTick, handleInput, renderState, gameOver)
-    // se mantienen igual que en la versión de tu compañero para no romper el layout dinámico.
     toggleHud(visible) { if (this.hudRoot) this.hudRoot.classList.toggle('d-none', !visible); }
 
     updateLayout(viewportWidth, viewportHeight) {
@@ -203,9 +319,9 @@ export class LocalGame extends Phaser.Scene {
 
     updateLivesHud(targetElement, lives) {
         if (!targetElement) return;
-        const safeLives = Math.max(0, Math.min(MAX_LIVES, Number(lives) || 0));
+        const safeLives = Math.max(0, Math.min(CHAOS_MAX_LIVES, Number(lives) || 0));
         targetElement.innerHTML = '<span class="text-danger">&#10084;</span>'.repeat(safeLives) +
-            '<span class="text-secondary opacity-50">&#10084;</span>'.repeat(MAX_LIVES - safeLives);
+            '<span class="text-secondary opacity-50">&#10084;</span>'.repeat(CHAOS_MAX_LIVES - safeLives);
     }
 
     pushDirection(playerId, direction) {
@@ -215,7 +331,6 @@ export class LocalGame extends Phaser.Scene {
     gameTick() {
         this.handleInput();
 
-        // 1. Guardar el estado ANTES de mover (usando variables fijas como hizo tu compañero)
         const oldState = this.engine.getState();
         const p1Old = oldState.players.get(P1_ID);
         const p2Old = oldState.players.get(P2_ID);
@@ -225,13 +340,11 @@ export class LocalGame extends Phaser.Scene {
         const lives1 = p1Old?.lives || 0;
         const lives2 = p2Old?.lives || 0;
 
-        // 2. Actualizar el motor
         const state = this.engine.tick();
 
         const p1New = state.players.get(P1_ID);
         const p2New = state.players.get(P2_ID);
 
-        // 3. Comparar con los números fijos que guardamos antes
         if ((p1New?.score || 0) > score1 || (p2New?.score || 0) > score2) {
             this.sound.play('eat_apple', { volume: this.userSfxVol * 0.7 });
         }
@@ -258,22 +371,20 @@ export class LocalGame extends Phaser.Scene {
         if (p1) this.updateLivesHud(this.hudJ1Lives, p1.lives);
         if (p2) this.updateLivesHud(this.hudJ2Lives, p2.lives);
 
-        if (p1.score >= WIN_SCORE || p2.score >= WIN_SCORE) this.gameOver(true);
-        if (p1.lives <= 0 || p2.lives <= 0) this.gameOver(false);
+        if (p1.lives <= 0 || p2.lives <= 0) this.gameOver();
     }
 
-    gameOver(reason) {
+    gameOver() {
         if (this.gameTimer) this.gameTimer.remove();
         const state = this.engine.getState();
         const p1 = state.players.get(P1_ID);
         const p2 = state.players.get(P2_ID);
         this.scene.start('GameOver', {
-            winner: reason ? getScoreWinner(p1.score, p2.score) : getLivesWinner(p1.lives, p2.lives),
+            winner: p1.lives > 0 ? 'J1' : 'J2',
             p1Score: p1.score, p1Lives: p1.lives,
             p2Score: p2.score, p2Lives: p2.lives,
-            reason: reason ? 'score' : 'lives',
-            mode: 'local',
-            rematchScene: 'LocalGame'
+            reason: 'lives',
+            rematchScene: 'ChaosGame',
         });
     }
 }
