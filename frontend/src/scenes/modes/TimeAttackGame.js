@@ -1,6 +1,8 @@
+import Phaser from 'phaser';
 import { SnakeEngine } from '@shared/SnakeEngine';
 import { TICK_MS } from '@shared/GameConfig';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
+import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
@@ -11,6 +13,13 @@ export class TimeAttackGame extends Phaser.Scene {
         this.audioStateCache = new Map();
     }
 
+    init(data) {
+        const fromStorage = loadLocalGameSettings();
+        const merged = normalizeLocalGameSettings({ ...fromStorage, ...(data ?? {}), gameMode: 'timeAttack' });
+        this.matchSettings = merged;
+        saveLocalGameSettings(merged);
+    }
+
     create() {
         this.boardRenderer = new SnakeBoardRenderer(this);
         this.cacheHudElements();
@@ -19,8 +28,10 @@ export class TimeAttackGame extends Phaser.Scene {
 
         this.engine = new SnakeEngine({ foodCount: 15, maxLives: 9999 });
 
-        this.engine.addPlayer(P1_ID, { color: 0xe74c3c });
-        this.engine.addPlayer(P2_ID, { color: 0x3498db });
+        const p1Cfg = this.matchSettings?.players?.p1 ?? {};
+        const p2Cfg = this.matchSettings?.players?.p2 ?? {};
+        this.engine.addPlayer(P1_ID, { color: p1Cfg.color ?? 0xe74c3c, skinId: p1Cfg.skinId });
+        this.engine.addPlayer(P2_ID, { color: p2Cfg.color ?? 0x3498db, skinId: p2Cfg.skinId });
 
         this.inputBuffers = { [P1_ID]: [], [P2_ID]: [] };
 
@@ -61,6 +72,7 @@ export class TimeAttackGame extends Phaser.Scene {
         this.gameTimer = this.time.addEvent({ delay: TICK_MS, loop: true, callback: this.gameTick, callbackScope: this });
         this.clockTimer = this.time.addEvent({ delay: 1000, loop: true, callback: this.actualizarReloj, callbackScope: this });
 
+        this.applyHudIdentity();
         this.updateLayout(this.scale.width, this.scale.height);
         this.scale.on('resize', (gameSize) => this.updateLayout(gameSize.width, gameSize.height));
     }
@@ -216,11 +228,42 @@ export class TimeAttackGame extends Phaser.Scene {
 
     cacheHudElements() {
         this.hudRoot = document.getElementById('localgame-hud');
+        this.hudJ1Score = document.getElementById('hud-j1-score');
         this.hudJ1ScoreBig = document.getElementById('hud-j1-score-big');
+        this.hudJ2Score = document.getElementById('hud-j2-score');
         this.hudJ2ScoreBig = document.getElementById('hud-j2-score-big');
         this.hudHelpWrap = document.getElementById('hud-help-wrap');
+        this.hudHelp = document.getElementById('hud-help');
+        this.hudLeftPlayer = document.getElementById('hud-left-player');
+        this.hudRightPlayer = document.getElementById('hud-right-player');
         const lives = [document.getElementById('hud-j1-lives'), document.getElementById('hud-j2-lives')];
         lives.forEach(l => { if (l) l.style.display = 'none'; });
+    }
+
+    applyHudIdentity() {
+        const p1Name = this.matchSettings?.players?.p1?.name ?? 'J1';
+        const p2Name = this.matchSettings?.players?.p2?.name ?? 'J2';
+        const p1Color = this.matchSettings?.players?.p1?.color;
+        const p2Color = this.matchSettings?.players?.p2?.color;
+
+        if (this.hudJ1Score) this.hudJ1Score.textContent = p1Name;
+        if (this.hudJ2Score) this.hudJ2Score.textContent = p2Name;
+
+        if (this.hudLeftPlayer && p1Color !== undefined) {
+            const hex = colorNumberToCssHex(p1Color);
+            this.hudLeftPlayer.style.borderColor = `${hex}55`;
+            this.hudLeftPlayer.style.boxShadow = `0 12px 40px rgba(0,0,0,0.35), 0 0 0 2px ${hex}33 inset`;
+        }
+
+        if (this.hudRightPlayer && p2Color !== undefined) {
+            const hex = colorNumberToCssHex(p2Color);
+            this.hudRightPlayer.style.borderColor = `${hex}55`;
+            this.hudRightPlayer.style.boxShadow = `0 12px 40px rgba(0,0,0,0.35), 0 0 0 2px ${hex}33 inset`;
+        }
+
+        if (this.hudHelp) {
+            this.hudHelp.textContent = `Contrarreloj | ${p1Name} (WASD) vs ${p2Name} (Flechas) — ESC: Menu`;
+        }
     }
 
     toggleHud(v) { if (this.hudRoot) this.hudRoot.classList.toggle('d-none', !v); }
