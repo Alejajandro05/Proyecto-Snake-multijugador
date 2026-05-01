@@ -331,6 +331,12 @@ export class SnakeEngine {
     });
   }
 
+  /** Re-roll obstacle positions (e.g. chaos mode). Snakes are avoided; food is not moved. */
+  regenerateObstacles(): void {
+    this.obstacles.length = 0;
+    this.generateObstacles();
+  }
+
   private isSafeSpawn(col: number, row: number): boolean {
     return this.obstacles.every(ob => {
       const obCol = ob.x / this.config.gridSize;

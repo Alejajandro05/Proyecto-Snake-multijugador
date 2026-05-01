@@ -20,6 +20,11 @@ export class LocalGameSetup extends Phaser.Scene {
     constructor() {
         super('LocalGameSetup');
         this.overlayEl = null;
+        this.presetMode = null;
+    }
+
+    init(data) {
+        this.presetMode = data?.gameMode ? String(data.gameMode) : null;
     }
 
     create() {
@@ -35,6 +40,7 @@ export class LocalGameSetup extends Phaser.Scene {
         this.scale.on('resize', (gameSize) => ajustarFondo(gameSize.width, gameSize.height));
 
         const saved = loadLocalGameSettings();
+        const initialGameMode = String(this.presetMode ?? saved?.gameMode ?? 'classic');
         const initialDifficulty = String(saved?.difficulty ?? DEFAULT_CONFIG.difficulty);
         const initialP1Name = safeName(saved?.players?.p1?.name, DEFAULT_CONFIG.p1.name);
         const initialP2Name = safeName(saved?.players?.p2?.name, DEFAULT_CONFIG.p2.name);
@@ -43,6 +49,9 @@ export class LocalGameSetup extends Phaser.Scene {
         menuDiv.id = 'local-game-setup-overlay';
         menuDiv.className = 'position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center';
         menuDiv.style.zIndex = '1000';
+        menuDiv.style.paddingTop = '0.75rem';
+        menuDiv.style.paddingBottom = '5.75rem';
+        menuDiv.style.boxSizing = 'border-box';
 
         let p1SkinIndex = 0;
         let p2SkinIndex = 1;
@@ -66,6 +75,50 @@ export class LocalGameSetup extends Phaser.Scene {
                 #btn-create-local-game:hover { transform: scale(1.02); }
                 input.custom-input:focus { border-bottom: 2px solid rgba(255,255,255,0.5) !important; outline: none; box-shadow: none; }
                 input.custom-input { border-bottom: 2px solid transparent !important; border-radius: 0; }
+
+                .mode-select-btn { border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.06); color: white; transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease; }
+                .mode-select-btn:hover {
+                    transform: translateY(-1px);
+                    background: linear-gradient(180deg, #F67D31 0%, #e56a1f 100%);
+                    border-color: rgba(255, 200, 140, 0.95);
+                    color: #0B081A;
+                    box-shadow: 0 8px 28px rgba(246, 125, 49, 0.45);
+                }
+
+                .local-setup-card {
+                    max-height: min(88vh, calc(100vh - 7.25rem));
+                    overflow-y: auto;
+                }
+                .local-setup-card::-webkit-scrollbar { width: 8px; }
+                .local-setup-card::-webkit-scrollbar-thumb { background: rgba(246, 125, 49, 0.45); border-radius: 999px; }
+                .local-setup-card::-webkit-scrollbar-track { background: rgba(255,255,255,0.06); border-radius: 999px; }
+
+                .mode-modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; padding: 22px; z-index: 2000; background: rgba(0,0,0,0.55); backdrop-filter: blur(6px); }
+                .mode-modal.open { display: flex; }
+                .mode-modal-panel { width: min(860px, 96vw); border-radius: 18px; background: rgba(12, 18, 42, 0.96); border: 2px solid rgba(246, 125, 49, 0.55); box-shadow: 0 30px 120px rgba(0,0,0,0.55); overflow: hidden; }
+                .mode-modal-header { padding: 18px 18px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.12); }
+                .mode-modal-title { margin: 0; color: white; font-weight: 800; letter-spacing: 1px; font-family: 'Montserrat', sans-serif; }
+                .mode-modal-subtitle { margin: 6px 0 0; color: rgba(255,255,255,0.75); font-size: 0.9rem; }
+                .mode-close { border: 1px solid rgba(255,255,255,0.22); background: transparent; color: white; border-radius: 999px; padding: 8px 12px; }
+                .mode-close:hover { background: rgba(255,255,255,0.08); }
+
+                .mode-carousel { display: grid; grid-template-columns: 64px 1fr 64px; align-items: center; gap: 10px; padding: 18px; }
+                .mode-arrow { width: 54px; height: 54px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); color: white; font-size: 28px; line-height: 1; display: grid; place-items: center; cursor: pointer; transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease; user-select: none; }
+                .mode-arrow:hover { transform: scale(1.04); background: rgba(255,255,255,0.1); border-color: rgba(246, 125, 49, 0.55); }
+
+                .mode-card { border-radius: 16px; overflow: hidden; border: 3px solid #F67D31; box-shadow: 0 18px 60px rgba(0,0,0,0.35); background: rgba(11, 8, 26, 1); }
+                .mode-card-img { height: 220px; background: #0B081A; position: relative; overflow: hidden; }
+                .mode-card-img img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; transform: scale(1.02); }
+                .mode-card-img::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(12,18,42,1), rgba(12,18,42,0.15)); }
+                .mode-card-body { padding: 16px 16px 18px; background: rgba(12, 18, 42, 0.98); }
+                .mode-card-title { margin: 0 0 6px; color: white; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; font-family: 'Montserrat', sans-serif; }
+                .mode-card-desc { margin: 0; color: rgba(255,255,255,0.8); font-size: 0.95rem; line-height: 1.3; }
+
+                .mode-modal-footer { padding: 14px 18px 18px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255,255,255,0.12); }
+                .mode-choose { padding: 12px 16px; border-radius: 999px; border: 2px solid rgba(246, 125, 49, 0.85); background: linear-gradient(90deg, #DE1A58, #8F0177); color: white; font-weight: 800; }
+                .mode-choose:hover { filter: brightness(1.03); }
+                .mode-cancel { padding: 12px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); color: white; font-weight: 700; }
+                .mode-cancel:hover { background: rgba(255,255,255,0.1); }
                 .map-option { border: 2px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.06); color: white; transition: all 0.2s; }
                 .map-option:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.4); }
                 .map-option.active { border-color: #F67D31; box-shadow: 0 0 0 2px rgba(246,125,49,0.2), 0 12px 28px rgba(0,0,0,0.25); }
@@ -74,7 +127,7 @@ export class LocalGameSetup extends Phaser.Scene {
                 <button id="btn-setup-back" class="btn btn-sm btn-outline-light fw-semibold align-self-start mb-3" type="button" style="border-radius: 999px; padding: 8px 14px;">
                     ← Volver
                 </button>
-                <div class="rounded-4 shadow-lg p-4 p-md-5 d-flex flex-column align-items-center w-100" style="background: rgba(15, 23, 42, 0.86); border: 1px solid rgba(255,255,255,0.14); backdrop-filter: blur(6px);">
+                <div class="local-setup-card rounded-4 shadow-lg p-4 p-md-4 d-flex flex-column align-items-center w-100" style="background: rgba(15, 23, 42, 0.86); border: 1px solid rgba(255,255,255,0.14); backdrop-filter: blur(6px);">
                     
                     <div class="rounded-pill px-5 py-2 mb-4 text-center" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); min-width: 50%;">
                         <h1 class="h3 text-white fw-bold mb-0" style="font-family: 'Teko', sans-serif; letter-spacing: 1px;">CONFIGURACIÓN LOCAL</h1>
@@ -87,6 +140,18 @@ export class LocalGameSetup extends Phaser.Scene {
                         <button id="btn-diff-normal" type="button" class="btn rounded-pill px-4 py-2 fw-bold diff-btn" data-difficulty="normal" style="min-width: 120px;">Medium</button>
                         <button id="btn-diff-hard" type="button" class="btn rounded-pill px-4 py-2 fw-bold diff-btn" data-difficulty="hard" style="min-width: 120px;">Hard</button>
                         <input id="difficulty" type="hidden" value="${initialDifficulty}" />
+                    </div>
+
+                    <div class="w-75 border-bottom border-secondary opacity-50 mb-4"></div>
+
+                    <div class="d-flex flex-column align-items-center mb-4 w-100">
+                        <button id="btn-open-mode" type="button" class="btn rounded-pill px-4 py-2 fw-bold mode-select-btn" style="min-width: 280px;">
+                            Seleccionar modo de juego
+                        </button>
+                        <div id="mode-selected-label" class="mt-2 small" style="color: rgba(255,255,255,0.75);">
+                            -
+                        </div>
+                        <input id="gameMode" type="hidden" value="${initialGameMode}" />
                     </div>
 
                     <div class="w-75 border-bottom border-secondary opacity-50 mb-4"></div>
@@ -127,6 +192,29 @@ export class LocalGameSetup extends Phaser.Scene {
                             style="padding: 14px 18px; background: linear-gradient(90deg, #DE1A58, #8F0177); border: 2px solid rgba(246, 125, 49, 0.85); font-family: 'Montserrat', sans-serif; min-width: 280px; width: 60%;">
                             Crear Partida
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="mode-modal" class="mode-modal" role="dialog" aria-modal="true" aria-labelledby="mode-modal-title">
+                <div class="mode-modal-panel">
+                    <div class="mode-modal-header">
+                        <div>
+                            <h2 id="mode-modal-title" class="mode-modal-title">SELECCIONA MODO DE JUEGO</h2>
+                            <p class="mode-modal-subtitle">Usa las flechas para ver más modos.</p>
+                        </div>
+                        <button id="mode-close" class="mode-close" type="button">Cerrar</button>
+                    </div>
+
+                    <div class="mode-carousel">
+                        <button id="mode-prev" class="mode-arrow" type="button" aria-label="Anterior">‹</button>
+                        <div id="mode-card-slot"></div>
+                        <button id="mode-next" class="mode-arrow" type="button" aria-label="Siguiente">›</button>
+                    </div>
+
+                    <div class="mode-modal-footer">
+                        <button id="mode-cancel" class="mode-cancel" type="button">Cancelar</button>
+                        <button id="mode-choose" class="mode-choose" type="button">Elegir este modo</button>
                     </div>
                 </div>
             </div>
@@ -187,6 +275,7 @@ export class LocalGameSetup extends Phaser.Scene {
         };
 
         const startGame = () => {
+            const gameMode = String(document.getElementById('gameMode')?.value ?? 'classic');
             const difficulty = String(document.getElementById('difficulty')?.value ?? DEFAULT_CONFIG.difficulty);
             const p1Name = safeName(document.getElementById('p1-name')?.value, DEFAULT_CONFIG.p1.name);
             const p2Name = safeName(document.getElementById('p2-name')?.value, DEFAULT_CONFIG.p2.name);
@@ -201,6 +290,7 @@ export class LocalGameSetup extends Phaser.Scene {
             const mapId = mapAssets[mapIndex].id;
 
             const payload = {
+                gameMode,
                 difficulty,
                 mapId,
                 players: {
@@ -212,7 +302,8 @@ export class LocalGameSetup extends Phaser.Scene {
             saveLocalGameSettings(payload);
 
             cleanup();
-            this.scene.start('LocalGame', payload);
+            const sceneKey = gameMode === 'timeAttack' ? 'TimeAttackGame' : gameMode === 'chaos' ? 'ChaosGame' : 'LocalGame';
+            this.scene.start(sceneKey, payload);
         };
 
         document.getElementById('btn-setup-back')?.addEventListener('click', goBack);
@@ -256,11 +347,114 @@ export class LocalGameSetup extends Phaser.Scene {
         });
         setDifficultyUi(initialDifficulty);
 
-        this.input.keyboard?.on('keydown-ESC', goBack);
+        const gameModeInput = document.getElementById('gameMode');
+        const modeSelectedLabel = document.getElementById('mode-selected-label');
+        const modeOpenBtn = document.getElementById('btn-open-mode');
+
+        const modeModal = document.getElementById('mode-modal');
+        const modeClose = document.getElementById('mode-close');
+        const modeCancel = document.getElementById('mode-cancel');
+        const modeChoose = document.getElementById('mode-choose');
+        const modePrev = document.getElementById('mode-prev');
+        const modeNext = document.getElementById('mode-next');
+        const modeCardSlot = document.getElementById('mode-card-slot');
+
+        const MODES = [
+            {
+                id: 'classic',
+                title: 'CLÁSICO',
+                desc: 'Duelo 1 vs 1 con vidas y puntuación. El primero en ganar se lo lleva.',
+                img: '/fondo_duelo.png',
+                label: 'Clásico (1vs1)',
+            },
+            {
+                id: 'timeAttack',
+                title: 'CONTRARRELOJ',
+                desc: '1 minuto, vidas infinitas y Muerte súbita en empate.',
+                img: '/time_attack.jpg',
+                label: 'Contrarreloj',
+            },
+            {
+                id: 'chaos',
+                title: 'MODO CAOS',
+                desc: '5 vidas, sin victoria por puntuación: gana quien aguante. Efectos aleatorios en el tablero y los controles.',
+                img: '/assets/ModoCaos2.png',
+                label: 'Modo Caos',
+            },
+        ];
+
+        let modeIndex = Math.max(0, MODES.findIndex((m) => m.id === initialGameMode));
+        if (modeIndex === -1) modeIndex = 0;
+        let pendingModeId = MODES[modeIndex]?.id ?? 'classic';
+
+        const setGameModeValue = (modeId) => {
+            let safe = 'classic';
+            if (modeId === 'timeAttack') safe = 'timeAttack';
+            else if (modeId === 'chaos') safe = 'chaos';
+            if (gameModeInput) gameModeInput.value = safe;
+            const current = MODES.find((m) => m.id === safe);
+            if (modeSelectedLabel) modeSelectedLabel.textContent = current ? `Seleccionado: ${current.label}` : 'Seleccionado: -';
+        };
+
+        const renderModeCard = () => {
+            const m = MODES[modeIndex];
+            if (!m || !modeCardSlot) return;
+            pendingModeId = m.id;
+            modeCardSlot.innerHTML = `
+                <div class="mode-card" role="group" aria-label="Modo de juego">
+                    <div class="mode-card-img">
+                        <img src="${m.img}" alt="${m.title}">
+                    </div>
+                    <div class="mode-card-body">
+                        <h3 class="mode-card-title">${m.title}</h3>
+                        <p class="mode-card-desc">${m.desc}</p>
+                    </div>
+                </div>
+            `;
+        };
+
+        const openModeModal = () => {
+            if (!modeModal) return;
+            renderModeCard();
+            modeModal.classList.add('open');
+        };
+
+        const closeModeModal = () => {
+            if (!modeModal) return;
+            modeModal.classList.remove('open');
+        };
+
+        const rotateMode = (delta) => {
+            const len = MODES.length || 1;
+            modeIndex = (modeIndex + delta + len) % len;
+            renderModeCard();
+        };
+
+        modeOpenBtn?.addEventListener('click', openModeModal);
+        modeClose?.addEventListener('click', closeModeModal);
+        modeCancel?.addEventListener('click', closeModeModal);
+        modePrev?.addEventListener('click', () => rotateMode(-1));
+        modeNext?.addEventListener('click', () => rotateMode(1));
+        modeChoose?.addEventListener('click', () => {
+            setGameModeValue(pendingModeId);
+            closeModeModal();
+        });
+
+        modeModal?.addEventListener('click', (e) => {
+            if (e.target === modeModal) closeModeModal();
+        });
+
+        setGameModeValue(initialGameMode);
+
+        this.input.keyboard?.on('keydown-ESC', () => {
+            const isOpen = Boolean(document.getElementById('mode-modal')?.classList.contains('open'));
+            if (isOpen) closeModeModal();
+            else goBack();
+        });
 
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
             cleanup();
-            this.input.keyboard?.off('keydown-ESC', goBack);
+            this.input.keyboard?.off('keydown-ESC');
         });
     }
 }

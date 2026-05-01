@@ -32,7 +32,7 @@ export class MainMenu extends Phaser.Scene {
         menuDiv.style.zIndex = '1000';
         menuDiv.style.overflow = 'hidden';
 
-        // DISEÑO ABSOLUTO: El centro es el centro, la derecha es la derecha.
+        // Menú centrado sobre el fondo.
         menuDiv.innerHTML = `
             <div id="pantalla-principal" class="w-100 h-100 position-relative">
                 
@@ -53,29 +53,6 @@ export class MainMenu extends Phaser.Scene {
                         <button id="btn-opciones" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #1A05A2; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">
                             ⚙️ OPCIONES
                         </button>
-                    </div>
-                </div>
-
-                <div class="position-absolute top-50 end-0 translate-middle-y me-4 me-xl-5 d-none d-lg-block" style="width: 320px; margin-top: -20px;">
-                    <h3 class="text-white fw-bold mb-3" style="font-family: 'Montserrat', sans-serif; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 10px;">
-                        Modos Arcade
-                    </h3>
-                    
-                    <div id="btn-time-attack" class="card shadow-lg bg-transparent arcade-card" style="border: 3px solid #F67D31; border-radius: 16px; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; overflow: hidden;">
-                        <div style="height: 180px; background-color: #0B081A; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative;">
-                            
-                            <img src="/time_attack.jpg" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.85; transition: opacity 0.3s ease;" class="arcade-img">
-                            
-                            <div class="position-absolute bottom-0 start-0 w-100" style="height: 50%; background: linear-gradient(to top, rgba(12,18,42,1), transparent);"></div>
-                        </div>
-                        <div class="card-body p-3" style="background: rgba(12, 18, 42, 0.98);">
-                            <h5 class="card-title fw-bold text-white mb-2" style="font-family: 'Montserrat', sans-serif; text-transform: uppercase; letter-spacing: 1px;">
-                                <span style="color: #F67D31;">⏱️</span> Contrarreloj
-                            </h5>
-                            <p class="card-text text-light mb-0" style="opacity: 0.85; line-height: 1.3; font-size: 0.85rem;">
-                                1 minuto, vidas infinitas y Muerte súbita en empate.
-                            </p>
-                        </div>
                     </div>
                 </div>
 
@@ -128,19 +105,13 @@ export class MainMenu extends Phaser.Scene {
         document.getElementById('btn-local').addEventListener('click', () => {
             detenerAudioPrueba();
             clearMenu();
-            this.scene.start('LocalGameSetup');
+            this.scene.start('LocalGameSetup', { gameMode: 'classic' });
         });
 
         document.getElementById('btn-online').addEventListener('click', () => {
             detenerAudioPrueba();
             clearMenu();
             this.scene.start('OnlineMenu');
-        });
-
-        document.getElementById('btn-time-attack').addEventListener('click', () => {
-            detenerAudioPrueba();
-            clearMenu();
-            this.scene.start('TimeAttackGame');
         });
 
         document.getElementById('btn-opciones').addEventListener('click', () => {

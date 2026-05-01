@@ -7,6 +7,7 @@ import { LocalGame } from './scenes/modes/LocalGame.js';
 import { OnlineMenu } from './scenes/OnlineMenu.js';
 import { OnlineGame } from './scenes/modes/OnlineGame.js';
 import { TimeAttackGame } from './scenes/modes/TimeAttackGame.js';
+import { ChaosGame } from './scenes/modes/ChaosGame.js';
 import { Pause } from './scenes/Pause.js';
 import {LocalGameSetup} from "./scenes/LocalGameSetup";
 
@@ -51,6 +52,7 @@ const config = {
         LocalGame,
         OnlineGame,
         TimeAttackGame,
+        ChaosGame,
         GameOver,
         Pause
     ]
