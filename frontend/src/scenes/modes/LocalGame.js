@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { SnakeEngine } from '@shared/SnakeEngine';
-import { MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig';
+import { SnakeEngine } from '@shared/SnakeEngine.ts';
+import { MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig.js';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
 
@@ -251,6 +251,7 @@ export class LocalGame extends Phaser.Scene {
         this.boardRenderer.renderState(state);
         const p1 = state.players.get(P1_ID);
         const p2 = state.players.get(P2_ID);
+        console.log(`p1 score: ${p1.score} \t p2 score: ${p2.score}`)
         if (p1 && this.hudJ1ScoreBig) this.hudJ1ScoreBig.textContent = `${p1.score}`;
         if (p2 && this.hudJ2ScoreBig) this.hudJ2ScoreBig.textContent = `${p2.score}`;
         if (p1) this.updateLivesHud(this.hudJ1Lives, p1.lives);

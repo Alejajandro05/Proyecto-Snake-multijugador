@@ -6,8 +6,26 @@ export interface Position {
 }
 
 export type SnakeSegmentState = Position;
-export type FoodState = Position;
+// export type FoodState = Position;
 export type ObstacleState = Position;
+
+export type FoodType = "apple" | "grape" | "poison";
+
+type FoodEffect = (player: PlayerState) => void;
+
+export type FoodConfigItem = {
+  frame: number;
+  score: number;
+  weight: number;
+  effect?: FoodEffect;
+};
+
+export type FoodState = {
+  x: number;
+  y: number;
+  type: FoodType;
+  score: number;
+}
 
 export interface PlayerState {
   id: string;
@@ -19,6 +37,11 @@ export interface PlayerState {
   lives: number;
   score: number;
   segments: SnakeSegmentState[];
+
+  // velocidad
+  speed: number;
+  moveCounter: number;
+  speedEffectRemaining: number;
 }
 
 export interface GameState {
