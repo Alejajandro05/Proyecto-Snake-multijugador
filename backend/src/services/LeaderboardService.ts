@@ -15,9 +15,14 @@ interface LeaderboardCreateData {
 
 const firebaseConfig = () => {
   if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON_B64) {
+    const serviceAccountJson = Buffer.from(
+      process.env.FIREBASE_SERVICE_ACCOUNT_JSON_B64,
+      "base64",
+    ).toString("utf8");
+
     return {
       credential: admin.credential.cert(
-        JSON.parse(Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_JSON_B64, 'base64')),
+        JSON.parse(serviceAccountJson),
       ),
     };
   }
@@ -29,7 +34,7 @@ const firebaseConfig = () => {
   }
 
   throw new Error(
-    "Firebase service account credentials are required. Set FIREBASE_SERVICE_ACCOUNT_JSON or GOOGLE_APPLICATION_CREDENTIALS.",
+    "Firebase service account credentials are required. Set FIREBASE_SERVICE_ACCOUNT_JSON_B64 or GOOGLE_APPLICATION_CREDENTIALS.",
   );
 };
 
