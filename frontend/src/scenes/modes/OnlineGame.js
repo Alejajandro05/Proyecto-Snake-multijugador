@@ -4,6 +4,7 @@ import { createLobbyClient } from '../../net/lobbyClient.js';
 import { getCurrentUser } from '../../services/firebaseAuthService.js';
 import { LeaderboardService } from '../../services/LeaderboardService.js';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
+import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
 
 function normalizeHttpUrlToWebSocket(url) {
     const s = String(url ?? '').trim();
@@ -52,10 +53,11 @@ export class OnlineGame extends Phaser.Scene {
     init(data) {
         this.matchRoomId = data?.matchRoomId ?? '';
         this.playerSkinId = data?.skinId ?? '';
+        this.mapId = data?.mapId ?? '';
     }
 
     async create() {
-        this.boardRenderer = new SnakeBoardRenderer(this);
+        this.boardRenderer = new SnakeBoardRenderer(this, { mapId: this.mapId });
 
         this.cacheHudElements();
         this.toggleHud(true);
@@ -390,19 +392,25 @@ export class OnlineGame extends Phaser.Scene {
 
         if (reason) {
             this.scene.start('GameOver', {
+                winner: getScoreWinner(p1.score, p2.score),
                 p1Score: p1.score,
                 p1Lives: p1.lives,
                 p2Score: p2.score,
                 p2Lives: p2.lives,
-                reason: 'score'
+                reason: 'score',
+                mode: 'online',
+                rematchScene: 'OnlineMenu'
             });
         } else {
             this.scene.start('GameOver', {
+                winner: getLivesWinner(p1.lives, p2.lives),
                 p1Score: p1.score,
                 p1Lives: p1.lives,
                 p2Score: p2.score,
                 p2Lives: p2.lives,
-                reason: 'lives'
+                reason: 'lives',
+                mode: 'online',
+                rematchScene: 'OnlineMenu'
             });
         }
     }

@@ -3,6 +3,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const backendTarget = process.env.VITE_API_PROXY_TARGET || 'http://localhost:2567';
+const backendProxy = {
+  target: backendTarget,
+  changeOrigin: true,
+  ws: true,
+};
 
 export default defineConfig({
   // Serve/copy frontend/assets as static files available at /...
@@ -10,10 +16,9 @@ export default defineConfig({
   publicDir: 'assets',
   server: {
     proxy: {
-      '/api': {
-        target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:2567',
-        changeOrigin: true,
-      },
+      '/api': backendProxy,
+      '/matchmake': backendProxy,
+      '^/[A-Za-z0-9_-]+/[A-Za-z0-9_-]+(?:\\?.*)?$': backendProxy,
     },
   },
   resolve: {

@@ -5,6 +5,10 @@
 		X-Frame-Options "SAMEORIGIN"
 	}
 
+	handle /api* {
+		reverse_proxy backend:2567
+	}
+
 	handle /ws* {
 		uri strip_prefix /ws
 		reverse_proxy backend:2567

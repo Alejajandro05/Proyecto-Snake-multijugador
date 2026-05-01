@@ -37,12 +37,13 @@ La raiz contiene archivos de orquestacion y apoyo:
 - `DEPLOY.md`
 - `README.md`
 - `PROJECT_CONTEXT.md`
+- `package.json` / `package-lock.json` si se usan dependencias o herramientas de raiz.
 
 ## Stack
 
 - Frontend: Phaser, Vite, JavaScript.
 - Backend: TypeScript, Colyseus, Express.
-- Shared domain: TypeScript y JavaScript coexistiendo en el mismo arbol.
+- Shared domain: TypeScript como fuente canonica y JavaScript runtime generado en el mismo arbol.
 - Contenedores: Docker y Docker Compose.
 - Proxy/produccion: Caddy.
 
@@ -66,7 +67,6 @@ El cliente arranca Phaser y registra estas escenas:
 - `LocalGameSetup`
 - `LocalGame`
 - `OnlineGame`
-- `Game`
 - `TimeAttackGame`
 - `GameOver`
 - `Pause`
@@ -89,9 +89,11 @@ El backend expone ademas estos endpoints HTTP:
 - `/api/lobbies`
 - `/api/lobbies/resolve`
 
+En produccion, Caddy debe reenviar `/api*` y `/ws*` al backend Colyseus.
+
 ### Shared Domain
 
-La carpeta `shared/src/domain` contiene la logica que no depende de Phaser ni de Colyseus:
+La carpeta `shared/src/domain` contiene la logica que no depende de Phaser ni de Colyseus. TypeScript es la fuente canonica y los `.js` del mismo directorio son artefactos runtime generados para los imports ESM actuales.
 
 - `GameConfig.ts` y `GameConfig.js`: constantes y presets de dificultad.
 - `types.ts` y `types.js`: tipos y estructuras del estado del juego.
@@ -184,7 +186,6 @@ No forman parte del flujo principal del juego, pero siguen presentes como refere
 - `LocalGameSetup`: configuracion previa al modo local.
 - `LocalGame`: modo local 1vs1 usando `SnakeEngine`.
 - `OnlineGame`: modo online sincronizado con `snake_room`.
-- `Game`: escena simple de prueba / legado.
 - `TimeAttackGame`: modo especial de tiempo.
 - `GameOver`: overlay o escena de resultado final.
 - `Pause`: overlay o escena de pausa.
@@ -220,6 +221,8 @@ Archivos utiles:
 - Mapa, baldosas y obstaculos.
 - Sprites de frutas.
 
+Nota de despliegue: con `vite build`, los archivos de `publicDir: 'assets'` se copian al raiz de `frontend/dist`, asi que `time_attack.jpg` se sirve como `/time_attack.jpg` en produccion.
+
 ## Configuracion Y Entorno
 
 ### Desarrollo local
@@ -233,6 +236,8 @@ Archivos utiles:
 - `docker-compose.prod.yml` levanta backend + Caddy.
 - Caddy sirve el frontend compilado desde `frontend/dist`.
 - WebSocket publico por defecto en `/ws`.
+- El proxy HTTP para el frontend online usa `/api/lobbies` y `/api/lobbies/resolve` contra el backend.
+- El flujo correcto de despliegue en el VPS es `scripts/pull-git-and-restart-docker.sh`, no `scripts/deploy.sh`.
 
 ### Variables relevantes del frontend
 
@@ -253,7 +258,14 @@ En `frontend/package.json`:
 
 - `npm run dev`
 - `npm run build`
+- `npm test`
 - `npm run preview`
+
+En `shared/package.json`:
+
+- `npm run build`
+- `npm run build:runtime`
+- `npm run check`
 
 ## Tests
 
@@ -261,11 +273,16 @@ Hay tests en `backend/test/`:
 
 - `SnakeEngine.test.ts`: movimiento, giro, comida, colision, wrap, respawn y limpieza.
 - `MyRoom.test.ts`: test basico de ejemplo de Colyseus.
+- `LobbyRoom.test.ts`: flujo de lobby e invitaciones.
+
+Hay tests en `frontend/test/`:
+
+- `gameOverRouting.test.js`: routing de revancha y empates del overlay `GameOver`.
 
 ## Notas Importantes
 
-- La raiz no tiene `package.json`; cada subproyecto maneja sus dependencias.
-- En `shared/src/domain` hay archivos `.ts` y `.js`; conviene mantenerlos alineados.
+- La raiz puede tener `package.json`, pero los scripts principales viven en `frontend/`, `backend/` y `shared/`.
+- En `shared/src/domain`, no edites los `.js` a mano si el cambio viene de logica compartida; edita los `.ts` y regenera con `npm run build:runtime --prefix shared`.
 - El modo online principal usa `snake_room`; `lobby_room` soporta el flujo de lobby.
 - El frontend mezcla escenas de juego, menu y configuracion en una sola app Phaser.
 - El renderer del tablero esta preparado para funcionar incluso si faltan algunos assets.
@@ -284,3 +301,5 @@ Cuando haga falta tocar funcionalidad, los archivos mas probables a revisar prim
 - `frontend/src/scenes/OnlineMenu.js`
 - `frontend/src/scenes/LocalGameSetup.js`
 - `frontend/src/renderers/SnakeBoardRenderer.js`
+- `Caddyfile`
+- `scripts/pull-git-and-restart-docker.sh`
