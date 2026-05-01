@@ -17,7 +17,7 @@ const firebaseConfig = () => {
   if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON_B64) {
     return {
       credential: admin.credential.cert(
-        JSON.parse(Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_JSON, 'base64')),
+        JSON.parse(Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_JSON_B64, 'base64')),
       ),
     };
   }
@@ -100,5 +100,11 @@ export class LeaderboardService {
     await collection.doc(id).delete();
   }
 }
+
+// Logic for recording wins in LeaderboardService:
+// When a player wins, call LeaderboardService.create({ userUUID: winnerFirebaseUid, winCount: 1 });
+// This will create a new entry or update existing one if needed.
+// To get existing wins: const existing = await LeaderboardService.getAll().find(e => e.userUUID === winnerFirebaseUid);
+// If existing, update with winCount + 1, else create new with winCount: 1
 
 export type { LeaderboardEntry };

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
 import { createLobbyClient } from '../../net/lobbyClient.js';
+import { getCurrentUser } from '../../services/firebaseAuthService.js';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 
 function normalizeHttpUrlToWebSocket(url) {
@@ -233,9 +234,14 @@ export class OnlineGame extends Phaser.Scene {
     async connectToServer() {
         try {
             const client = createLobbyClient();
+            const currentUser = await getCurrentUser();
+            const options = { skinId: this.playerSkinId };
+            if (currentUser) {
+                options.firebaseUid = currentUser.uid;
+            }
             this.room = this.matchRoomId
-                ? await client.joinSnakeRoomById(this.matchRoomId, { skinId: this.playerSkinId })
-                : await client.joinOrCreateSnakeRoom({ skinId: this.playerSkinId });
+                ? await client.joinSnakeRoomById(this.matchRoomId, options)
+                : await client.joinOrCreateSnakeRoom(options);
 
             this.room.onStateChange((state) => {
                 this.checkAudioEvents(state);

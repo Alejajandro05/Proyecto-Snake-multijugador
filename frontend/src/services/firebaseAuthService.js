@@ -1,7 +1,7 @@
 // Firebase Authentication Service
 // Centralized service for handling Firebase authentication operations
 import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 import { firebaseConfig } from '../config/firebaseConfig.js';
 
 let app = null;
@@ -28,6 +28,29 @@ export const getFirebaseAuth = () => {
     return initializeFirebase();
   }
   return auth;
+};
+
+/**
+ * Get current authenticated user
+ * @returns {Promise<Object|null>} Current user or null if not authenticated
+ */
+export const getCurrentUser = () => {
+  return new Promise((resolve) => {
+    const auth = getFirebaseAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      unsubscribe();
+      resolve(user);
+    });
+  });
+};
+
+/**
+ * Check if user is currently authenticated
+ * @returns {Promise<boolean>} True if authenticated
+ */
+export const isUserLoggedIn = async () => {
+  const user = await getCurrentUser();
+  return user !== null;
 };
 
 /**
