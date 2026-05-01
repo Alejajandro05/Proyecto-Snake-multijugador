@@ -4,7 +4,7 @@ import { DEFAULT_MAP_ID, DEFAULT_SNAKE_SKIN_ID, getMapAsset, getSnakeAsset } fro
 const STORAGE_KEY = 'localGameSettings.v1';
 
 const DEFAULTS = {
-    gameMode: 'classic', // classic | timeAttack | chaos
+    gameMode: 'classic', // classic | timeAttack | chaos | kingOfTheHill
     difficulty: 'normal', // easy | normal | hard
     mapId: DEFAULT_MAP_ID,
     players: {
@@ -14,7 +14,9 @@ const DEFAULTS = {
 };
 
 function normalizeGameMode(value) {
-    return value === 'classic' || value === 'timeAttack' || value === 'chaos' ? value : DEFAULTS.gameMode;
+    return value === 'classic' || value === 'timeAttack' || value === 'chaos' || value === 'kingOfTheHill'
+        ? value
+        : DEFAULTS.gameMode;
 }
 
 function normalizeDifficulty(value) {

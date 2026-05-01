@@ -52,6 +52,8 @@ export class GameOver extends Phaser.Scene {
             reasonText = '¡El tiempo se ha agotado!';
         } else if (data.reason === 'tiebreaker') {
             reasonText = '¡Ganador por muerte súbita (5 frutas)!';
+        } else if (data.reason === 'hill') {
+            reasonText = '¡Ganador por dominar la zona (rey de la colina)!';
         }
 
         const mostrarVidas = (data.reason !== 'time' && data.reason !== 'tiebreaker');        const vidasJ1HTML = mostrarVidas ? `<div><span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Vidas: ${data.p1Lives}</span></div>` : '';

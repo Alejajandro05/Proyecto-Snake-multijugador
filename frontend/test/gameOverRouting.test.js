@@ -13,6 +13,10 @@ test('keeps time attack rematches in the time attack flow', () => {
   assert.equal(getGameOverRematchScene({ mode: 'timeAttack', reason: 'tiebreaker' }), 'TimeAttackGame');
 });
 
+test('keeps king of the hill rematches in the hill flow', () => {
+  assert.equal(getGameOverRematchScene({ mode: 'kingOfTheHill', reason: 'hill' }), 'KingOfTheHillGame');
+});
+
 test('returns online players to the online lobby instead of local play', () => {
   assert.equal(getGameOverRematchScene({ mode: 'online', reason: 'score' }), 'OnlineMenu');
   assert.equal(getGameOverRematchScene({ mode: 'online', reason: 'lives' }), 'OnlineMenu');
