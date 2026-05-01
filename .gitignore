@@ -39,3 +39,5 @@ docker-compose.override.yml
 Thumbs.db
 .vscode/
 .idea/
+
+.codex

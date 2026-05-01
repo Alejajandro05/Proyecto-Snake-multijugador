@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
 import { createLobbyClient } from '../../net/lobbyClient.js';
 import { getCurrentUser } from '../../services/firebaseAuthService.js';
+import { LeaderboardService } from '../../services/LeaderboardService.js';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 
 function normalizeHttpUrlToWebSocket(url) {
@@ -214,6 +215,14 @@ export class OnlineGame extends Phaser.Scene {
         return Array.from(state?.players?.values?.() ?? []);
     }
 
+    getOrderedPlayerEntries(state) {
+        const entries = [];
+        state?.players?.forEach?.((player, sessionId) => {
+            entries.push([sessionId, player]);
+        });
+        return entries;
+    }
+
     syncHudFromPlayers(state) {
         const players = this.getOrderedPlayers(state);
         const firstPlayer = players[0];
@@ -355,9 +364,10 @@ export class OnlineGame extends Phaser.Scene {
         }
     }
 
-    gameOver(reason) {
+    async gameOver(reason) {
         if (this.isLeavingRoom) return;
         this.isLeavingRoom = true;
+        const currentSessionId = this.room?.sessionId;
         this.cleanupRoom();
 
         const players = this.getOrderedPlayers(this.latestState);
@@ -369,9 +379,19 @@ export class OnlineGame extends Phaser.Scene {
             return;
         }
 
+        const winner = reason
+            ? (p1.score > p2.score ? 'J1' : 'J2')
+            : (p1.lives > 0 ? 'J1' : 'J2');
+        const winnerSessionId = winner === 'J1' ? p1SessionId : p2SessionId;
+
+        try {
+            await this.recordWinIfCurrentUserWon(currentSessionId, winnerSessionId);
+        } catch (error) {
+            console.error('Leaderboard win update failed:', error);
+        }
+
         if (reason) {
             this.scene.start('GameOver', {
-                winner: p1.score > p2.score ? 'J1' : 'J2',
                 p1Score: p1.score,
                 p1Lives: p1.lives,
                 p2Score: p2.score,
@@ -380,7 +400,6 @@ export class OnlineGame extends Phaser.Scene {
             });
         } else {
             this.scene.start('GameOver', {
-                winner: p1.lives > 0 ? 'J1' : 'J2',
                 p1Score: p1.score,
                 p1Lives: p1.lives,
                 p2Score: p2.score,
@@ -388,6 +407,23 @@ export class OnlineGame extends Phaser.Scene {
                 reason: 'lives'
             });
         }
+    }
+
+    getUserNameFromFirebaseUser(user) {
+        const emailUserName = String(user?.email ?? '').split('@')[0]?.trim();
+        return String(user?.displayName ?? emailUserName ?? '').trim();
+    }
+
+    async recordWinIfCurrentUserWon(currentSessionId, winnerSessionId) {
+        if (!currentSessionId || currentSessionId !== winnerSessionId) return;
+
+        const currentUser = await getCurrentUser();
+        if (!currentUser) return;
+
+        const userName = this.getUserNameFromFirebaseUser(currentUser);
+        if (!userName) return;
+
+        await LeaderboardService.incrementWinCount(userName);
     }
 
     shutdown() {
