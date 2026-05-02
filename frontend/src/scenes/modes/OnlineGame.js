@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
 import { createLobbyClient } from '../../net/lobbyClient.js';
+import { getCurrentUser } from '../../services/firebaseAuthService.js';
+import { LeaderboardService } from '../../services/LeaderboardService.js';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
 
@@ -215,6 +217,14 @@ export class OnlineGame extends Phaser.Scene {
         return Array.from(state?.players?.values?.() ?? []);
     }
 
+    getOrderedPlayerEntries(state) {
+        const entries = [];
+        state?.players?.forEach?.((player, sessionId) => {
+            entries.push([sessionId, player]);
+        });
+        return entries;
+    }
+
     syncHudFromPlayers(state) {
         const players = this.getOrderedPlayers(state);
         const firstPlayer = players[0];
@@ -235,9 +245,14 @@ export class OnlineGame extends Phaser.Scene {
     async connectToServer() {
         try {
             const client = createLobbyClient();
+            const currentUser = await getCurrentUser();
+            const options = { skinId: this.playerSkinId };
+            if (currentUser) {
+                options.firebaseUid = currentUser.uid;
+            }
             this.room = this.matchRoomId
-                ? await client.joinSnakeRoomById(this.matchRoomId, { skinId: this.playerSkinId })
-                : await client.joinOrCreateSnakeRoom({ skinId: this.playerSkinId });
+                ? await client.joinSnakeRoomById(this.matchRoomId, options)
+                : await client.joinOrCreateSnakeRoom(options);
 
             this.room.onStateChange((state) => {
                 this.checkAudioEvents(state);
@@ -354,16 +369,26 @@ export class OnlineGame extends Phaser.Scene {
     gameOver(reason) {
         if (this.isLeavingRoom) return;
         this.isLeavingRoom = true;
+        const currentSessionId = this.room?.sessionId;
         this.cleanupRoom();
 
-        const players = this.getOrderedPlayers(this.latestState);
-        const p1 = players[0];
-        const p2 = players[1];
+        const playerEntries = this.getOrderedPlayerEntries(this.latestState);
+        const [p1SessionId, p1] = playerEntries[0] ?? [];
+        const [p2SessionId, p2] = playerEntries[1] ?? [];
 
         if (!p1 || !p2) {
             this.scene.start('MainMenu');
             return;
         }
+
+        const winner = reason
+            ? (p1.score > p2.score ? 'J1' : 'J2')
+            : (p1.lives > 0 ? 'J1' : 'J2');
+        const winnerSessionId = winner === 'J1' ? p1SessionId : p2SessionId;
+
+        this.recordWinIfCurrentUserWon(currentSessionId, winnerSessionId).catch((error) => {
+            console.error('Leaderboard win update failed:', error);
+        });
 
         if (reason) {
             this.scene.start('GameOver', {
@@ -388,6 +413,24 @@ export class OnlineGame extends Phaser.Scene {
                 rematchScene: 'OnlineMenu'
             });
         }
+    }
+
+    getUserNameFromFirebaseUser(user) {
+        const emailUserName = String(user?.email ?? '').split('@')[0]?.trim();
+        const displayName = String(user?.displayName ?? '').trim();
+        return displayName || emailUserName || '';
+    }
+
+    async recordWinIfCurrentUserWon(currentSessionId, winnerSessionId) {
+        if (!currentSessionId || currentSessionId !== winnerSessionId) return;
+
+        const currentUser = await getCurrentUser();
+        if (!currentUser) return;
+
+        const userName = this.getUserNameFromFirebaseUser(currentUser);
+        if (!userName) return;
+
+        await LeaderboardService.incrementWinCount(userName);
     }
 
     shutdown() {

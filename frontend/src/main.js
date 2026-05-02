@@ -6,6 +6,8 @@ import { MainMenu } from './scenes/MainMenu.js';
 import { LocalGame } from './scenes/modes/LocalGame.js';
 import { NormalLocalGame } from './scenes/modes/NormalLocalGame.js';
 import { OnlineMenu } from './scenes/OnlineMenu.js';
+import { Registration } from './scenes/Registration.js';
+import { Login } from './scenes/Login.js';
 import { OnlineGame } from './scenes/modes/OnlineGame.js';
 import { TimeAttackGame } from './scenes/modes/TimeAttackGame.js';
 import { ChaosGame } from './scenes/modes/ChaosGame.js';
@@ -50,6 +52,8 @@ const config = {
         Preloader,
         MainMenu,
         OnlineMenu,
+        Registration,
+        Login,
         LocalGameSetup,
         LocalGame,
         NormalLocalGame,
