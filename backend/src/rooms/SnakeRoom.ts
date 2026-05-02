@@ -16,6 +16,8 @@ interface SnakeRoomCreateOptions {
   obstaclesPerQuadrant?: number;
   difficulty?: GameDifficulty;
   mapId?: string;
+  gameMode?: unknown;
+  lobbyId?: unknown;
 }
 
 interface SnakeRoomJoinOptions {
@@ -39,15 +41,24 @@ function toDifficulty(value: unknown): GameDifficulty | undefined {
 }
 
 function toMapId(value: unknown): string {
-  if (typeof value !== "string") return "classic";
+  if (typeof value !== "string") return "arena01";
   const normalized = value.trim();
-  return normalized.length > 0 ? normalized.slice(0, 32) : "classic";
+  return normalized.length > 0 ? normalized.slice(0, 32) : "arena01";
 }
 
 function toSkinId(value: unknown, fallback: string): string {
   if (typeof value !== "string") return fallback;
   const normalized = value.trim();
   return normalized.length > 0 ? normalized.slice(0, 32) : fallback;
+}
+
+function toOptionId(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized.slice(0, 32) : undefined;
 }
 
 function getRoomRuntimeConfig(options?: SnakeRoomCreateOptions) {
@@ -71,6 +82,11 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
     const runtimeConfig = getRoomRuntimeConfig(options);
     this.engine = new SnakeEngine(runtimeConfig);
     this.tickMs = runtimeConfig.tickMs;
+    this.metadata = {
+      lobbyId: toOptionId(options?.lobbyId) ?? "",
+      gameMode: toOptionId(options?.gameMode) ?? "classic",
+      mapId: toMapId(options?.mapId),
+    };
 
     this.state.boardCols = runtimeConfig.gridCols;
     this.state.boardRows = runtimeConfig.gridRows;

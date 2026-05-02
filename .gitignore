@@ -10,6 +10,8 @@ build/
 .tscache/
 **/.tscache/
 *.tsbuildinfo
+superpowers/
+.worktrees/
 
 # --- Env files (do NOT commit secrets) ---
 .env
@@ -37,3 +39,12 @@ docker-compose.override.yml
 Thumbs.db
 .vscode/
 .idea/
+.codex
+
+# --- Server site changes (production) ---
+Caddyfile
+frontend/vite.config.js
+
+# --- Server site changes (production) ---
+Caddyfile
+frontend/vite.config.js

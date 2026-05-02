@@ -1,7 +1,10 @@
 import Phaser from 'phaser';
-import { Client } from '@colyseus/sdk';
 import { MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
+import { createLobbyClient } from '../../net/lobbyClient.js';
+import { getCurrentUser } from '../../services/firebaseAuthService.js';
+import { LeaderboardService } from '../../services/LeaderboardService.js';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
+import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
 
 function normalizeHttpUrlToWebSocket(url) {
     const s = String(url ?? '').trim();
@@ -47,8 +50,14 @@ export class OnlineGame extends Phaser.Scene {
         super('OnlineGame');
     }
 
+    init(data) {
+        this.matchRoomId = data?.matchRoomId ?? '';
+        this.playerSkinId = data?.skinId ?? '';
+        this.mapId = data?.mapId ?? '';
+    }
+
     async create() {
-        this.boardRenderer = new SnakeBoardRenderer(this);
+        this.boardRenderer = new SnakeBoardRenderer(this, { mapId: this.mapId });
 
         this.cacheHudElements();
         this.toggleHud(true);
@@ -208,6 +217,14 @@ export class OnlineGame extends Phaser.Scene {
         return Array.from(state?.players?.values?.() ?? []);
     }
 
+    getOrderedPlayerEntries(state) {
+        const entries = [];
+        state?.players?.forEach?.((player, sessionId) => {
+            entries.push([sessionId, player]);
+        });
+        return entries;
+    }
+
     syncHudFromPlayers(state) {
         const players = this.getOrderedPlayers(state);
         const firstPlayer = players[0];
@@ -227,8 +244,15 @@ export class OnlineGame extends Phaser.Scene {
 
     async connectToServer() {
         try {
-            const client = new Client(getColyseusServerUrl());
-            this.room = await client.joinOrCreate('snake_room');
+            const client = createLobbyClient();
+            const currentUser = await getCurrentUser();
+            const options = { skinId: this.playerSkinId };
+            if (currentUser) {
+                options.firebaseUid = currentUser.uid;
+            }
+            this.room = this.matchRoomId
+                ? await client.joinSnakeRoomById(this.matchRoomId, options)
+                : await client.joinOrCreateSnakeRoom(options);
 
             this.room.onStateChange((state) => {
                 this.checkAudioEvents(state);
@@ -345,36 +369,68 @@ export class OnlineGame extends Phaser.Scene {
     gameOver(reason) {
         if (this.isLeavingRoom) return;
         this.isLeavingRoom = true;
+        const currentSessionId = this.room?.sessionId;
         this.cleanupRoom();
 
-        const players = this.getOrderedPlayers(this.latestState);
-        const p1 = players[0];
-        const p2 = players[1];
+        const playerEntries = this.getOrderedPlayerEntries(this.latestState);
+        const [p1SessionId, p1] = playerEntries[0] ?? [];
+        const [p2SessionId, p2] = playerEntries[1] ?? [];
 
         if (!p1 || !p2) {
             this.scene.start('MainMenu');
             return;
         }
 
+        const winner = reason
+            ? (p1.score > p2.score ? 'J1' : 'J2')
+            : (p1.lives > 0 ? 'J1' : 'J2');
+        const winnerSessionId = winner === 'J1' ? p1SessionId : p2SessionId;
+
+        this.recordWinIfCurrentUserWon(currentSessionId, winnerSessionId).catch((error) => {
+            console.error('Leaderboard win update failed:', error);
+        });
+
         if (reason) {
             this.scene.start('GameOver', {
-                winner: p1.score > p2.score ? 'J1' : 'J2',
+                winner: getScoreWinner(p1.score, p2.score),
                 p1Score: p1.score,
                 p1Lives: p1.lives,
                 p2Score: p2.score,
                 p2Lives: p2.lives,
-                reason: 'score'
+                reason: 'score',
+                mode: 'online',
+                rematchScene: 'OnlineMenu'
             });
         } else {
             this.scene.start('GameOver', {
-                winner: p1.lives > 0 ? 'J1' : 'J2',
+                winner: getLivesWinner(p1.lives, p2.lives),
                 p1Score: p1.score,
                 p1Lives: p1.lives,
                 p2Score: p2.score,
                 p2Lives: p2.lives,
-                reason: 'lives'
+                reason: 'lives',
+                mode: 'online',
+                rematchScene: 'OnlineMenu'
             });
         }
+    }
+
+    getUserNameFromFirebaseUser(user) {
+        const emailUserName = String(user?.email ?? '').split('@')[0]?.trim();
+        const displayName = String(user?.displayName ?? '').trim();
+        return displayName || emailUserName || '';
+    }
+
+    async recordWinIfCurrentUserWon(currentSessionId, winnerSessionId) {
+        if (!currentSessionId || currentSessionId !== winnerSessionId) return;
+
+        const currentUser = await getCurrentUser();
+        if (!currentUser) return;
+
+        const userName = this.getUserNameFromFirebaseUser(currentUser);
+        if (!userName) return;
+
+        await LeaderboardService.incrementWinCount(userName);
     }
 
     shutdown() {

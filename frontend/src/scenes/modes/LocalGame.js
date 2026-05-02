@@ -3,13 +3,28 @@ import { SnakeEngine } from '@shared/SnakeEngine.ts';
 import { MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig.js';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
+import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
+import { shouldDieAtWall } from '../localModeHelpers.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
 
 export class LocalGame extends Phaser.Scene {
-    constructor() {
-        super('LocalGame');
+    constructor(sceneKey = 'LocalGame') {
+        super(sceneKey);
+        this.sceneKey = sceneKey;
+    }
+
+    getSceneKey() {
+        return this.sceneKey;
+    }
+
+    getRematchSceneKey() {
+        return this.getSceneKey();
+    }
+
+    hasWallCollisionMode() {
+        return false;
     }
 
     init(data) {
@@ -21,7 +36,7 @@ export class LocalGame extends Phaser.Scene {
     }
 
     create() {
-        this.boardRenderer = new SnakeBoardRenderer(this);
+        this.boardRenderer = new SnakeBoardRenderer(this, { mapId: this.matchSettings?.mapId });
 
         this.cacheHudElements();
         this.toggleHud(true);
@@ -53,7 +68,7 @@ export class LocalGame extends Phaser.Scene {
             this.scene.pause();
             // Usamos la clave 'Pause' y pasamos el caller para que sepa volver
             this.scene.launch('Pause', {
-                caller: 'LocalGame',
+                caller: this.getSceneKey(),
                 p1Score: p1.score ?? 0,
                 p2Score: p2.score ?? 0,
                 p1Lives: p1.lives ?? 0,
@@ -132,6 +147,7 @@ export class LocalGame extends Phaser.Scene {
 
     applyHudIdentity() {
         const difficulty = String(this.matchSettings?.difficulty ?? 'normal');
+        const mapId = this.matchSettings?.mapId ?? 'arena01';
         const p1Name = this.matchSettings?.players?.p1?.name ?? 'J1';
         const p2Name = this.matchSettings?.players?.p2?.name ?? 'J2';
         const p1Color = this.matchSettings?.players?.p1?.color;
@@ -154,7 +170,7 @@ export class LocalGame extends Phaser.Scene {
 
         if (this.hudHelp) {
             const label = difficulty === 'easy' ? 'Easy' : difficulty === 'hard' ? 'Difficult' : 'Medium';
-            this.hudHelp.textContent = `${label} | ${p1Name} (WASD) vs ${p2Name} (Flechas) — ESC: Menu`;
+            this.hudHelp.textContent = `${label} | ${mapId} | ${p1Name} (WASD) vs ${p2Name} (Flechas) — ESC: Menu`;
         }
     }
 
@@ -223,6 +239,8 @@ export class LocalGame extends Phaser.Scene {
         const lives1 = p1Old?.lives || 0;
         const lives2 = p2Old?.lives || 0;
 
+        this.applyWallDeaths(oldState);
+
         // 2. Actualizar el motor
         const state = this.engine.tick();
 
@@ -247,6 +265,23 @@ export class LocalGame extends Phaser.Scene {
         });
     }
 
+    applyWallDeaths(state) {
+        if (!this.hasWallCollisionMode()) return;
+
+        const config = this.engine.getConfig?.();
+        if (!config) return;
+
+        [P1_ID, P2_ID].forEach((playerId) => {
+            const player = state.players.get(playerId);
+            if (!player?.alive || !player.segments?.length) return;
+
+            const direction = player.nextDirection ?? player.direction;
+            if (shouldDieAtWall(player.segments[0], direction, config)) {
+                this.engine.killPlayer(player);
+            }
+        });
+    }
+
     renderState(state) {
         this.boardRenderer.renderState(state);
         const p1 = state.players.get(P1_ID);
@@ -267,10 +302,12 @@ export class LocalGame extends Phaser.Scene {
         const p1 = state.players.get(P1_ID);
         const p2 = state.players.get(P2_ID);
         this.scene.start('GameOver', {
-            winner: reason ? (p1.score > p2.score ? 'J1' : 'J2') : (p1.lives > 0 ? 'J1' : 'J2'),
+            winner: reason ? getScoreWinner(p1.score, p2.score) : getLivesWinner(p1.lives, p2.lives),
             p1Score: p1.score, p1Lives: p1.lives,
             p2Score: p2.score, p2Lives: p2.lives,
-            reason: reason ? 'score' : 'lives'
+            reason: reason ? 'score' : 'lives',
+            mode: 'local',
+            rematchScene: this.getRematchSceneKey()
         });
     }
 }

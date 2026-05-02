@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { getGameOverRematchScene } from './gameOverRouting.js';
 
 export class GameOver extends Phaser.Scene {
     constructor() {
@@ -51,12 +52,14 @@ export class GameOver extends Phaser.Scene {
             reasonText = '¡El tiempo se ha agotado!';
         } else if (data.reason === 'tiebreaker') {
             reasonText = '¡Ganador por muerte súbita (5 frutas)!';
+        } else if (data.reason === 'hill') {
+            reasonText = '¡Ganador por dominar la zona (rey de la colina)!';
         }
 
         const mostrarVidas = (data.reason !== 'time' && data.reason !== 'tiebreaker');        const vidasJ1HTML = mostrarVidas ? `<div><span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Vidas: ${data.p1Lives}</span></div>` : '';
         const vidasJ2HTML = mostrarVidas ? `<div><span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Vidas: ${data.p2Lives}</span></div>` : '';
 
-        const escenaRevancha = (data.reason === 'time' || data.reason === 'tiebreaker') ? 'TimeAttackGame' : 'LocalGame';
+        const escenaRevancha = getGameOverRematchScene(data);
         gameOverDiv.innerHTML = `
             <div class="container">
                 <div class="row justify-content-center">

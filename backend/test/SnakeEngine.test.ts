@@ -46,6 +46,20 @@ describe("SnakeEngine – domain logic", () => {
     assert.strictEqual(engine.getState().players.get("p1")!.direction, "up");
   });
 
+  it("buffers rapid turn sequences across consecutive ticks", () => {
+    const engine = createEngine();
+    engine.addPlayer("p1");
+
+    engine.setNextDirection("p1", "up");
+    engine.setNextDirection("p1", "left");
+
+    engine.tick();
+    assert.strictEqual(engine.getState().players.get("p1")!.direction, "up");
+
+    engine.tick();
+    assert.strictEqual(engine.getState().players.get("p1")!.direction, "left");
+  });
+
   it("increments score and grows snake when eating food", () => {
     const engine = createEngine();
     engine.addPlayer("p1");
@@ -62,6 +76,24 @@ describe("SnakeEngine – domain logic", () => {
 
     assert.strictEqual(playerAfter.score, 1);
     assert.strictEqual(playerAfter.segments.length, lenBefore + 1);
+  });
+
+  it("does not spawn replacement food on obstacles", () => {
+    const engine = createEngine();
+    // @ts-ignore - controlled obstacle placement for deterministic domain test
+    engine["obstacles"] = [{ x: 0, y: 0 }];
+
+    const originalRandom = Math.random;
+    const randomValues = [0, 0, 0.5, 0.5];
+    Math.random = () => randomValues.shift() ?? 0.5;
+
+    try {
+      // @ts-ignore - exercise private helper through the public engine instance
+      const food = engine["randomFood"]();
+      assert.notDeepStrictEqual(food, { x: 0, y: 0 });
+    } finally {
+      Math.random = originalRandom;
+    }
   });
 
   it("kills a player on self collision and schedules respawn", () => {

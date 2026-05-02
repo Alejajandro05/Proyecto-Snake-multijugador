@@ -1,38 +1,39 @@
 import {
     defineServer,
     defineRoom,
-    monitor,
-    playground,
-    createRouter,
-    createEndpoint,
 } from "colyseus";
+import type { Express, Request, Response } from "express";
 
 import { SnakeRoom } from "./rooms/SnakeRoom.js";
 import { MyRoom } from "./rooms/MyRoom.js";
+import { LobbyRoom } from "./rooms/LobbyRoom.js";
 
-const server = defineServer({
+const serverConfig: any = {
     rooms: {
         snake_room: defineRoom(SnakeRoom),
-        my_room: defineRoom(MyRoom)
+        my_room: defineRoom(MyRoom),
+        lobby_room: defineRoom(LobbyRoom),
     },
+};
 
-    routes: createRouter({
-        api_hello: createEndpoint("/api/hello", { method: "GET", }, async (ctx) => {
-            return { message: "Hello World" }
-        })
-    }),
-
-    express: (app) => {
-        app.get("/hi", (req, res) => {
-            res.send("Snake Multiplayer backend running!");
+if (process.env.NODE_ENV !== "test") {
+    serverConfig.express = (app: Express) => {
+        app.get("/api/hello", (_req: Request, res: Response) => {
+            res.json({ message: "Hello World" });
         });
 
-        app.use("/monitor", monitor());
+        app.get("/api/lobbies", (_req: Request, res: Response) => {
+            res.json({ lobbies: LobbyRoom.listPublicLobbies() });
+        });
 
-        if (process.env.NODE_ENV !== "production") {
-            app.use("/", playground());
-        }
-    }
-});
+        app.get("/api/lobbies/resolve", (req: Request, res: Response) => {
+            const code = typeof req.query?.code === "string" ? req.query.code : "";
+            const match = LobbyRoom.resolveInviteCode(code);
+            res.json(match ?? { lobbyId: "" });
+        });
+    };
+}
+
+const server = defineServer(serverConfig);
 
 export default server;

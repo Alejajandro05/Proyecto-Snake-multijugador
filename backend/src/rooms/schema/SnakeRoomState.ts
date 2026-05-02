@@ -14,6 +14,6 @@ export class SnakeRoomState extends Schema {
   @type("number")       foodCount: number = 0;
   @type("number")       obstaclesPerQuadrant: number = 0;
   @type("string")       difficulty: string = "normal";
-  @type("string")       mapId: string = "classic";
+  @type("string")       mapId: string = "arena01";
   @type("boolean")       started: boolean = false;
 }

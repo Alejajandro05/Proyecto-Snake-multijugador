@@ -44,7 +44,7 @@ chmod +x scripts/pull-git-and-restart-docker.sh   # una vez
 ./scripts/pull-git-and-restart-docker.sh
 ```
 
-Ese script hace `git pull --ff-only`, construye el frontend en el host (`frontend/dist`) y ejecuta `docker compose -f docker-compose.prod.yml up -d --build`.
+Ese script hace `git pull --ff-only`, construye el frontend en el host (`frontend/dist`) y ejecuta `docker compose -f docker-compose.prod.yml up -d --build --force-recreate` para que Caddy recargue cambios del `Caddyfile`.
 
 ### Desarrollo local
 

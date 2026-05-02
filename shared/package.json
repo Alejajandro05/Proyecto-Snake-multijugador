@@ -2,5 +2,13 @@
   "name": "@snake/shared",
   "version": "1.0.0",
   "type": "module",
-  "private": true
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:runtime": "tsc -p tsconfig.runtime.json",
+    "check": "npm run build && node scripts/check-runtime-sync.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.4"
+  }
 }

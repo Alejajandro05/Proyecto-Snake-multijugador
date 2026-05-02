@@ -6,14 +6,14 @@
   "type": "module",
   "main": "build/backend/src/index.js",
   "engines": {
-    "node": ">= 20.9.0"
+    "node": ">= 22.x"
   },
   "scripts": {
     "start": "tsx watch src/index.ts",
     "loadtest": "tsx loadtest/example.ts --room my_room --numClients 2",
     "build": "npm run clean && tsc -p tsconfig.build.json",
     "clean": "rimraf build",
-    "test": "mocha -r tsx test/**.test.ts --exit --timeout 15000"
+    "test": "mocha -r tsx -r ./test/setup-test-env.ts test/**.test.ts --exit --timeout 15000"
   },
   "author": "",
   "license": "UNLICENSED",
@@ -36,6 +36,7 @@
     "@colyseus/tools": "^0.17.0",
     "@colyseus/schema": "^4.0.0",
     "colyseus": "^0.17.6",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "firebase-admin": "^13.8.0"
   }
 }

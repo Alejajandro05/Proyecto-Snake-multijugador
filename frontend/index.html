@@ -1,3 +1,4 @@
+suggested method
 <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -33,9 +34,11 @@
                 background:
                     radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.22), transparent 32%),
                     radial-gradient(circle at 85% 12%, rgba(34, 197, 94, 0.18), transparent 38%),
-                    linear-gradient(160deg, #020617 0%, #0b1120 48%, #172554 100%);
+                    linear-gradient(160deg, #020617 0%, #0b1120 48%, #172554 100%),
+                    url('./assets/fondo_duelo.png') center/cover no-repeat fixed;
                 overflow: hidden;
             }
+
     
             ol, ul {
                 list-style: none;
@@ -211,6 +214,44 @@
                     border-radius: 0 !important;
                 }
             }
+
+            .legal-footer {
+                position: absolute;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 9999;
+                padding: 0.75rem 1rem 1rem;
+                pointer-events: auto;
+            }
+
+            .legal-footer .legal-links {
+                display: inline-flex;
+                justify-content: center;
+                align-items: center;
+                gap: 0.75rem;
+                border-top: 1px solid rgba(255,255,255,0.12);
+                padding-top: 0.75rem;
+                opacity: 0.92;
+                color: #e2e8f0;
+                font-size: 0.95rem;
+            }
+
+            .legal-footer a {
+                color: #7dd3fc;
+                text-decoration: none;
+                pointer-events: auto;
+                transition: opacity 0.2s ease, transform 0.2s ease;
+            }
+
+            .legal-footer a:hover {
+                opacity: 1;
+                transform: translateY(-1px);
+            }
+
+            .legal-footer .separator {
+                color: rgba(255,255,255,0.35);
+            }
         </style>
     </head>
     <body>
@@ -234,6 +275,20 @@
                     </div>
                 </header>
                 <div id="game-container"></div>
+
+                <footer class="legal-footer text-center">
+                    <div class="legal-links">
+                        <a href="/aviso-legal.html" class="d-flex align-items-center gap-1">
+                            <span>⚖️</span>
+                            <span>Aviso Legal</span>
+                        </a>
+                        <span class="separator">•</span>
+                        <a href="/proteccion-datos.html" class="d-flex align-items-center gap-1">
+                            <span>🛡️</span>
+                            <span>Protección de datos</span>
+                        </a>
+                    </div>
+                </footer>
             </section>
         </main>
         <script type="module" src="./src/main.js"></script>
