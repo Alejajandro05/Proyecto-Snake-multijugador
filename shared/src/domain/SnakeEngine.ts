@@ -5,6 +5,7 @@ import {
   resolveGameRuntimeConfig,
   WIN_SCORE,
 } from './GameConfig.js';
+import { EventEmitter } from "./EventEmitter.js"
 
 const OPPOSITE: Record<Direction, Direction> = {
   up: 'down',
@@ -20,17 +21,23 @@ export interface AddPlayerOptions {
   skinId?: string;
 }
 
-const FOOD_CONFIG: Record<string, FoodConfigItem> = {
+export const FOOD_CONFIG: Record<string, FoodConfigItem> = {
   apple: {
     frame: 0,
     score: 1,
-    weight: 60
+    weight: 60,
+    hudEffect: "+1",
+    hudDuration: 2000,
+    hudHelp: "🍎 = +1"
   },
 
   grape: {
     frame: 1,
     score: 3,
-    weight: 20
+    weight: 20,
+    hudEffect: "+3",
+    hudDuration: 2000,
+    hudHelp: "🍇 = +3"
   },
 
   speed: {
@@ -40,7 +47,10 @@ const FOOD_CONFIG: Record<string, FoodConfigItem> = {
     effect: (player) => {
       player.speed = 1;
       player.speedEffectRemaining = Math.max(player.speedEffectRemaining, 50);
-    }
+    },
+    hudEffect: "speed boost",
+    hudDuration: 5000,
+    hudHelp: "🍓 = speed boost 5s"
   },
 
   poison: {
@@ -50,7 +60,10 @@ const FOOD_CONFIG: Record<string, FoodConfigItem> = {
     effect: (player) => {
       player.speed = 3;
       player.speedEffectRemaining = Math.max(player.speedEffectRemaining, 50);
-    }
+    },
+    hudEffect: "-2, speed reduce",
+    hudDuration: 5000,
+    hudHelp: "🥝 = -2, reduce speed 5s"
   }
 };
 
@@ -71,6 +84,8 @@ export class SnakeEngine {
   private speedDurationMs = 5000;
   private ticksTicksDurationMs;
 
+  private events = new EventEmitter();
+
   constructor(config?: Partial<GameRuntimeConfig>);
   constructor(initialFood?: number, config?: Partial<GameRuntimeConfig>);
   constructor(initialFoodOrConfig?: number | Partial<GameRuntimeConfig>, configOverrides?: Partial<GameRuntimeConfig>) {
@@ -83,12 +98,7 @@ export class SnakeEngine {
 
     this.ticksTicksDurationMs = Math.ceil(this.speedDurationMs / this.config.tickMs);
 
-    this.generateObstacles();
-
-    this.ticksTicksDurationMs = Math.ceil(this.speedDurationMs / this.config.tickMs);
-
-    this.generateObstacles();
-
+    this.generateObstacles(); 
     
     for (let i = 0; i < this.config.foodCount; i++) {
       this.food.push(this.randomFood());
@@ -121,6 +131,7 @@ export class SnakeEngine {
       lives: this.config.maxLives,
       score: 0,
       segments,
+      lastEatenFood: null,
       speed: 2,
       moveCounter: 0,
       speedEffectRemaining: 0
@@ -275,6 +286,12 @@ export class SnakeEngine {
       this.food.push(this.randomFood());
 
       const config = FOOD_CONFIG[eatenFood.type];
+      player.lastEatenFood = config;
+
+      this.events.emit("playerEatFood", {
+        playerId: player.id,
+        food: config
+      });
 
       let temp_score = player.score + config.score;
 
@@ -318,7 +335,7 @@ export class SnakeEngine {
       col = Math.floor(Math.random() * (this.config.gridCols - margin * 2) + margin);
       row = Math.floor(Math.random() * (this.config.gridRows - margin * 2) + margin);
       attempts++;
-    } while (!this.isSafeSpawn(col, row) && attempts < 50);
+    } while (!this.isAreaSafeForSnake(col, row, this.config.safeMargin) && attempts < 50);
 
     player.segments = [];
     for (let i = 0; i < this.config.initialSnakeLength; i++) {
@@ -362,10 +379,7 @@ export class SnakeEngine {
         score: FOOD_CONFIG[type].score
       };
     }
-    while (
-      playerSegments.some(s => s.x === food.x && s.y === food.y) ||
-      this.obstacles.some(o => o.x === food.x && o.y === food.y)
-    );
+    while (this.isCellOccupied(food.x, food.y));
     return food;
   }
 
@@ -439,6 +453,37 @@ export class SnakeEngine {
       const obRow = ob.y / this.config.gridSize;
       return Math.abs(obCol - col) > this.config.safeMargin || Math.abs(obRow - row) > this.config.safeMargin;
     });
+  }
+
+  private isCellOccupied(x: number, y: number): boolean {
+    // snakes
+    if (this.getSnakesPosition().some(s => s.x == x && s.y == y)) return true;
+
+    // food
+    if (this.food.some(f => f.x === x && f.y === y)) return true;
+
+    // obstacles
+    if (this.obstacles.some(o => o.x === x && o.y === y)) return true;
+
+    return false;
+  }
+
+  private isAreaSafeForSnake(col: number, row: number, margin: number): boolean {
+    const startCol = col - margin;
+    const endCol = col + margin;
+    const startRow = row - margin;
+    const endRow = row + margin;
+
+    for (let c = startCol; c <= endCol; c++) {
+      for (let r = startRow; r <= endRow; r++) {
+        const x = c * this.config.gridSize;
+        const y = r * this.config.gridSize;
+
+        if (this.isCellOccupied(x, y)) return false;
+      }
+    }
+
+    return true;
   }
 
 }

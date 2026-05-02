@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { SnakeEngine } from '@shared/SnakeEngine.ts';
+import { SnakeEngine, FOOD_CONFIG } from '@shared/SnakeEngine.ts';
 import { MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig.js';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
@@ -47,6 +47,12 @@ export class LocalGame extends Phaser.Scene {
         const p2Cfg = this.matchSettings?.players?.p2 ?? {};
 
         this.engine = new SnakeEngine({ difficulty });
+        this.effectTimeouts = {};
+
+        this.engine.events.on("playerEatFood", ({ playerId, food }) => {
+            const hud = playerId === P1_ID ? this.hudJ1Effect : this.hudJ2Effect;
+            this.showPlayerEffect(food, hud, playerId);
+        });
 
         // Aplicamos los colores y skins del menú
         this.engine.addPlayer(P1_ID, { color: p1Cfg.color, skinId: p1Cfg.skinId, startCol: 8, startRow: 12 });
@@ -139,6 +145,11 @@ export class LocalGame extends Phaser.Scene {
         this.hudLeftPlayer = document.getElementById('hud-left-player');
         this.hudRightPlayer = document.getElementById('hud-right-player');
 
+        this.hudJ1Effect = document.getElementById('hud-j1-effect');
+        this.hudJ2Effect = document.getElementById('hud-j2-effect');
+        this.hudFoodHelp = document.getElementById('hud-food-help');
+        this.hudFoodHelp.classList.remove('d-none');
+
         this.applyHudIdentity(); // Mostrar los nombres elegidos
 
         this.updateLivesHud(this.hudJ1Lives, MAX_LIVES);
@@ -172,6 +183,16 @@ export class LocalGame extends Phaser.Scene {
             const label = difficulty === 'easy' ? 'Easy' : difficulty === 'hard' ? 'Difficult' : 'Medium';
             this.hudHelp.textContent = `${label} | ${mapId} | ${p1Name} (WASD) vs ${p2Name} (Flechas) — ESC: Menu`;
         }
+
+        if(this.hudFoodHelp){
+            this.hudFoodHelp.textContent = this.buildFoodHelp();
+        }
+    }
+
+    buildFoodHelp() {
+        return Object.values(FOOD_CONFIG)
+            .map(food => food.hudHelp)
+            .join(' | ');
     }
 
     // El resto de funciones (toggleHud, updateLayout, gameTick, handleInput, renderState, gameOver)
@@ -286,7 +307,6 @@ export class LocalGame extends Phaser.Scene {
         this.boardRenderer.renderState(state);
         const p1 = state.players.get(P1_ID);
         const p2 = state.players.get(P2_ID);
-        console.log(`p1 score: ${p1.score} \t p2 score: ${p2.score}`)
         if (p1 && this.hudJ1ScoreBig) this.hudJ1ScoreBig.textContent = `${p1.score}`;
         if (p2 && this.hudJ2ScoreBig) this.hudJ2ScoreBig.textContent = `${p2.score}`;
         if (p1) this.updateLivesHud(this.hudJ1Lives, p1.lives);
@@ -296,8 +316,27 @@ export class LocalGame extends Phaser.Scene {
         if (p1.lives <= 0 || p2.lives <= 0) this.gameOver(false);
     }
 
+    showPlayerEffect(food, hudElement, playerId) {
+    if (!food || !hudElement) return;
+
+    console.log(food.hudEffect);
+
+    hudElement.textContent = food.hudEffect;
+
+    // limpiar timeout del jugador
+    if (this.effectTimeouts[playerId]) {
+        clearTimeout(this.effectTimeouts[playerId]);
+    }
+
+    this.effectTimeouts[playerId] = setTimeout(() => {
+        hudElement.textContent = "";
+    }, food.hudDuration);
+}
+    
+
     gameOver(reason) {
         if (this.gameTimer) this.gameTimer.remove();
+        this.hudFoodHelp.classList.add('d-none');
         const state = this.engine.getState();
         const p1 = state.players.get(P1_ID);
         const p2 = state.players.get(P2_ID);

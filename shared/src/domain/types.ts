@@ -18,6 +18,9 @@ export type FoodConfigItem = {
   score: number;
   weight: number;
   effect?: FoodEffect;
+  hudEffect: string;
+  hudDuration: number;
+  hudHelp: string;
 };
 
 export type FoodState = {
@@ -37,6 +40,8 @@ export interface PlayerState {
   lives: number;
   score: number;
   segments: SnakeSegmentState[];
+
+  lastEatenFood: FoodConfigItem | null;
 
   // velocidad
   speed: number;
