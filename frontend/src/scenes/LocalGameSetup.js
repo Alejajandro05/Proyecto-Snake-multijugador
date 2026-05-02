@@ -395,6 +395,13 @@ export class LocalGameSetup extends Phaser.Scene {
                 img: '/ModoReyColina.png',
                 label: 'Rey de la colina',
             },
+            {
+                id: 'territory',
+                title: 'CONTROL DE TERRITORIO',
+                desc: 'Cada serpiente deja un rastro de su color. Si invades una casilla rival, la conquistas. Gana quien tenga mas casillas al terminar el tiempo.',
+                img: '/territorygame.png',
+                label: 'Control de territorio',
+            },
         ];
 
         let modeIndex = Math.max(0, MODES.findIndex((m) => m.id === initialGameMode));

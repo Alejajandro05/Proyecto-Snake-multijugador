@@ -2,6 +2,7 @@ const REMATCH_SCENE_BY_MODE = {
     local: 'LocalGame',
     timeAttack: 'TimeAttackGame',
     kingOfTheHill: 'KingOfTheHillGame',
+    territory: 'TerritoryGame',
     online: 'OnlineMenu',
 };
 
@@ -16,6 +17,10 @@ export function getGameOverRematchScene(data = {}) {
 
     if (data.reason === 'time' || data.reason === 'tiebreaker') {
         return 'TimeAttackGame';
+    }
+
+    if (data.reason === 'territory') {
+        return 'TerritoryGame';
     }
 
     return 'LocalGame';

@@ -5,7 +5,7 @@ import { normalizeLocalGameMode } from '../scenes/localModeHelpers.js';
 const STORAGE_KEY = 'localGameSettings.v1';
 
 const DEFAULTS = {
-    gameMode: 'normal', // normal | infinite | timeAttack | chaos | kingOfTheHill
+    gameMode: 'normal', // normal | infinite | timeAttack | chaos | kingOfTheHill | territory
     difficulty: 'normal', // easy | normal | hard
     mapId: DEFAULT_MAP_ID,
     players: {

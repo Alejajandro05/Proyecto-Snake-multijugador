@@ -27,7 +27,9 @@ export class GameOver extends Phaser.Scene {
         gameOverDiv.style.padding = '28px';
         gameOverDiv.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
 
-        let winnerName, winnerClass, winnerGradient;
+        let winnerName;
+        let winnerClass;
+        let winnerGradient;
 
         if (data.winner === 'EMPATE') {
             winnerName = '¡EMPATE!';
@@ -54,9 +56,13 @@ export class GameOver extends Phaser.Scene {
             reasonText = '¡Ganador por muerte súbita (5 frutas)!';
         } else if (data.reason === 'hill') {
             reasonText = '¡Ganador por dominar la zona (rey de la colina)!';
+        } else if (data.reason === 'territory') {
+            reasonText = '¡Ganador por controlar mas territorio al final del tiempo!';
         }
 
-        const mostrarVidas = (data.reason !== 'time' && data.reason !== 'tiebreaker');        const vidasJ1HTML = mostrarVidas ? `<div><span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Vidas: ${data.p1Lives}</span></div>` : '';
+        const mostrarVidas = data.reason !== 'time' && data.reason !== 'tiebreaker';
+        const scoreLabel = data.reason === 'territory' ? 'Territorio' : 'Puntuación';
+        const vidasJ1HTML = mostrarVidas ? `<div><span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Vidas: ${data.p1Lives}</span></div>` : '';
         const vidasJ2HTML = mostrarVidas ? `<div><span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Vidas: ${data.p2Lives}</span></div>` : '';
 
         const escenaRevancha = getGameOverRematchScene(data);
@@ -71,7 +77,7 @@ export class GameOver extends Phaser.Scene {
 
                                 <div class="card h-100 mb-4 border-${winnerClass}" style="background: ${winnerGradient}; border-radius: 20px; border: 1px solid rgba(255,255,255,0.18);">
                                     <div class="card-body text-center py-4">
-                                        <h5 class="card-title text-${winnerClass} fw-bold mb-2"> Ganador</h5>
+                                        <h5 class="card-title text-${winnerClass} fw-bold mb-2">Ganador</h5>
                                         <h4 class="text-${winnerClass} fw-bold mb-2">${winnerName}</h4>
                                         <p class="text-white mb-0">${reasonText}</p>
                                     </div>
@@ -83,7 +89,7 @@ export class GameOver extends Phaser.Scene {
                                             <div class="card-body text-center py-4">
                                                 <h5 class="card-title text-danger fw-bold mb-3">Jugador 1</h5>
                                                 <div class="mb-3">
-                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Puntuación: ${data.p1Score}</span>
+                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">${scoreLabel}: ${data.p1Score}</span>
                                                 </div>
                                                 ${vidasJ1HTML}
                                             </div>
@@ -94,7 +100,7 @@ export class GameOver extends Phaser.Scene {
                                             <div class="card-body text-center py-4">
                                                 <h5 class="card-title text-primary fw-bold mb-3">Jugador 2</h5>
                                                 <div class="mb-3">
-                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Puntuación: ${data.p2Score}</span>
+                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">${scoreLabel}: ${data.p2Score}</span>
                                                 </div>
                                                 ${vidasJ2HTML}
                                             </div>
@@ -118,7 +124,7 @@ export class GameOver extends Phaser.Scene {
         document.getElementById('new-match-btn').addEventListener('click', () => {
             document.body.removeChild(gameOverDiv);
             this.game.canvas.style.display = 'block';
-            this.scene.start(escenaRevancha); // Te lleva al modo correcto
+            this.scene.start(escenaRevancha);
         });
 
         document.getElementById('menu-btn').addEventListener('click', () => {

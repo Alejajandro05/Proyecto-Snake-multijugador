@@ -19,6 +19,7 @@ test('keeps special modes unchanged and falls back to normal mode', () => {
     assert.equal(resolveLocalSceneKey('timeAttack'), 'TimeAttackGame');
     assert.equal(resolveLocalSceneKey('chaos'), 'ChaosGame');
     assert.equal(resolveLocalSceneKey('kingOfTheHill'), 'KingOfTheHillGame');
+    assert.equal(resolveLocalSceneKey('territory'), 'TerritoryGame');
     assert.equal(resolveLocalSceneKey('unknown-mode'), 'NormalLocalGame');
     assert.equal(resolveLocalSceneKey(), 'NormalLocalGame');
 });
@@ -27,6 +28,7 @@ test('maps legacy classic saves to infinite mode', () => {
     assert.equal(normalizeLocalGameMode('classic'), 'infinite');
     assert.equal(normalizeLocalGameMode('infinite'), 'infinite');
     assert.equal(normalizeLocalGameMode('normal'), 'normal');
+    assert.equal(normalizeLocalGameMode('territory'), 'territory');
 });
 
 test('detects when a move exits the board bounds', () => {
