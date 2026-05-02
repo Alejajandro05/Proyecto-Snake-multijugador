@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { getGameOverRematchScene } from './gameOverRouting.js';
+import { getPlayerCardTheme } from '../utils/playerIdentity.js';
 
 export class GameOver extends Phaser.Scene {
     constructor() {
@@ -8,6 +9,12 @@ export class GameOver extends Phaser.Scene {
 
     create(data) {
         this.game.canvas.style.display = 'none';
+
+        const players = data?.players ?? {};
+        const p1Player = players.p1 ?? { label: 'Jugador 1', name: 'J1', color: 0xe74c3c };
+        const p2Player = players.p2 ?? { label: 'Jugador 2', name: 'J2', color: 0x3498db };
+        const p1Theme = getPlayerCardTheme(p1Player.color);
+        const p2Theme = getPlayerCardTheme(p2Player.color);
 
         const gameOverDiv = document.createElement('div');
         gameOverDiv.id = 'game-over-screen';
@@ -36,11 +43,11 @@ export class GameOver extends Phaser.Scene {
             winnerClass = 'warning';
             winnerGradient = 'linear-gradient(135deg, rgba(241, 196, 15, 0.95) 0%, rgba(243, 156, 18, 0.95) 100%)';
         } else if (data.winner === 'J1') {
-            winnerName = 'Jugador 1';
+            winnerName = `${p1Player.label}: ${p1Player.name}`;
             winnerClass = 'danger';
             winnerGradient = 'linear-gradient(135deg, rgba(231, 76, 60, 0.95) 0%, rgba(245, 183, 177, 0.95) 100%)';
         } else {
-            winnerName = 'Jugador 2';
+            winnerName = `${p2Player.label}: ${p2Player.name}`;
             winnerClass = 'primary';
             winnerGradient = 'linear-gradient(135deg, rgba(52, 152, 219, 0.95) 0%, rgba(166, 226, 241, 0.95) 100%)';
         }
@@ -85,9 +92,9 @@ export class GameOver extends Phaser.Scene {
 
                                 <div class="row gx-3 gy-3 mb-4">
                                     <div class="col-6">
-                                        <div class="card h-100 border-danger" style="background: linear-gradient(135deg, rgba(255,154,158,0.95) 0%, rgba(254,207,239,0.95) 100%); border-radius: 18px;">
+                                        <div class="card h-100" style="background: ${p1Theme.gradient}; border: 2px solid ${p1Theme.softBorder}; border-radius: 18px;">
                                             <div class="card-body text-center py-4">
-                                                <h5 class="card-title text-danger fw-bold mb-3">Jugador 1</h5>
+                                                <h5 class="card-title fw-bold mb-3" style="color: ${p1Theme.textColor};">${p1Player.label}: ${p1Player.name}</h5>
                                                 <div class="mb-3">
                                                     <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">${scoreLabel}: ${data.p1Score}</span>
                                                 </div>
@@ -96,9 +103,9 @@ export class GameOver extends Phaser.Scene {
                                         </div>
                                     </div>
                                     <div class="col-6">
-                                        <div class="card h-100 border-primary" style="background: linear-gradient(135deg, rgba(168,237,234,0.95) 0%, rgba(254,214,227,0.95) 100%); border-radius: 18px;">
+                                        <div class="card h-100" style="background: ${p2Theme.gradient}; border: 2px solid ${p2Theme.softBorder}; border-radius: 18px;">
                                             <div class="card-body text-center py-4">
-                                                <h5 class="card-title text-primary fw-bold mb-3">Jugador 2</h5>
+                                                <h5 class="card-title fw-bold mb-3" style="color: ${p2Theme.textColor};">${p2Player.label}: ${p2Player.name}</h5>
                                                 <div class="mb-3">
                                                     <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">${scoreLabel}: ${data.p2Score}</span>
                                                 </div>

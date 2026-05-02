@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { getPlayerCardTheme } from '../utils/playerIdentity.js';
 
 export class Pause extends Phaser.Scene {
     constructor() {
@@ -6,8 +7,12 @@ export class Pause extends Phaser.Scene {
     }
 
     create(data) {
-        // Guardamos la escena que nos llamó para poder reanudarla luego.
         const callerScene = data.caller || 'LocalGame';
+        const players = data?.players ?? {};
+        const p1 = players.p1 ?? { label: 'Jugador 1', name: 'J1', color: 0xe74c3c };
+        const p2 = players.p2 ?? { label: 'Jugador 2', name: 'J2', color: 0x3498db };
+        const p1Theme = getPlayerCardTheme(p1.color);
+        const p2Theme = getPlayerCardTheme(p2.color);
 
         const pauseDiv = document.createElement('div');
         pauseDiv.id = 'pause-screen';
@@ -29,6 +34,7 @@ export class Pause extends Phaser.Scene {
         const p2Score = data?.p2Score ?? 0;
         const p1Lives = data?.p1Lives ?? 0;
         const p2Lives = data?.p2Lives ?? 0;
+        const scoreLabel = data?.scoreLabel ?? 'Puntuación';
 
         pauseDiv.innerHTML = `
             <div class="container">
@@ -41,11 +47,11 @@ export class Pause extends Phaser.Scene {
 
                                 <div class="row gx-3 gy-3 mb-4">
                                     <div class="col-6">
-                                        <div class="card h-100 border-danger" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); border-radius: 18px;">
+                                        <div class="card h-100" style="background: ${p1Theme.gradient}; border: 2px solid ${p1Theme.softBorder}; border-radius: 18px;">
                                             <div class="card-body text-center py-4">
-                                                <h5 class="card-title text-danger fw-bold mb-3">Jugador 1</h5>
+                                                <h5 class="fw-bold mb-3" style="color: ${p1Theme.textColor};">${p1.label}: ${p1.name}</h5>
                                                 <div class="mb-3">
-                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Puntuación: ${p1Score}</span>
+                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">${scoreLabel}: ${p1Score}</span>
                                                 </div>
                                                 <div>
                                                     <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Vidas restantes: ${p1Lives}</span>
@@ -54,11 +60,11 @@ export class Pause extends Phaser.Scene {
                                         </div>
                                     </div>
                                     <div class="col-6">
-                                        <div class="card h-100 border-primary" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); border-radius: 18px;">
+                                        <div class="card h-100" style="background: ${p2Theme.gradient}; border: 2px solid ${p2Theme.softBorder}; border-radius: 18px;">
                                             <div class="card-body text-center py-4">
-                                                <h5 class="card-title text-primary fw-bold mb-3">Jugador 2</h5>
+                                                <h5 class="fw-bold mb-3" style="color: ${p2Theme.textColor};">${p2.label}: ${p2.name}</h5>
                                                 <div class="mb-3">
-                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Puntuación: ${p2Score}</span>
+                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">${scoreLabel}: ${p2Score}</span>
                                                 </div>
                                                 <div>
                                                     <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Vidas restantes: ${p2Lives}</span>

@@ -2,7 +2,8 @@ import Phaser from 'phaser';
 import { SnakeEngine } from '@shared/SnakeEngine';
 import { MAX_LIVES, TICK_MS } from '@shared/GameConfig';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
-import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
+import { loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
+import { applyPlayerThemeToHud, buildPlayerIdentityMap } from '../../utils/playerIdentity.js';
 import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
 
 const P1_ID = 'player1';
@@ -119,6 +120,7 @@ export class KingOfTheHillGame extends Phaser.Scene {
                 p2Score: p2.score ?? 0,
                 p1Lives: p1.lives ?? 0,
                 p2Lives: p2.lives ?? 0,
+                players: buildPlayerIdentityMap(this.matchSettings),
             });
         });
 
@@ -240,17 +242,8 @@ export class KingOfTheHillGame extends Phaser.Scene {
         if (this.hudJ1Score) this.hudJ1Score.textContent = p1Name;
         if (this.hudJ2Score) this.hudJ2Score.textContent = p2Name;
 
-        if (this.hudLeftPlayer && p1Color !== undefined) {
-            const hex = colorNumberToCssHex(p1Color);
-            this.hudLeftPlayer.style.borderColor = `${hex}55`;
-            this.hudLeftPlayer.style.boxShadow = `0 12px 40px rgba(0,0,0,0.35), 0 0 0 2px ${hex}33 inset`;
-        }
-
-        if (this.hudRightPlayer && p2Color !== undefined) {
-            const hex = colorNumberToCssHex(p2Color);
-            this.hudRightPlayer.style.borderColor = `${hex}55`;
-            this.hudRightPlayer.style.boxShadow = `0 12px 40px rgba(0,0,0,0.35), 0 0 0 2px ${hex}33 inset`;
-        }
+        if (p1Color !== undefined) applyPlayerThemeToHud({ panelEl: this.hudLeftPlayer, titleEl: this.hudJ1Score, scoreEl: this.hudJ1ScoreBig, livesEl: this.hudJ1Lives, colorNumber: p1Color });
+        if (p2Color !== undefined) applyPlayerThemeToHud({ panelEl: this.hudRightPlayer, titleEl: this.hudJ2Score, scoreEl: this.hudJ2ScoreBig, livesEl: this.hudJ2Lives, colorNumber: p2Color });
 
         if (this.hudHelp) {
             this.hudHelp.textContent = `Meta ${HILL_WIN_SCORE} pts o ganar por vidas · ESC`;
@@ -397,6 +390,7 @@ export class KingOfTheHillGame extends Phaser.Scene {
             reason: byScore ? 'hill' : 'lives',
             mode: 'kingOfTheHill',
             rematchScene: 'KingOfTheHillGame',
+            players: buildPlayerIdentityMap(this.matchSettings),
         });
     }
 }
