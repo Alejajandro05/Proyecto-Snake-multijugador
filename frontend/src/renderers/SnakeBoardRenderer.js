@@ -8,6 +8,13 @@ const OBSTACLE_COLOR = 0x888888;
 const FOOD_FRAME_CYCLE = [0, 1, 2, 3, 4, 5];
 const FOOD_PADDING_RATIO = 0.04;
 
+const FOOD_TYPE_TO_FRAME = {
+    apple: 0,
+    grape: 3,
+    poison: 4,
+    speed: 10
+};
+
 // Ángulos de rotación para cada dirección (en radianes)
 const DIR_ANGLE = {
     right: 0,
@@ -443,11 +450,20 @@ export class SnakeBoardRenderer {
         return sprite;
     }
 
+    /*
     _getFoodFrame(food) {
         const col = Math.floor(food.x / GRID_SIZE);
         const row = Math.floor(food.y / GRID_SIZE);
         const hash = (col * 31 + row * 17) >>> 0;
         return FOOD_FRAME_CYCLE[hash % FOOD_FRAME_CYCLE.length];
+    }
+    */
+    _getFoodFrame(food) {
+        if (!(food.type in FOOD_TYPE_TO_FRAME)) {
+            console.warn("Tipo de fruta desconocido:", food.type);
+        }
+
+        return FOOD_TYPE_TO_FRAME[food.type] ?? FOOD_FRAME_CYCLE[0];
     }
 
     hideFoodSprites() {
