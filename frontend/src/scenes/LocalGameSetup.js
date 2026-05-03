@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { PLAYER_COLORS } from '@shared/GameConfig';
 import { loadLocalGameSettings, saveLocalGameSettings } from '../utils/localGameSettings.js';
+import { ensureLocalPlayerProfile, loadLocalPlayerProfiles, sanitizeLocalProfileName } from '../utils/localProfiles.js';
 import { DEFAULT_MAP_ID, DEFAULT_SNAKE_SKIN_ID, getMapAsset, getSnakeAsset, mapAssets, snakeAssets } from '../config/gameAssetRegistry.js';
 import { normalizeLocalGameMode, resolveLocalSceneKey } from './localModeHelpers.js';
 
@@ -45,6 +46,7 @@ export class LocalGameSetup extends Phaser.Scene {
         const initialDifficulty = String(saved?.difficulty ?? DEFAULT_CONFIG.difficulty);
         const initialP1Name = safeName(saved?.players?.p1?.name, DEFAULT_CONFIG.p1.name);
         const initialP2Name = safeName(saved?.players?.p2?.name, DEFAULT_CONFIG.p2.name);
+        let localProfiles = loadLocalPlayerProfiles(localStorage);
 
         const menuDiv = document.createElement('div');
         menuDiv.id = 'local-game-setup-overlay';
@@ -123,6 +125,15 @@ export class LocalGameSetup extends Phaser.Scene {
                 .map-option { border: 2px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.06); color: white; transition: all 0.2s; }
                 .map-option:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.4); }
                 .map-option.active { border-color: #F67D31; box-shadow: 0 0 0 2px rgba(246,125,49,0.2), 0 12px 28px rgba(0,0,0,0.25); }
+                .profile-select {
+                    max-width: 200px;
+                    background: rgba(255,255,255,0.08);
+                    border: 1px solid rgba(255,255,255,0.18);
+                    color: white;
+                }
+                .profile-select option {
+                    color: black;
+                }
             </style>
             <div class="w-100 px-3 d-flex flex-column align-items-center" style="max-width: 900px;">
                 <button id="btn-setup-back" class="btn btn-sm btn-outline-light fw-semibold align-self-start mb-3" type="button" style="border-radius: 999px; padding: 8px 14px;">
@@ -159,6 +170,7 @@ export class LocalGameSetup extends Phaser.Scene {
 
                     <div class="row w-100 mb-4 justify-content-center gap-2 gap-md-5">
                         <div class="col-12 col-sm-auto text-center d-flex flex-column align-items-center mb-4 mb-sm-0">
+                            <select id="p1-profile-select" class="form-select form-select-sm profile-select mb-2"></select>
                             <input id="p1-name" class="form-control bg-transparent text-white text-center fs-5 fw-bold mb-3 custom-input" placeholder="Jugador 1" maxlength="16" value="${initialP1Name}" style="max-width: 200px;" />
                             <div class="d-flex align-items-center gap-3">
                                 <button id="p1-prev" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height: 1;">&lsaquo;</button>
@@ -170,6 +182,7 @@ export class LocalGameSetup extends Phaser.Scene {
                         </div>
 
                         <div class="col-12 col-sm-auto text-center d-flex flex-column align-items-center">
+                            <select id="p2-profile-select" class="form-select form-select-sm profile-select mb-2"></select>
                             <input id="p2-name" class="form-control bg-transparent text-white text-center fs-5 fw-bold mb-3 custom-input" placeholder="Jugador 2" maxlength="16" value="${initialP2Name}" style="max-width: 200px;" />
                             <div class="d-flex align-items-center gap-3">
                                 <button id="p2-prev" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height: 1;">&lsaquo;</button>
@@ -230,6 +243,36 @@ export class LocalGameSetup extends Phaser.Scene {
             `;
         };
 
+        const buildProfileOptions = (selectedName) => {
+            const selectedId = sanitizeLocalProfileName(selectedName).toLowerCase();
+            const options = ['<option value="">Escribir nuevo perfil...</option>'];
+            localProfiles.forEach((profile) => {
+                const safeProfileName = sanitizeLocalProfileName(profile.name);
+                const optionValue = this.escapeHtml(safeProfileName);
+                const isSelected = safeProfileName.toLowerCase() === selectedId ? 'selected' : '';
+                options.push(`<option value="${optionValue}" ${isSelected}>${optionValue}</option>`);
+            });
+            return options.join('');
+        };
+
+        const syncProfileSelect = (selectId, inputId) => {
+            const select = document.getElementById(selectId);
+            const input = document.getElementById(inputId);
+            if (!select || !input) return;
+            const currentName = sanitizeLocalProfileName(input.value);
+            const matching = localProfiles.find((profile) => sanitizeLocalProfileName(profile.name).toLowerCase() === currentName.toLowerCase());
+            select.value = matching ? sanitizeLocalProfileName(matching.name) : '';
+        };
+
+        const renderProfileSelects = () => {
+            const p1Select = document.getElementById('p1-profile-select');
+            const p2Select = document.getElementById('p2-profile-select');
+            if (p1Select) p1Select.innerHTML = buildProfileOptions(document.getElementById('p1-name')?.value ?? initialP1Name);
+            if (p2Select) p2Select.innerHTML = buildProfileOptions(document.getElementById('p2-name')?.value ?? initialP2Name);
+            syncProfileSelect('p1-profile-select', 'p1-name');
+            syncProfileSelect('p2-profile-select', 'p2-name');
+        };
+
         const updateSkins = () => {
             const p1Container = document.getElementById('p1-skin-container');
             if (p1Container) p1Container.innerHTML = getSkinImg(snakeAssets[p1SkinIndex]);
@@ -262,6 +305,7 @@ export class LocalGameSetup extends Phaser.Scene {
         
         updateSkins();
         renderMapOptions();
+        renderProfileSelects();
 
         const cleanup = () => {
             const el = this.overlayEl;
@@ -280,6 +324,10 @@ export class LocalGameSetup extends Phaser.Scene {
             const difficulty = String(document.getElementById('difficulty')?.value ?? DEFAULT_CONFIG.difficulty);
             const p1Name = safeName(document.getElementById('p1-name')?.value, DEFAULT_CONFIG.p1.name);
             const p2Name = safeName(document.getElementById('p2-name')?.value, DEFAULT_CONFIG.p2.name);
+
+            ensureLocalPlayerProfile(localStorage, p1Name);
+            ensureLocalPlayerProfile(localStorage, p2Name);
+            localProfiles = loadLocalPlayerProfiles(localStorage);
             
             // Keep local player identity colors stable even if both choose the same skin.
             const defaultColors = Array.isArray(PLAYER_COLORS) && PLAYER_COLORS.length ? PLAYER_COLORS : [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71];
@@ -325,6 +373,31 @@ export class LocalGameSetup extends Phaser.Scene {
             p2SkinIndex = (p2SkinIndex + 1) % snakeAssets.length;
             updateSkins();
         });
+
+        const bindProfilePicker = (selectId, inputId) => {
+            const select = document.getElementById(selectId);
+            const input = document.getElementById(inputId);
+            if (!select || !input) return;
+
+            select.addEventListener('change', () => {
+                if (!select.value) {
+                    input.focus();
+                    return;
+                }
+                input.value = sanitizeLocalProfileName(select.value);
+            });
+
+            const syncInput = () => {
+                input.value = sanitizeLocalProfileName(input.value);
+                syncProfileSelect(selectId, inputId);
+            };
+
+            input.addEventListener('input', syncInput);
+            input.addEventListener('blur', syncInput);
+        };
+
+        bindProfilePicker('p1-profile-select', 'p1-name');
+        bindProfilePicker('p2-profile-select', 'p2-name');
 
         const difficultyInput = document.getElementById('difficulty');
         const difficultyButtons = Array.from(menuDiv.querySelectorAll('[data-difficulty]'));
@@ -468,6 +541,15 @@ export class LocalGameSetup extends Phaser.Scene {
             cleanup();
             this.input.keyboard?.off('keydown-ESC');
         });
+    }
+
+    escapeHtml(value) {
+        return String(value)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
     }
 }
 

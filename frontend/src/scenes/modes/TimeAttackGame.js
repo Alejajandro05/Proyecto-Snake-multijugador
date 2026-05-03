@@ -4,6 +4,7 @@ import { TICK_MS } from '@shared/GameConfig';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
 import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.js';
+import { recordLocalMatchResult } from '../../utils/localProfiles.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
@@ -217,11 +218,14 @@ export class TimeAttackGame extends Phaser.Scene {
 
         const score1 = state.players.get(P1_ID)?.score || 0;
         const score2 = state.players.get(P2_ID)?.score || 0;
+        const p1Name = this.matchSettings?.players?.p1?.name ?? 'Jugador 1';
+        const p2Name = this.matchSettings?.players?.p2?.name ?? 'Jugador 2';
+        recordLocalMatchResult(localStorage, { winner, p1Name, p2Name });
 
         this.scene.start('GameOver', {
             winner: winner,
-            p1Name: this.matchSettings?.players?.p1?.name ?? 'Jugador 1',
-            p2Name: this.matchSettings?.players?.p2?.name ?? 'Jugador 2',
+            p1Name,
+            p2Name,
             p1Score: score1,
             p2Score: score2,
             reason: this.isTiebreaker ? 'tiebreaker' : 'time',
