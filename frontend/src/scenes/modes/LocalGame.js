@@ -4,6 +4,7 @@ import { MAX_LIVES, TICK_MS } from '@shared/GameConfig.js';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
 import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.js';
+import { recordLocalMatchResult } from '../../utils/localProfiles.js';
 import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
 import { shouldEndStandardMatchByLives, shouldEndStandardMatchByScore } from '../matchEndRules.js';
 import { shouldDieAtWall } from '../localModeHelpers.js';
@@ -344,10 +345,14 @@ export class LocalGame extends Phaser.Scene {
         const state = this.engine.getState();
         const p1 = state.players.get(P1_ID);
         const p2 = state.players.get(P2_ID);
+        const winner = reason ? getScoreWinner(p1.score, p2.score) : getLivesWinner(p1.lives, p2.lives);
+        const p1Name = this.matchSettings?.players?.p1?.name ?? 'Jugador 1';
+        const p2Name = this.matchSettings?.players?.p2?.name ?? 'Jugador 2';
+        recordLocalMatchResult(localStorage, { winner, p1Name, p2Name });
         this.scene.start('GameOver', {
-            winner: reason ? getScoreWinner(p1.score, p2.score) : getLivesWinner(p1.lives, p2.lives),
-            p1Name: this.matchSettings?.players?.p1?.name ?? 'Jugador 1',
-            p2Name: this.matchSettings?.players?.p2?.name ?? 'Jugador 2',
+            winner,
+            p1Name,
+            p2Name,
             p1Score: p1.score, p1Lives: p1.lives,
             p2Score: p2.score, p2Lives: p2.lives,
             reason: reason ? 'score' : 'lives',

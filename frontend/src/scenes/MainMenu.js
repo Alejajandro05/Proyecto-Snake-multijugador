@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { extractLeaderboardUserName, getCurrentUser } from '../services/firebaseAuthService.js';
 import { LeaderboardService } from '../services/LeaderboardService.js';
 import { getAudioSettings, saveMusicVolume, saveSelectedMusic, saveSfxVolume } from '../utils/audioSettings.js';
+import { getLocalLeaderboardEntries } from '../utils/localProfiles.js';
 
 const MENU_MUSIC_KEYS = ['musica_in_game', 'musica2', 'musica3'];
 
@@ -13,6 +14,14 @@ export class MainMenu extends Phaser.Scene {
     }
 
     create() {
+        this.leaderboardView = 'online';
+        this.leaderboardData = {
+            onlineEntries: [],
+            onlineStatus: 'Comprobando tu puesto...',
+            onlineError: false,
+            localEntries: getLocalLeaderboardEntries(localStorage),
+        };
+
         const fondo = this.add.image(this.scale.width / 2, this.scale.height / 2, 'fondo_duelo');
 
         const ajustarFondo = (width, height) => {
@@ -38,7 +47,6 @@ export class MainMenu extends Phaser.Scene {
         menuDiv.style.zIndex = '1000';
         menuDiv.style.overflow = 'hidden';
 
-        // Menú centrado sobre el fondo.
         menuDiv.innerHTML = `
             <style>
                 #main-menu-overlay .leaderboard-panel {
@@ -57,14 +65,45 @@ export class MainMenu extends Phaser.Scene {
                     backdrop-filter: blur(8px);
                 }
 
+                #main-menu-overlay .leaderboard-header {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    margin-bottom: 12px;
+                }
+
                 #main-menu-overlay .leaderboard-title {
-                    margin: 0 0 12px;
+                    margin: 0;
                     color: #FDE68A;
                     font-size: 1.05rem;
                     font-weight: 800;
                     letter-spacing: 0;
                     text-align: center;
                     text-transform: uppercase;
+                }
+
+                #main-menu-overlay .leaderboard-tabs {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 8px;
+                }
+
+                #main-menu-overlay .leaderboard-tab {
+                    border: 1px solid rgba(255, 255, 255, 0.18);
+                    border-radius: 999px;
+                    background: rgba(255, 255, 255, 0.08);
+                    color: #E2E8F0;
+                    font-size: 0.82rem;
+                    font-weight: 800;
+                    letter-spacing: 0.02em;
+                    padding: 8px 10px;
+                    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+                }
+
+                #main-menu-overlay .leaderboard-tab.active {
+                    background: linear-gradient(90deg, rgba(246, 125, 49, 0.95), rgba(222, 26, 88, 0.92));
+                    border-color: rgba(255, 214, 170, 0.9);
+                    color: white;
                 }
 
                 #main-menu-overlay .leaderboard-list {
@@ -76,7 +115,7 @@ export class MainMenu extends Phaser.Scene {
 
                 #main-menu-overlay .leaderboard-row {
                     display: grid;
-                    grid-template-columns: 38px minmax(0, 1fr) 58px;
+                    grid-template-columns: 38px minmax(0, 1fr) 88px;
                     align-items: center;
                     gap: 8px;
                     min-height: 32px;
@@ -104,6 +143,8 @@ export class MainMenu extends Phaser.Scene {
                     color: #C7D2FE;
                     font-weight: 800;
                     text-align: right;
+                    white-space: nowrap;
+                    font-size: 0.78rem;
                 }
 
                 #main-menu-overlay .leaderboard-status {
@@ -115,6 +156,10 @@ export class MainMenu extends Phaser.Scene {
                     font-weight: 700;
                     line-height: 1.35;
                     text-align: center;
+                }
+
+                #main-menu-overlay .leaderboard-status strong {
+                    color: #FDE68A;
                 }
 
                 #main-menu-overlay .leaderboard-empty {
@@ -142,29 +187,34 @@ export class MainMenu extends Phaser.Scene {
                 }
             </style>
             <div id="pantalla-principal" class="w-100 h-100 position-relative">
-                
                 <div class="position-absolute top-50 start-50 translate-middle d-flex flex-column align-items-center" style="margin-top: -50px; width: 100%; max-width: 400px;">
                     <h1 class="display-1 fw-bold text-white mb-5 text-center" style="font-family: 'Teko', sans-serif; text-shadow: 0px 4px 20px #F67D31, 0px 0px 10px #F67D31; letter-spacing: 2px;">
                         SNAKE CLASH
                     </h1>
-                    
+
                     <div class="d-flex flex-column gap-3 w-100 align-items-center">
                         <button id="btn-local" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #DE1A58; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">
-                            🎮 JUEGO LOCAL
+                            JUEGO LOCAL
                         </button>
-                        
+
                         <button id="btn-online" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #8F0177; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">
-                            🌐 1 VS 1 ONLINE
+                            1 VS 1 ONLINE
                         </button>
 
                         <button id="btn-opciones" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #1A05A2; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">
-                            ⚙️ OPCIONES
+                            OPCIONES
                         </button>
                     </div>
                 </div>
 
                 <aside class="leaderboard-panel" aria-label="Tabla de clasificación">
-                    <h2 class="leaderboard-title">TOP 10 JUGADORES</h2>
+                    <div class="leaderboard-header">
+                        <h2 id="leaderboard-title" class="leaderboard-title">TOP 10 ONLINE</h2>
+                        <div class="leaderboard-tabs" role="tablist" aria-label="Tipo de clasificación">
+                            <button id="leaderboard-tab-online" class="leaderboard-tab active" type="button">Online</button>
+                            <button id="leaderboard-tab-local" class="leaderboard-tab" type="button">Local / Amigos</button>
+                        </div>
+                    </div>
                     <div id="leaderboard-list" class="leaderboard-list">
                         <p class="leaderboard-empty">Cargando clasificación...</p>
                     </div>
@@ -174,7 +224,7 @@ export class MainMenu extends Phaser.Scene {
 
             <div id="pantalla-opciones" class="d-none position-absolute top-50 start-50 translate-middle d-flex flex-column gap-4 px-4 py-4" style="width: 100%; max-width: 500px; background: rgba(15, 23, 42, 0.95); border: 2px solid rgba(34, 211, 238, 0.4); border-radius: 16px; backdrop-filter: blur(10px); box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
                 <h2 class="text-white text-center fw-bold mb-3" style="font-family: 'Montserrat', sans-serif;">AJUSTES</h2>
-                
+
                 <div class="text-start">
                     <label for="music-vol" class="form-label text-white fw-semibold mb-1 small">Música de la partida</label>
                     <input type="range" class="form-range" id="music-vol" min="0" max="1" step="0.05" value="${savedMusicVol}">
@@ -201,6 +251,8 @@ export class MainMenu extends Phaser.Scene {
         `;
 
         document.getElementById('game-container').appendChild(menuDiv);
+        this.initializeLeaderboardTabs(menuDiv);
+        this.renderLeaderboard(menuDiv);
         this.loadLeaderboard(menuDiv);
 
         const pantallaPrincipal = document.getElementById('pantalla-principal');
@@ -270,7 +322,7 @@ export class MainMenu extends Phaser.Scene {
         });
 
         const elementsToHover = document.querySelectorAll('.menu-btn, .arcade-card');
-        elementsToHover.forEach(el => {
+        elementsToHover.forEach((el) => {
             el.addEventListener('mouseenter', () => {
                 el.style.transform = 'scale(1.05)';
                 if (el.classList.contains('arcade-card')) {
@@ -303,8 +355,8 @@ export class MainMenu extends Phaser.Scene {
     }
 
     async loadLeaderboard(menuDiv) {
-        const listElement = menuDiv.querySelector('#leaderboard-list');
-        const userRankElement = menuDiv.querySelector('#leaderboard-user-rank');
+        this.leaderboardData.localEntries = getLocalLeaderboardEntries(localStorage);
+        this.renderLeaderboard(menuDiv);
 
         try {
             const [entries, currentUser] = await Promise.all([
@@ -314,32 +366,85 @@ export class MainMenu extends Phaser.Scene {
 
             if (!menuDiv.isConnected) return;
 
-            const sortedEntries = entries
+            this.leaderboardData.onlineEntries = entries
                 .filter((entry) => entry && entry.userName)
                 .sort((first, second) => second.winCount - first.winCount || first.userName.localeCompare(second.userName));
-
-            const topEntries = sortedEntries.slice(0, 10);
-            listElement.innerHTML = topEntries.length > 0
-                ? topEntries.map((entry, index) => this.createLeaderboardRow(entry, index + 1)).join('')
-                : '<p class="leaderboard-empty">Todavía no hay jugadores.</p>';
+            this.leaderboardData.onlineError = false;
 
             if (!currentUser) {
-                userRankElement.textContent = 'Inicia sesión para ver tu puesto.';
+                this.leaderboardData.onlineStatus = 'Inicia sesión para ver tu puesto.';
+                this.renderLeaderboard(menuDiv);
                 return;
             }
 
             const userName = extractLeaderboardUserName(currentUser);
-            const userIndex = sortedEntries.findIndex((entry) => entry.userName === userName);
+            const userIndex = this.leaderboardData.onlineEntries.findIndex((entry) => entry.userName === userName);
 
-            userRankElement.textContent = userIndex >= 0
+            this.leaderboardData.onlineStatus = userIndex >= 0
                 ? `Tu puesto: #${userIndex + 1}`
                 : 'Aún no tienes puesto. Gana una partida.';
+            this.renderLeaderboard(menuDiv);
         } catch (error) {
             console.error('Could not load leaderboard.', error);
             if (!menuDiv.isConnected) return;
-            listElement.innerHTML = '<p class="leaderboard-empty">No se pudo cargar la clasificación.</p>';
-            userRankElement.textContent = 'Inténtalo de nuevo más tarde.';
+            this.leaderboardData.onlineError = true;
+            this.leaderboardData.onlineStatus = 'Inténtalo de nuevo más tarde.';
+            this.renderLeaderboard(menuDiv);
         }
+    }
+
+    initializeLeaderboardTabs(menuDiv) {
+        const onlineTab = menuDiv.querySelector('#leaderboard-tab-online');
+        const localTab = menuDiv.querySelector('#leaderboard-tab-local');
+
+        onlineTab?.addEventListener('click', () => {
+            this.leaderboardView = 'online';
+            this.renderLeaderboard(menuDiv);
+        });
+
+        localTab?.addEventListener('click', () => {
+            this.leaderboardView = 'local';
+            this.leaderboardData.localEntries = getLocalLeaderboardEntries(localStorage);
+            this.renderLeaderboard(menuDiv);
+        });
+    }
+
+    renderLeaderboard(menuDiv) {
+        const listElement = menuDiv.querySelector('#leaderboard-list');
+        const statusElement = menuDiv.querySelector('#leaderboard-user-rank');
+        const titleElement = menuDiv.querySelector('#leaderboard-title');
+        const onlineTab = menuDiv.querySelector('#leaderboard-tab-online');
+        const localTab = menuDiv.querySelector('#leaderboard-tab-local');
+
+        if (!listElement || !statusElement || !titleElement) return;
+
+        const isLocal = this.leaderboardView === 'local';
+        titleElement.textContent = isLocal ? 'RANKING LOCAL / AMIGOS' : 'TOP 10 ONLINE';
+        onlineTab?.classList.toggle('active', !isLocal);
+        localTab?.classList.toggle('active', isLocal);
+
+        if (isLocal) {
+            const localEntries = (this.leaderboardData.localEntries ?? []).slice(0, 10);
+            listElement.innerHTML = localEntries.length > 0
+                ? localEntries.map((entry, index) => this.createLocalLeaderboardRow(entry, index + 1)).join('')
+                : '<p class="leaderboard-empty">Todavía no hay perfiles locales.</p>';
+            statusElement.innerHTML = localEntries.length > 0
+                ? `Perfiles guardados: <strong>${this.leaderboardData.localEntries.length}</strong>`
+                : 'Crea una partida local para empezar a registrar amigos.';
+            return;
+        }
+
+        if (this.leaderboardData.onlineError) {
+            listElement.innerHTML = '<p class="leaderboard-empty">No se pudo cargar la clasificación.</p>';
+            statusElement.textContent = this.leaderboardData.onlineStatus;
+            return;
+        }
+
+        const onlineEntries = (this.leaderboardData.onlineEntries ?? []).slice(0, 10);
+        listElement.innerHTML = onlineEntries.length > 0
+            ? onlineEntries.map((entry, index) => this.createLeaderboardRow(entry, index + 1)).join('')
+            : '<p class="leaderboard-empty">Cargando clasificación...</p>';
+        statusElement.textContent = this.leaderboardData.onlineStatus;
     }
 
     createLeaderboardRow(entry, rank) {
@@ -348,6 +453,16 @@ export class MainMenu extends Phaser.Scene {
                 <span class="leaderboard-rank">#${rank}</span>
                 <span class="leaderboard-name">${this.escapeHtml(entry.userName)}</span>
                 <span class="leaderboard-score">${entry.winCount}</span>
+            </div>
+        `;
+    }
+
+    createLocalLeaderboardRow(entry, rank) {
+        return `
+            <div class="leaderboard-row">
+                <span class="leaderboard-rank">#${rank}</span>
+                <span class="leaderboard-name">${this.escapeHtml(entry.name)}</span>
+                <span class="leaderboard-score">${this.escapeHtml(`${entry.wins}V · ${entry.losses}D · ${entry.gamesPlayed}PJ`)}</span>
             </div>
         `;
     }
