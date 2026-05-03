@@ -384,6 +384,8 @@ export class ChaosGame extends Phaser.Scene {
         const p2 = state.players.get(P2_ID);
         this.scene.start('GameOver', {
             winner: p1.lives > 0 ? 'J1' : 'J2',
+            p1Name: this.matchSettings?.players?.p1?.name ?? 'Jugador 1',
+            p2Name: this.matchSettings?.players?.p2?.name ?? 'Jugador 2',
             p1Score: p1.score, p1Lives: p1.lives,
             p2Score: p2.score, p2Lives: p2.lives,
             reason: 'lives',

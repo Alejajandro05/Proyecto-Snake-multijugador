@@ -2,6 +2,7 @@
 import { GRID_COLS, GRID_ROWS, GRID_SIZE } from '@shared/GameConfig';
 import { ASSET_KEYS } from '../config/assetManifest.js';
 import { getMapAsset, getSnakeAsset } from '../config/gameAssetRegistry.js';
+import { getSnakeIdentityStyle } from './snakeIdentityStyle.js';
 
 const FOOD_COLOR     = 0xffff00;
 const OBSTACLE_COLOR = 0x888888;
@@ -58,6 +59,7 @@ export class SnakeBoardRenderer {
                 .setOrigin(0).setAlpha(0.92).setDepth(5)
             : null;
 
+        this.identityGraphics = this.scene.add.graphics().setDepth(9);
         this.snakeGraphics    = this.scene.add.graphics().setDepth(10);
         this.foodGraphics     = this.scene.add.graphics().setDepth(11);
         this.obstacleGraphics = this.scene.add.graphics().setDepth(12);
@@ -121,7 +123,7 @@ export class SnakeBoardRenderer {
         this.updateFloorTileLayer();
         this.updateBoardFrameSprite();
 
-        [this.gridGraphics, this.snakeGraphics, this.foodGraphics, this.obstacleGraphics].forEach((layer) => {
+        [this.gridGraphics, this.identityGraphics, this.snakeGraphics, this.foodGraphics, this.obstacleGraphics].forEach((layer) => {
             layer.setPosition(0, 0).setScale(1);
         });
 
@@ -176,6 +178,7 @@ export class SnakeBoardRenderer {
     // ─────────────────────────────────────────────────────────────────
 
     clearDynamicLayers() {
+        this.identityGraphics.clear();
         this.snakeGraphics.clear();
         this.foodGraphics.clear();
         this.obstacleGraphics.clear();
@@ -237,6 +240,7 @@ export class SnakeBoardRenderer {
             const angle     = this._computeAngle(segments, i, isHead, isTail, player.direction, snakeAsset);
 
             const sprite = this._getSnakeSprite(playerIndex, i, spriteKey);
+            this._drawIdentityMarker(seg, player.color, isHead);
             this._placeSprite(sprite, seg, angle);
         });
     }
@@ -406,6 +410,24 @@ export class SnakeBoardRenderer {
             .setDisplaySize(this.cellSize, this.cellSize)
             .setRotation(angle)
             .setVisible(true);
+    }
+
+    _drawIdentityMarker(segment, color, isHead) {
+        const col = Math.floor(segment.x / GRID_SIZE);
+        const row = Math.floor(segment.y / GRID_SIZE);
+        const px = this.boardOffsetX + col * this.cellSize;
+        const py = this.boardOffsetY + row * this.cellSize;
+        const style = getSnakeIdentityStyle(this.cellSize, isHead);
+        const size = Math.max(1, this.cellSize - style.padding * 2);
+
+        this.identityGraphics.fillStyle(color, style.alpha);
+        this.identityGraphics.fillRoundedRect(
+            px + style.padding,
+            py + style.padding,
+            size,
+            size,
+            style.radius,
+        );
     }
 
     // ─────────────────────────────────────────────────────────────────

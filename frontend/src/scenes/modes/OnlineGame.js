@@ -385,6 +385,8 @@ export class OnlineGame extends Phaser.Scene {
         const playerEntries = this.getOrderedPlayerEntries(this.latestState);
         const [p1SessionId, p1] = playerEntries[0] ?? [];
         const [p2SessionId, p2] = playerEntries[1] ?? [];
+        const p1Name = p1?.playerName || 'Jugador 1';
+        const p2Name = p2?.playerName || 'Jugador 2';
 
         if (!p1 || !p2) {
             this.scene.start('MainMenu');
@@ -403,6 +405,8 @@ export class OnlineGame extends Phaser.Scene {
         if (reason) {
             this.scene.start('GameOver', {
                 winner: getScoreWinner(p1.score, p2.score),
+                p1Name,
+                p2Name,
                 p1Score: p1.score,
                 p1Lives: p1.lives,
                 p2Score: p2.score,
@@ -414,6 +418,8 @@ export class OnlineGame extends Phaser.Scene {
         } else {
             this.scene.start('GameOver', {
                 winner: getLivesWinner(p1.lives, p2.lives),
+                p1Name,
+                p2Name,
                 p1Score: p1.score,
                 p1Lives: p1.lives,
                 p2Score: p2.score,

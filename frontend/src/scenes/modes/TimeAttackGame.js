@@ -220,6 +220,8 @@ export class TimeAttackGame extends Phaser.Scene {
 
         this.scene.start('GameOver', {
             winner: winner,
+            p1Name: this.matchSettings?.players?.p1?.name ?? 'Jugador 1',
+            p2Name: this.matchSettings?.players?.p2?.name ?? 'Jugador 2',
             p1Score: score1,
             p2Score: score2,
             reason: this.isTiebreaker ? 'tiebreaker' : 'time',

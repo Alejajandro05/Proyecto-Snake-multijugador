@@ -393,6 +393,8 @@ export class KingOfTheHillGame extends Phaser.Scene {
         const p2 = state.players.get(P2_ID);
         this.scene.start('GameOver', {
             winner: byScore ? getScoreWinner(p1.score, p2.score) : getLivesWinner(p1.lives, p2.lives),
+            p1Name: this.matchSettings?.players?.p1?.name ?? 'Jugador 1',
+            p2Name: this.matchSettings?.players?.p2?.name ?? 'Jugador 2',
             p1Score: p1.score,
             p1Lives: p1.lives,
             p2Score: p2.score,
