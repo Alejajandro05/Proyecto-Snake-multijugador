@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { registerUser } from '../services/firebaseAuthService.js';
+import { registerUser, validateUserName } from '../services/firebaseAuthService.js';
 
 export class Registration extends Phaser.Scene {
   constructor() {
@@ -86,8 +86,6 @@ export class Registration extends Phaser.Scene {
     const toggleConfirmPasswordButton = overlay.querySelector('#toggle-confirmPassword');
     const backButton = overlay.querySelector('#btn-registration-back');
 
-    const existingUsers = ['player1', 'player2', 'admin'];
-
     const resetValidation = () => {
       [usernameInput, passwordInput, confirmInput].forEach((input) => {
         input.style.borderColor = '#94A3B8';
@@ -137,6 +135,13 @@ export class Registration extends Phaser.Scene {
       if (!usernameValue) {
         usernameInput.style.borderColor = 'red';
         validationMessage.textContent = 'El nombre del usuario es requerido.';
+        return;
+      }
+
+      const usernameValidation = validateUserName(usernameValue);
+      if (!usernameValidation.ok) {
+        usernameInput.style.borderColor = 'red';
+        validationMessage.textContent = usernameValidation.message;
         return;
       }
 

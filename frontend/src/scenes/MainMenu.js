@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { getCurrentUser } from '../services/firebaseAuthService.js';
+import { extractLeaderboardUserName, getCurrentUser } from '../services/firebaseAuthService.js';
 import { LeaderboardService } from '../services/LeaderboardService.js';
 import { getAudioSettings, saveMusicVolume, saveSelectedMusic, saveSfxVolume } from '../utils/audioSettings.js';
 
@@ -328,7 +328,7 @@ export class MainMenu extends Phaser.Scene {
                 return;
             }
 
-            const userName = this.getUserNameFromFirebaseUser(currentUser);
+            const userName = extractLeaderboardUserName(currentUser);
             const userIndex = sortedEntries.findIndex((entry) => entry.userName === userName);
 
             userRankElement.textContent = userIndex >= 0
@@ -350,12 +350,6 @@ export class MainMenu extends Phaser.Scene {
                 <span class="leaderboard-score">${entry.winCount}</span>
             </div>
         `;
-    }
-
-    getUserNameFromFirebaseUser(user) {
-        const emailUserName = String(user?.email ?? '').split('@')[0]?.trim();
-        const displayName = String(user?.displayName ?? '').trim();
-        return displayName || emailUserName || '';
     }
 
     escapeHtml(value) {

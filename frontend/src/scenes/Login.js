@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { loginUser } from '../services/firebaseAuthService.js';
+import { loginUser, validateUserName } from '../services/firebaseAuthService.js';
 
 export class Login extends Phaser.Scene {
   constructor() {
@@ -116,6 +116,13 @@ export class Login extends Phaser.Scene {
       if (!usernameValue) {
         usernameInput.style.borderColor = 'red';
         validationMessage.textContent = 'El nombre del usuario es requerido.';
+        return;
+      }
+
+      const usernameValidation = validateUserName(usernameValue);
+      if (!usernameValidation.ok) {
+        usernameInput.style.borderColor = 'red';
+        validationMessage.textContent = usernameValidation.message;
         return;
       }
 

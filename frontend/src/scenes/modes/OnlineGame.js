@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
 import { MAX_LIVES } from '@shared/GameConfig';
 import { createLobbyClient } from '../../net/lobbyClient.js';
-import { getCurrentUser } from '../../services/firebaseAuthService.js';
+import { extractLeaderboardUserName, getCurrentUser } from '../../services/firebaseAuthService.js';
 import { LeaderboardService } from '../../services/LeaderboardService.js';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
 import { shouldEndStandardMatchByLives, shouldEndStandardMatchByScore } from '../matchEndRules.js';
 import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.js';
+import { loadOnlinePrefs } from '../../utils/onlineStorage.js';
 
 function normalizeHttpUrlToWebSocket(url) {
     const s = String(url ?? '').trim();
@@ -56,6 +57,7 @@ export class OnlineGame extends Phaser.Scene {
         this.matchRoomId = data?.matchRoomId ?? '';
         this.playerSkinId = data?.skinId ?? '';
         this.mapId = data?.mapId ?? '';
+        this.playerName = data?.playerName ?? '';
     }
 
     async create() {
@@ -234,8 +236,8 @@ export class OnlineGame extends Phaser.Scene {
         const firstPlayer = players[0];
         const secondPlayer = players[1];
 
-        if (this.hudJ1Score) this.hudJ1Score.textContent = 'J1';
-        if (this.hudJ2Score) this.hudJ2Score.textContent = 'J2';
+        if (this.hudJ1Score) this.hudJ1Score.textContent = firstPlayer?.playerName || 'J1';
+        if (this.hudJ2Score) this.hudJ2Score.textContent = secondPlayer?.playerName || 'J2';
 
         if (this.hudJ1ScoreBig) this.hudJ1ScoreBig.textContent = `${firstPlayer?.score ?? 0}`;
         if (this.hudJ2ScoreBig) this.hudJ2ScoreBig.textContent = `${secondPlayer?.score ?? 0}`;
@@ -250,7 +252,11 @@ export class OnlineGame extends Phaser.Scene {
         try {
             const client = createLobbyClient();
             const currentUser = await getCurrentUser();
-            const options = { skinId: this.playerSkinId };
+            const onlinePrefs = loadOnlinePrefs();
+            const options = {
+                skinId: this.playerSkinId,
+                playerName: this.playerName || onlinePrefs.playerName || 'Jugador',
+            };
             if (currentUser) {
                 options.firebaseUid = currentUser.uid;
             }
@@ -419,19 +425,13 @@ export class OnlineGame extends Phaser.Scene {
         }
     }
 
-    getUserNameFromFirebaseUser(user) {
-        const emailUserName = String(user?.email ?? '').split('@')[0]?.trim();
-        const displayName = String(user?.displayName ?? '').trim();
-        return displayName || emailUserName || '';
-    }
-
     async recordWinIfCurrentUserWon(currentSessionId, winnerSessionId) {
         if (!currentSessionId || currentSessionId !== winnerSessionId) return;
 
         const currentUser = await getCurrentUser();
         if (!currentUser) return;
 
-        const userName = this.getUserNameFromFirebaseUser(currentUser);
+        const userName = extractLeaderboardUserName(currentUser);
         if (!userName) return;
 
         await LeaderboardService.incrementWinCount(userName);
