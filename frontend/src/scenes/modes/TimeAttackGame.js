@@ -5,6 +5,7 @@ import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
 import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.js';
 import { recordLocalMatchResult } from '../../utils/localProfiles.js';
+import { applyPlayerThemeToHud, buildPlayerIdentityMap } from '../../utils/playerIdentity.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
@@ -58,7 +59,8 @@ export class TimeAttackGame extends Phaser.Scene {
                 p1Score: state.players.get(P1_ID)?.score || 0,
                 p2Score: state.players.get(P2_ID)?.score || 0,
                 p1Lives: '∞',
-                p2Lives: '∞'
+                p2Lives: '∞',
+                players: buildPlayerIdentityMap(this.matchSettings)
             });
         });
 
@@ -209,7 +211,8 @@ export class TimeAttackGame extends Phaser.Scene {
 
     actualizarHUDDesempate() {
         if (this.timerDiv) {
-            this.timerDiv.innerHTML = `<span style="color:#e74c3c;">${this.tiebreakerScores[P1_ID]}</span> - <span style="color:#3498db;">${this.tiebreakerScores[P2_ID]}</span> <br><span style="font-size: 1.2rem; color: #FFC107;">¡EL PRIMERO EN 5!</span>`;
+            const identities = buildPlayerIdentityMap(this.matchSettings);
+            this.timerDiv.innerHTML = `<span style="color:${identities.p1.colorHex};">${this.tiebreakerScores[P1_ID]}</span> - <span style="color:${identities.p2.colorHex};">${this.tiebreakerScores[P2_ID]}</span> <br><span style="font-size: 1.2rem; color: #FFC107;">¡EL PRIMERO EN 5!</span>`;
         }
     }
 
@@ -230,7 +233,8 @@ export class TimeAttackGame extends Phaser.Scene {
             p2Score: score2,
             reason: this.isTiebreaker ? 'tiebreaker' : 'time',
             mode: 'timeAttack',
-            rematchScene: 'TimeAttackGame'
+            rematchScene: 'TimeAttackGame',
+            players: buildPlayerIdentityMap(this.matchSettings)
         });
     }
 
@@ -263,17 +267,8 @@ export class TimeAttackGame extends Phaser.Scene {
         if (this.hudJ1Score) this.hudJ1Score.textContent = p1Name;
         if (this.hudJ2Score) this.hudJ2Score.textContent = p2Name;
 
-        if (this.hudLeftPlayer && p1Color !== undefined) {
-            const hex = colorNumberToCssHex(p1Color);
-            this.hudLeftPlayer.style.borderColor = `${hex}55`;
-            this.hudLeftPlayer.style.boxShadow = `0 12px 40px rgba(0,0,0,0.35), 0 0 0 2px ${hex}33 inset`;
-        }
-
-        if (this.hudRightPlayer && p2Color !== undefined) {
-            const hex = colorNumberToCssHex(p2Color);
-            this.hudRightPlayer.style.borderColor = `${hex}55`;
-            this.hudRightPlayer.style.boxShadow = `0 12px 40px rgba(0,0,0,0.35), 0 0 0 2px ${hex}33 inset`;
-        }
+        if (p1Color !== undefined) applyPlayerThemeToHud({ panelEl: this.hudLeftPlayer, titleEl: this.hudJ1Score, scoreEl: this.hudJ1ScoreBig, colorNumber: p1Color });
+        if (p2Color !== undefined) applyPlayerThemeToHud({ panelEl: this.hudRightPlayer, titleEl: this.hudJ2Score, scoreEl: this.hudJ2ScoreBig, colorNumber: p2Color });
 
         if (this.hudHelp) {
             this.hudHelp.textContent = `Contrarreloj | ${p1Name} (WASD) vs ${p2Name} (Flechas) — ESC: Menu`;

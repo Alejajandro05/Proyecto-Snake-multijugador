@@ -1,4 +1,5 @@
 import admin from "firebase-admin";
+import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 
 const COLLECTION_NAME = "leaderboard-wins";
 
@@ -77,7 +78,7 @@ export class LeaderboardService {
   static async getAll(): Promise<LeaderboardEntry[]> {
     const snapshot = await collection.get();
 
-    return snapshot.docs.map((doc) => {
+    return snapshot.docs.map((doc: QueryDocumentSnapshot) => {
       const data = doc.data();
       return {
         id: doc.id,

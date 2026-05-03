@@ -60,6 +60,7 @@ export class SnakeBoardRenderer {
             : null;
 
         this.identityGraphics = this.scene.add.graphics().setDepth(9);
+        this.territoryGraphics = this.scene.add.graphics().setDepth(-12);
         this.snakeGraphics    = this.scene.add.graphics().setDepth(10);
         this.foodGraphics     = this.scene.add.graphics().setDepth(11);
         this.obstacleGraphics = this.scene.add.graphics().setDepth(12);
@@ -123,7 +124,7 @@ export class SnakeBoardRenderer {
         this.updateFloorTileLayer();
         this.updateBoardFrameSprite();
 
-        [this.gridGraphics, this.identityGraphics, this.snakeGraphics, this.foodGraphics, this.obstacleGraphics].forEach((layer) => {
+        [this.gridGraphics, this.territoryGraphics, this.identityGraphics, this.snakeGraphics, this.foodGraphics, this.obstacleGraphics].forEach((layer) => {
             layer.setPosition(0, 0).setScale(1);
         });
 
@@ -178,6 +179,7 @@ export class SnakeBoardRenderer {
     // ─────────────────────────────────────────────────────────────────
 
     clearDynamicLayers() {
+        this.territoryGraphics.clear();
         this.identityGraphics.clear();
         this.snakeGraphics.clear();
         this.foodGraphics.clear();
@@ -191,9 +193,17 @@ export class SnakeBoardRenderer {
     renderState(state) {
         if (state?.mapId) this.setMapId(state.mapId);
         this.clearDynamicLayers();
+        this.renderTerritory(state?.territory);
         this.renderPlayers(state?.players);
         this.renderFood(state?.food);
         this.renderObstacles(state?.obstacles);
+    }
+
+    renderTerritory(territoryCells) {
+        territoryCells?.forEach?.((cell) => {
+            const alpha = 0.36;
+            this.drawBoardCell(this.territoryGraphics, cell.x, cell.y, cell.ownerColor, alpha, 0.04);
+        });
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -580,13 +590,13 @@ export class SnakeBoardRenderer {
         }
     }
 
-    drawBoardCell(layer, x, y, color) {
+    drawBoardCell(layer, x, y, color, alpha = 1, paddingRatio = 0.08) {
         const col     = Math.floor(x / GRID_SIZE);
         const row     = Math.floor(y / GRID_SIZE);
         const px      = this.boardOffsetX + col * this.cellSize;
         const py      = this.boardOffsetY + row * this.cellSize;
-        const padding = Math.max(1, Math.floor(this.cellSize * 0.08));
-        layer.fillStyle(color, 1);
+        const padding = Math.max(1, Math.floor(this.cellSize * paddingRatio));
+        layer.fillStyle(color, alpha);
         layer.fillRect(px + padding, py + padding,
             Math.max(1, this.cellSize - padding * 2),
             Math.max(1, this.cellSize - padding * 2)

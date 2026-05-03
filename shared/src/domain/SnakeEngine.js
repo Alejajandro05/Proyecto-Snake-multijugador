@@ -15,6 +15,8 @@ export class SnakeEngine {
     inputQueues = new Map();
     food = [];
     obstacles = [];
+    territory = new Map();
+    territoryCounts = new Map();
     respawnQueue = new Map(); // playerId → respawn tick
     tickCount = 0;
     respawnTicks;
@@ -99,6 +101,8 @@ export class SnakeEngine {
             players: new Map(this.players),
             food: [...this.food],
             obstacles: [...this.obstacles],
+            territory: Array.from(this.territory.values(), (cell) => ({ ...cell })),
+            territoryCounts: new Map(this.territoryCounts),
         };
     }
     // ─── Private helpers ──────────────────────────────────────────────────────
@@ -175,6 +179,7 @@ export class SnakeEngine {
         }
         if (!player.alive)
             return;
+        this.claimTerritory(player, newX, newY);
         // Food collision
         let ate = false;
         const foodIdx = this.food.findIndex(f => f.x === newX && f.y === newY);
@@ -230,6 +235,24 @@ export class SnakeEngine {
         const nextDirection = queue.shift();
         player.nextDirection = queue[0] ?? nextDirection;
         return nextDirection;
+    }
+    claimTerritory(player, x, y) {
+        if (!this.config.territoryMode)
+            return;
+        const key = `${x},${y}`;
+        const previous = this.territory.get(key);
+        if (previous?.ownerId === player.id)
+            return;
+        if (previous?.ownerId) {
+            this.territoryCounts.set(previous.ownerId, Math.max(0, (this.territoryCounts.get(previous.ownerId) ?? 0) - 1));
+        }
+        this.territory.set(key, {
+            x,
+            y,
+            ownerId: player.id,
+            ownerColor: player.color,
+        });
+        this.territoryCounts.set(player.id, (this.territoryCounts.get(player.id) ?? 0) + 1);
     }
     getSnakesPosition() {
         let playerSegments = [];

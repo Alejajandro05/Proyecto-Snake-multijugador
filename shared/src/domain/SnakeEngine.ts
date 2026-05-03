@@ -1,4 +1,4 @@
-import type { Direction, GameState, PlayerState, FoodState, SnakeSegmentState, ObstacleState, Position, FoodType, FoodConfigItem } from './types.js';
+import type { Direction, GameState, PlayerState, FoodState, SnakeSegmentState, ObstacleState, Position, FoodType, FoodConfigItem, TerritoryCellState } from './types.js';
 import {
   type GameRuntimeConfig,
   PLAYER_COLORS,
@@ -77,6 +77,8 @@ export class SnakeEngine {
   private inputQueues = new Map<string, Direction[]>();
   private food: FoodState[] = [];
   private obstacles: ObstacleState[] = [];
+  private territory = new Map<string, TerritoryCellState>();
+  private territoryCounts = new Map<string, number>();
   private respawnQueue = new Map<string, number>(); // playerId → respawn tick
   private tickCount = 0;
   private readonly respawnTicks: number;
@@ -207,6 +209,8 @@ export class SnakeEngine {
       players: new Map(this.players),
       food: [...this.food],
       obstacles: [...this.obstacles],
+      territory: Array.from(this.territory.values(), (cell) => ({ ...cell })),
+      territoryCounts: new Map(this.territoryCounts),
     };
   }
 
@@ -275,6 +279,8 @@ export class SnakeEngine {
     }
 
     if (!player.alive) return;
+
+    this.claimTerritory(player, newX, newY);
 
     // Food collision
     let shouldGrow = false;
@@ -360,6 +366,26 @@ export class SnakeEngine {
     const nextDirection = queue.shift()!;
     player.nextDirection = queue[0] ?? nextDirection;
     return nextDirection;
+  }
+
+  private claimTerritory(player: PlayerState, x: number, y: number): void {
+    if (!this.config.territoryMode) return;
+
+    const key = `${x},${y}`;
+    const previous = this.territory.get(key);
+    if (previous?.ownerId === player.id) return;
+
+    if (previous?.ownerId) {
+      this.territoryCounts.set(previous.ownerId, Math.max(0, (this.territoryCounts.get(previous.ownerId) ?? 0) - 1));
+    }
+
+    this.territory.set(key, {
+      x,
+      y,
+      ownerId: player.id,
+      ownerColor: player.color,
+    });
+    this.territoryCounts.set(player.id, (this.territoryCounts.get(player.id) ?? 0) + 1);
   }
 
   private getSnakesPosition(): Position[] {

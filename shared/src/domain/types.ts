@@ -30,6 +30,11 @@ export type FoodState = {
   score: number;
 }
 
+export interface TerritoryCellState extends Position {
+  ownerId: string;
+  ownerColor: number;
+}
+
 export interface PlayerState {
   id: string;
   skinId: string;
@@ -53,4 +58,6 @@ export interface GameState {
   players: Map<string, PlayerState>;
   food: FoodState[];
   obstacles: ObstacleState[];
+  territory: TerritoryCellState[];
+  territoryCounts: Map<string, number>;
 }
