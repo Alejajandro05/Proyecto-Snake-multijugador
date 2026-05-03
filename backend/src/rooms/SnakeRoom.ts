@@ -180,7 +180,7 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
     }
   }
 
-  private syncFood(food: { x: number; y: number }[]): void {
+  private syncFood(food: { x: number; y: number; type?: string; score?: number }[]): void {
     while (this.state.food.length < food.length) {
       this.state.food.push(new Food());
     }
@@ -190,6 +190,8 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
     for (let i = 0; i < food.length; i++) {
       this.state.food[i].x = food[i].x;
       this.state.food[i].y = food[i].y;
+      this.state.food[i].type = food[i].type ?? "apple";
+      this.state.food[i].score = food[i].score ?? 0;
     }
   }
 
