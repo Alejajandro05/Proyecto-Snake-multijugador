@@ -9,7 +9,7 @@ export type SnakeSegmentState = Position;
 // export type FoodState = Position;
 export type ObstacleState = Position;
 
-export type FoodType = "apple" | "grape" | "poison";
+export type FoodType = "apple" | "grape" | "speed" | "poison";
 
 type FoodEffect = (player: PlayerState) => void;
 

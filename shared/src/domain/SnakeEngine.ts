@@ -132,7 +132,7 @@ export class SnakeEngine {
       score: 0,
       segments,
       lastEatenFood: null,
-      speed: 2,
+      speed: 1,
       moveCounter: 0,
       speedEffectRemaining: 0
     };
@@ -187,7 +187,7 @@ export class SnakeEngine {
         player.speedEffectRemaining--;
 
         if (player.speedEffectRemaining <= 0) {
-        player.speed = 2;
+        player.speed = 1;
         }
       }
 
@@ -285,7 +285,7 @@ export class SnakeEngine {
       this.food.splice(foodIdx, 1);
       this.food.push(this.randomFood());
 
-      const config = FOOD_CONFIG[eatenFood.type];
+      const config = FOOD_CONFIG[eatenFood.type ?? 'apple'] ?? FOOD_CONFIG.apple;
       player.lastEatenFood = config;
 
       this.events.emit("playerEatFood", {
@@ -344,6 +344,9 @@ export class SnakeEngine {
     player.direction = 'right';
     player.nextDirection = 'right';
     this.inputQueues.set(id, []);
+    player.speed = 1;
+    player.moveCounter = 0;
+    player.speedEffectRemaining = 0;
     player.alive = true;
   }
 
