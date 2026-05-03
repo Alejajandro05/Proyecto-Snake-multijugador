@@ -5,6 +5,7 @@ import { getCurrentUser } from '../../services/firebaseAuthService.js';
 import { LeaderboardService } from '../../services/LeaderboardService.js';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
+import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.js';
 
 function normalizeHttpUrlToWebSocket(url) {
     const s = String(url ?? '').trim();
@@ -98,18 +99,20 @@ export class OnlineGame extends Phaser.Scene {
         this.latestState = null;
         this.renderState({ players: new Map(), food: [], obstacles: [] });
 
-        this.userMusicVol = localStorage.getItem('musicVolume') !== null ? parseFloat(localStorage.getItem('musicVolume')) : 0.2;
-        this.userSfxVol = localStorage.getItem('sfxVolume') !== null ? parseFloat(localStorage.getItem('sfxVolume')) : 0.7;
+        const audioSettings = getAudioSettings(localStorage);
+        this.userMusicVol = audioSettings.musicVolume;
+        this.userSfxVol = audioSettings.sfxVolume;
 
-        const musicKey = localStorage.getItem('selectedMusic') || 'musica_in_game';
+        const musicKey = this.cache.audio.exists(audioSettings.selectedMusic) ? audioSettings.selectedMusic : DEFAULT_MUSIC_KEY;
         this.music = this.sound.add(musicKey, { loop: true, volume: this.userMusicVol });
-        this.music.play();
+        if (this.userMusicVol > 0) this.music.play();
 
         this.events.on('shutdown', () => { if (this.music) this.music.stop(); });
         this.events.on('pause', () => { if (this.music) this.music.pause(); });
         this.events.on('resume', () => {
             this.isPaused = false;
-            if (this.music) this.music.resume();
+            if (this.music?.isPaused) this.music.resume();
+            else if (this.music && !this.music.isPlaying && this.userMusicVol > 0) this.music.play();
         });
 
         this.audioStateCache = new Map();

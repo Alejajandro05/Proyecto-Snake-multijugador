@@ -3,6 +3,7 @@ import { SnakeEngine, FOOD_CONFIG } from '@shared/SnakeEngine.ts';
 import { MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig.js';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
+import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.js';
 import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
 import { shouldDieAtWall } from '../localModeHelpers.js';
 
@@ -109,12 +110,13 @@ export class LocalGame extends Phaser.Scene {
         this.updateLayout(this.scale.width, this.scale.height);
 
         // 5. AUDIO CORREGIDO
-        this.userMusicVol = parseFloat(localStorage.getItem('musicVolume')) || 0.2;
-        this.userSfxVol = parseFloat(localStorage.getItem('sfxVolume')) || 0.7;
+        const audioSettings = getAudioSettings(localStorage);
+        this.userMusicVol = audioSettings.musicVolume;
+        this.userSfxVol = audioSettings.sfxVolume;
 
-        const musicKey = localStorage.getItem('selectedMusic') || 'musica_in_game';
+        const musicKey = this.cache.audio.exists(audioSettings.selectedMusic) ? audioSettings.selectedMusic : DEFAULT_MUSIC_KEY;
         this.music = this.sound.add(musicKey, { loop: true, volume: this.userMusicVol });
-        this.music.play();
+        if (this.userMusicVol > 0) this.music.play();
 
         // Limpieza al cerrar
         this.events.on('shutdown', () => {
@@ -126,7 +128,8 @@ export class LocalGame extends Phaser.Scene {
         this.events.on('pause', () => { if (this.music) this.music.pause(); });
         this.events.on('resume', () => {
             this.isPaused = false;
-            if (this.music) this.music.resume();
+            if (this.music?.isPaused) this.music.resume();
+            else if (this.music && !this.music.isPlaying && this.userMusicVol > 0) this.music.play();
         });
 
         this.renderState(this.engine.getState());

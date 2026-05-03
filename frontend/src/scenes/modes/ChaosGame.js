@@ -3,6 +3,7 @@ import { SnakeEngine } from '@shared/SnakeEngine';
 import { TICK_MS } from '@shared/GameConfig';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
+import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
@@ -98,12 +99,13 @@ export class ChaosGame extends Phaser.Scene {
 
         this.updateLayout(this.scale.width, this.scale.height);
 
-        this.userMusicVol = parseFloat(localStorage.getItem('musicVolume')) || 0.2;
-        this.userSfxVol = parseFloat(localStorage.getItem('sfxVolume')) || 0.7;
+        const audioSettings = getAudioSettings(localStorage);
+        this.userMusicVol = audioSettings.musicVolume;
+        this.userSfxVol = audioSettings.sfxVolume;
 
-        const musicKey = localStorage.getItem('selectedMusic') || 'musica_in_game';
+        const musicKey = this.cache.audio.exists(audioSettings.selectedMusic) ? audioSettings.selectedMusic : DEFAULT_MUSIC_KEY;
         this.music = this.sound.add(musicKey, { loop: true, volume: this.userMusicVol });
-        this.music.play();
+        if (this.userMusicVol > 0) this.music.play();
 
         this.events.on('shutdown', () => {
             if (this.music) this.music.stop();
@@ -116,7 +118,8 @@ export class ChaosGame extends Phaser.Scene {
         this.events.on('pause', () => { if (this.music) this.music.pause(); });
         this.events.on('resume', () => {
             this.isPaused = false;
-            if (this.music) this.music.resume();
+            if (this.music?.isPaused) this.music.resume();
+            else if (this.music && !this.music.isPlaying && this.userMusicVol > 0) this.music.play();
         });
 
         this.renderState(this.engine.getState());
