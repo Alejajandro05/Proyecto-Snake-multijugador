@@ -82,15 +82,29 @@ export const snakeAssets = Object.freeze([
   }, ['snake010']),
 ]);
 
-function createMapAsset(id, label, floorPath, theme, aliases = []) {
+function getArenaAssetName(id) {
+  const match = String(id).match(/^arena0*(\d+)$/);
+  return match ? `arena${Number(match[1])}` : id;
+}
+
+function createMapAsset(id, label, theme, aliases = []) {
+  const arenaAssetName = theme.assetName ?? getArenaAssetName(id);
+
   return Object.freeze({
     id,
     label,
     aliases: Object.freeze(aliases),
-    floor: Object.freeze({ key: `map-${id}-floor`, path: floorPath }),
+    floor: Object.freeze({
+      key: `map-${id}-floor`,
+      path: theme.floorPath ?? `map/tiles/${arenaAssetName}.png`,
+    }),
+    border: Object.freeze({
+      key: theme.borderKey ?? `map-${id}-border`,
+      path: theme.borderPath ?? `map/borders/${arenaAssetName}.png`,
+    }),
     obstacle: Object.freeze({
-      key: theme.obstacleKey ?? 'map-obstacle-rock',
-      path: theme.obstaclePath ?? 'map/obstacles/obstacle_rock.png',
+      key: theme.obstacleKey ?? `map-${id}-obstacle`,
+      path: theme.obstaclePath ?? `map/obstacles/${arenaAssetName}.png`,
     }),
     theme: Object.freeze({
       backgroundColor: theme.backgroundColor,
@@ -102,45 +116,41 @@ function createMapAsset(id, label, floorPath, theme, aliases = []) {
 }
 
 export const mapAssets = Object.freeze([
-  createMapAsset('arena01', 'Arena 01', 'map/arena01/tile005.png', {
+  createMapAsset('arena01', 'Arena 01', {
     backgroundColor: 0x07111f,
     boardColor: 0x0f172a,
     borderColor: 0x22d3ee,
     gridColor: 0xffffff,
   }, ['classic']),
-  createMapAsset('arena02', 'Arena 02', 'map/arena02/tile021.png', {
+  createMapAsset('arena02', 'Arena 02', {
     backgroundColor: 0x1b1208,
     boardColor: 0x2a180c,
     borderColor: 0xf97316,
     gridColor: 0xffedd5,
-    obstacleKey: 'map-obstacle-rock-2',
-    obstaclePath: 'map/obstacles/obstacle_rock_2.png',
   }, ['canyon']),
-  createMapAsset('arena03', 'Arena 03', 'map/arena03/tile037.png', {
+  createMapAsset('arena03', 'Arena 03', {
     backgroundColor: 0x071a10,
     boardColor: 0x102317,
     borderColor: 0x22c55e,
     gridColor: 0xdcfce7,
   }),
-  createMapAsset('arena04', 'Arena 04', 'map/arena04/tile053.png', {
+  createMapAsset('arena04', 'Arena 04', {
     backgroundColor: 0x111827,
     boardColor: 0x1f2937,
     borderColor: 0xa78bfa,
     gridColor: 0xede9fe,
   }),
-  createMapAsset('arena05', 'Arena 05', 'map/arena05/tile069.png', {
+  createMapAsset('arena05', 'Arena 05', {
     backgroundColor: 0x172033,
     boardColor: 0x1e293b,
     borderColor: 0x38bdf8,
     gridColor: 0xe0f2fe,
   }),
-  createMapAsset('arena06', 'Arena 06', 'map/arena06/tile085.png', {
+  createMapAsset('arena06', 'Arena 06', {
     backgroundColor: 0x1c1510,
     boardColor: 0x292018,
     borderColor: 0xfacc15,
     gridColor: 0xfef9c3,
-    obstacleKey: 'map-obstacle-rock-2',
-    obstaclePath: 'map/obstacles/obstacle_rock_2.png',
   }),
 ]);
 
@@ -177,6 +187,7 @@ export function getAllMapImageAssets() {
   const byKey = new Map();
   mapAssets.forEach((asset) => {
     byKey.set(asset.floor.key, asset.floor);
+    byKey.set(asset.border.key, asset.border);
     byKey.set(asset.obstacle.key, asset.obstacle);
   });
   return Array.from(byKey.values());

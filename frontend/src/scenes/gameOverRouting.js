@@ -3,6 +3,7 @@ const REMATCH_SCENE_BY_MODE = {
     timeAttack: 'TimeAttackGame',
     kingOfTheHill: 'KingOfTheHillGame',
     territory: 'TerritoryGame',
+    captureTheFlag: 'CaptureTheFlagGame',
     online: 'OnlineMenu',
 };
 

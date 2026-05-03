@@ -24,7 +24,6 @@ const CORE_IMAGE_ASSETS = [
 ];
 
 const PLANNED_IMAGE_ASSETS = [
-    { key: ASSET_KEYS.MAP_FLOOR_TILE, path: 'map/tiles/floor_tile.png', enabled: true },
     ...getAllMapImageAssets().map((asset) => ({ ...asset, enabled: true })),
     ...getAllSnakeImageAssets().map((asset) => ({ ...asset, enabled: true })),
 ];
