@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
-import { MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
+import { MAX_LIVES } from '@shared/GameConfig';
 import { createLobbyClient } from '../../net/lobbyClient.js';
 import { getCurrentUser } from '../../services/firebaseAuthService.js';
 import { LeaderboardService } from '../../services/LeaderboardService.js';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
+import { shouldEndStandardMatchByLives, shouldEndStandardMatchByScore } from '../matchEndRules.js';
 import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.js';
 
 function normalizeHttpUrlToWebSocket(url) {
@@ -358,12 +359,12 @@ export class OnlineGame extends Phaser.Scene {
         const { firstPlayer, secondPlayer } = this.syncHudFromPlayers(state);
 
         if (firstPlayer && secondPlayer) {
-            if (firstPlayer.score >= WIN_SCORE || secondPlayer.score >= WIN_SCORE) {
+            if (shouldEndStandardMatchByScore(firstPlayer, secondPlayer)) {
                 this.gameOver(true);
                 return;
             }
 
-            if (firstPlayer.lives <= 0 || secondPlayer.lives <= 0) {
+            if (shouldEndStandardMatchByLives(firstPlayer, secondPlayer)) {
                 this.gameOver(false);
             }
         }
