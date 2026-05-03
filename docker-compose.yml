@@ -12,9 +12,9 @@ services:
       target: development
     container_name: snake_backend
     volumes:
-      - ./backend:/app
-      - ./shared:/shared
-      - backend_node_modules:/app/node_modules
+      - ./backend:/app/backend
+      - ./shared:/app/shared
+      - backend_node_modules:/app/backend/node_modules
     ports:
       - "2567:2567"
     environment:

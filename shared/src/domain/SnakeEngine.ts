@@ -1,9 +1,11 @@
-import type { Direction, GameState, PlayerState, FoodState, SnakeSegmentState, ObstacleState, Position } from './types.js';
+import type { Direction, GameState, PlayerState, FoodState, SnakeSegmentState, ObstacleState, Position, FoodType, FoodConfigItem } from './types.js';
 import {
   type GameRuntimeConfig,
   PLAYER_COLORS,
   resolveGameRuntimeConfig,
+  WIN_SCORE,
 } from './GameConfig.js';
+import { EventEmitter } from "./EventEmitter.js"
 
 const OPPOSITE: Record<Direction, Direction> = {
   up: 'down',
@@ -19,6 +21,52 @@ export interface AddPlayerOptions {
   skinId?: string;
 }
 
+export const FOOD_CONFIG: Record<string, FoodConfigItem> = {
+  apple: {
+    frame: 0,
+    score: 1,
+    weight: 60,
+    hudEffect: "+1",
+    hudDuration: 2000,
+    hudHelp: "🍎 = +1"
+  },
+
+  grape: {
+    frame: 1,
+    score: 3,
+    weight: 20,
+    hudEffect: "+3",
+    hudDuration: 2000,
+    hudHelp: "🍇 = +3"
+  },
+
+  speed: {
+    frame: 4,
+    score: 0,
+    weight: 10,
+    effect: (player) => {
+      player.speed = 1;
+      player.speedEffectRemaining = Math.max(player.speedEffectRemaining, 50);
+    },
+    hudEffect: "speed boost",
+    hudDuration: 5000,
+    hudHelp: "🍓 = speed boost 5s"
+  },
+
+  poison: {
+    frame: 4,
+    score: -2,
+    weight: 10,
+    effect: (player) => {
+      player.speed = 3;
+      player.speedEffectRemaining = Math.max(player.speedEffectRemaining, 50);
+    },
+    hudEffect: "-2, speed reduce",
+    hudDuration: 5000,
+    hudHelp: "🥝 = -2, reduce speed 5s"
+  }
+};
+
 /**
  * Pure game engine – no Phaser, no Colyseus dependencies.
  * All game logic (movement, collision detection, food spawning, respawn) lives here.
@@ -33,6 +81,11 @@ export class SnakeEngine {
   private tickCount = 0;
   private readonly respawnTicks: number;
 
+  private speedDurationMs = 5000;
+  private ticksTicksDurationMs;
+
+  private events = new EventEmitter();
+
   constructor(config?: Partial<GameRuntimeConfig>);
   constructor(initialFood?: number, config?: Partial<GameRuntimeConfig>);
   constructor(initialFoodOrConfig?: number | Partial<GameRuntimeConfig>, configOverrides?: Partial<GameRuntimeConfig>) {
@@ -43,7 +96,10 @@ export class SnakeEngine {
     this.config = resolveGameRuntimeConfig(configInput);
     this.respawnTicks = Math.max(1, Math.round(this.config.respawnDelayMs / this.config.tickMs));
 
-    this.generateObstacles();
+    this.ticksTicksDurationMs = Math.ceil(this.speedDurationMs / this.config.tickMs);
+
+    this.generateObstacles(); 
+    
     for (let i = 0; i < this.config.foodCount; i++) {
       this.food.push(this.randomFood());
     }
@@ -75,6 +131,10 @@ export class SnakeEngine {
       lives: this.config.maxLives,
       score: 0,
       segments,
+      lastEatenFood: null,
+      speed: 1,
+      moveCounter: 0,
+      speedEffectRemaining: 0
     };
 
     this.players.set(id, player);
@@ -120,8 +180,22 @@ export class SnakeEngine {
     });
 
     for (const player of this.players.values()) {
-      if (player.alive) {
+      if (!player.alive) continue;
+
+      // Reducir duración de velocidad
+      if (player.speedEffectRemaining > 0) {
+        player.speedEffectRemaining--;
+
+        if (player.speedEffectRemaining <= 0) {
+        player.speed = 1;
+        }
+      }
+
+      player.moveCounter++;
+
+      if (player.moveCounter >= player.speed) {
         this.movePlayer(player);
+        player.moveCounter = 0;
       }
     }
 
@@ -203,18 +277,36 @@ export class SnakeEngine {
     if (!player.alive) return;
 
     // Food collision
-    let ate = false;
+    let shouldGrow = false;
     const foodIdx = this.food.findIndex(f => f.x === newX && f.y === newY);
     if (foodIdx !== -1) {
+      const eatenFood = this.food[foodIdx];
+
       this.food.splice(foodIdx, 1);
       this.food.push(this.randomFood());
-      player.score += 1;
-      ate = true;
+
+      const config = FOOD_CONFIG[eatenFood.type ?? 'apple'] ?? FOOD_CONFIG.apple;
+      player.lastEatenFood = config;
+
+      this.events.emit("playerEatFood", {
+        playerId: player.id,
+        food: config
+      });
+
+      let temp_score = player.score + config.score;
+
+      if(temp_score < 0) player.score = 0;
+      else if(temp_score > WIN_SCORE) player.score = WIN_SCORE;
+      else player.score = temp_score;
+
+      config.effect?.(player);
+
+      shouldGrow = config.score > 0;
     }
 
     // Move snake: prepend new head, remove tail if not eating
     player.segments.unshift({ x: newX, y: newY });
-    if (!ate) {
+    if (!shouldGrow) {
       player.segments.pop();
     }
   }
@@ -243,7 +335,7 @@ export class SnakeEngine {
       col = Math.floor(Math.random() * (this.config.gridCols - margin * 2) + margin);
       row = Math.floor(Math.random() * (this.config.gridRows - margin * 2) + margin);
       attempts++;
-    } while (!this.isSafeSpawn(col, row) && attempts < 50);
+    } while (!this.isAreaSafeForSnake(col, row, this.config.safeMargin) && attempts < 50);
 
     player.segments = [];
     for (let i = 0; i < this.config.initialSnakeLength; i++) {
@@ -252,6 +344,9 @@ export class SnakeEngine {
     player.direction = 'right';
     player.nextDirection = 'right';
     this.inputQueues.set(id, []);
+    player.speed = 1;
+    player.moveCounter = 0;
+    player.speedEffectRemaining = 0;
     player.alive = true;
   }
 
@@ -275,18 +370,36 @@ export class SnakeEngine {
 
   private randomFood(): FoodState {
     let playerSegments: Position[] = this.getSnakesPosition();
-    let pos: FoodState;
+    let food: FoodState;
+
+    const type = this.getRandomFoodType();
+
     do{
-      pos = {
+      food = {
         x: Math.floor(Math.random() * this.config.gridCols) * this.config.gridSize,
         y: Math.floor(Math.random() * this.config.gridRows) * this.config.gridSize,
+        type: type,
+        score: FOOD_CONFIG[type].score
       };
-    }while (
-      playerSegments.some(s => s.x === pos.x && s.y === pos.y) ||
-      this.obstacles.some(o => o.x === pos.x && o.y === pos.y)
-    );
-    return pos;
+    }
+    while (this.isCellOccupied(food.x, food.y));
+    return food;
   }
+
+  private getRandomFoodType(): FoodType {
+    const entries = Object.entries(FOOD_CONFIG) as [FoodType, typeof FOOD_CONFIG[FoodType]][];
+
+    const totalWeight = entries.reduce((sum, [, cfg]) => sum + cfg.weight, 0);
+    let r = Math.random() * totalWeight;
+
+    for (const [type, cfg] of entries) {
+      r -= cfg.weight;
+      if (r < 0) return type;
+    }
+
+    return entries[0][0];
+  }
+
 
   private randomObstacleInQuadrant(quadrant: 'TL' | 'TR' | 'BL' | 'BR'): ObstacleState {
     const midCol = Math.floor(this.config.gridCols / 2);
@@ -343,6 +456,37 @@ export class SnakeEngine {
       const obRow = ob.y / this.config.gridSize;
       return Math.abs(obCol - col) > this.config.safeMargin || Math.abs(obRow - row) > this.config.safeMargin;
     });
+  }
+
+  private isCellOccupied(x: number, y: number): boolean {
+    // snakes
+    if (this.getSnakesPosition().some(s => s.x == x && s.y == y)) return true;
+
+    // food
+    if (this.food.some(f => f.x === x && f.y === y)) return true;
+
+    // obstacles
+    if (this.obstacles.some(o => o.x === x && o.y === y)) return true;
+
+    return false;
+  }
+
+  private isAreaSafeForSnake(col: number, row: number, margin: number): boolean {
+    const startCol = col - margin;
+    const endCol = col + margin;
+    const startRow = row - margin;
+    const endRow = row + margin;
+
+    for (let c = startCol; c <= endCol; c++) {
+      for (let r = startRow; r <= endRow; r++) {
+        const x = c * this.config.gridSize;
+        const y = r * this.config.gridSize;
+
+        if (this.isCellOccupied(x, y)) return false;
+      }
+    }
+
+    return true;
   }
 
 }

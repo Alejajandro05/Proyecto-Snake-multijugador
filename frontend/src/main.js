@@ -4,10 +4,14 @@ import { GameOver } from './scenes/GameOver.js';
 import { Preloader } from './scenes/Preloader.js';
 import { MainMenu } from './scenes/MainMenu.js';
 import { LocalGame } from './scenes/modes/LocalGame.js';
+import { NormalLocalGame } from './scenes/modes/NormalLocalGame.js';
 import { OnlineMenu } from './scenes/OnlineMenu.js';
+import { Registration } from './scenes/Registration.js';
+import { Login } from './scenes/Login.js';
 import { OnlineGame } from './scenes/modes/OnlineGame.js';
 import { TimeAttackGame } from './scenes/modes/TimeAttackGame.js';
 import { ChaosGame } from './scenes/modes/ChaosGame.js';
+import { KingOfTheHillGame } from './scenes/modes/KingOfTheHillGame.js';
 import { Pause } from './scenes/Pause.js';
 import {LocalGameSetup} from "./scenes/LocalGameSetup";
 
@@ -48,11 +52,15 @@ const config = {
         Preloader,
         MainMenu,
         OnlineMenu,
+        Registration,
+        Login,
         LocalGameSetup,
         LocalGame,
+        NormalLocalGame,
         OnlineGame,
         TimeAttackGame,
         ChaosGame,
+        KingOfTheHillGame,
         GameOver,
         Pause
     ]

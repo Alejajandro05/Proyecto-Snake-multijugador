@@ -1,4 +1,13 @@
 import Phaser from 'phaser';
+import {
+    DEFAULT_MUSIC_KEY,
+    getAudioSettings,
+    saveMusicVolume,
+    saveSelectedMusic,
+    saveSfxVolume,
+} from '../utils/audioSettings.js';
+
+const PAUSE_MUSIC_KEYS = ['musica_in_game', 'musica2', 'musica3'];
 
 export class Pause extends Phaser.Scene {
     constructor() {
@@ -6,8 +15,9 @@ export class Pause extends Phaser.Scene {
     }
 
     create(data) {
-        // Guardamos la escena que nos llamó para poder reanudarla luego.
         const callerScene = data.caller || 'LocalGame';
+        const callerGameScene = this.scene.get(callerScene);
+        const audioSettings = getAudioSettings(localStorage, PAUSE_MUSIC_KEYS);
 
         const pauseDiv = document.createElement('div');
         pauseDiv.id = 'pause-screen';
@@ -33,7 +43,7 @@ export class Pause extends Phaser.Scene {
         pauseDiv.innerHTML = `
             <div class="container">
                 <div class="row justify-content-center">
-                    <div class="col-xl-5 col-lg-6 col-md-8">
+                    <div class="col-xl-6 col-lg-7 col-md-9">
                         <div class="card shadow" style="background: rgba(12, 18, 42, 0.95); border: 4px solid rgba(34, 211, 238, 0.45); border-radius: 28px; box-shadow: 0 26px 80px rgba(0,0,0,0.35);">
                             <div class="card-body p-5 text-center">
                                 <h1 class="display-5 fw-bold text-white mb-2">PAUSA</h1>
@@ -45,7 +55,7 @@ export class Pause extends Phaser.Scene {
                                             <div class="card-body text-center py-4">
                                                 <h5 class="card-title text-danger fw-bold mb-3">Jugador 1</h5>
                                                 <div class="mb-3">
-                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Puntuación: ${p1Score}</span>
+                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Puntuacion: ${p1Score}</span>
                                                 </div>
                                                 <div>
                                                     <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Vidas restantes: ${p1Lives}</span>
@@ -58,7 +68,7 @@ export class Pause extends Phaser.Scene {
                                             <div class="card-body text-center py-4">
                                                 <h5 class="card-title text-primary fw-bold mb-3">Jugador 2</h5>
                                                 <div class="mb-3">
-                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Puntuación: ${p2Score}</span>
+                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Puntuacion: ${p2Score}</span>
                                                 </div>
                                                 <div>
                                                     <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Vidas restantes: ${p2Lives}</span>
@@ -68,9 +78,32 @@ export class Pause extends Phaser.Scene {
                                     </div>
                                 </div>
 
+                                <div class="text-start rounded-4 p-4 mb-4" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);">
+                                    <h2 class="h5 text-white text-center fw-bold mb-3">Sonido</h2>
+
+                                    <div class="mb-3">
+                                        <label for="pause-music-vol" class="form-label text-white fw-semibold mb-1 small">Musica</label>
+                                        <input type="range" class="form-range" id="pause-music-vol" min="0" max="1" step="0.05" value="${audioSettings.musicVolume}">
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="pause-sfx-vol" class="form-label text-white fw-semibold mb-1 small">Efectos SFX</label>
+                                        <input type="range" class="form-range" id="pause-sfx-vol" min="0" max="1" step="0.05" value="${audioSettings.sfxVolume}">
+                                    </div>
+
+                                    <div>
+                                        <label for="pause-music-select" class="form-label text-white fw-semibold mb-1 small">Pista</label>
+                                        <select class="form-select form-select-sm bg-dark text-white border-secondary" id="pause-music-select">
+                                            <option value="musica_in_game" ${audioSettings.selectedMusic === 'musica_in_game' ? 'selected' : ''}>Musica 1</option>
+                                            <option value="musica2" ${audioSettings.selectedMusic === 'musica2' ? 'selected' : ''}>Musica 2</option>
+                                            <option value="musica3" ${audioSettings.selectedMusic === 'musica3' ? 'selected' : ''}>Musica 3</option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
                                     <button id="resume-btn" class="btn btn-secondary px-5 py-3 fw-bold" style="border-radius: 50px; min-width: 180px;">Reanudar</button>
-                                    <button id="menu-btn" class="btn btn-secondary px-5 py-3 fw-bold" style="border-radius: 50px; min-width: 180px;">Salir al Menú</button>
+                                    <button id="menu-btn" class="btn btn-secondary px-5 py-3 fw-bold" style="border-radius: 50px; min-width: 180px;">Salir al Menu</button>
                                 </div>
                             </div>
                         </div>
@@ -81,9 +114,42 @@ export class Pause extends Phaser.Scene {
 
         document.body.appendChild(pauseDiv);
 
+        const musicSlider = pauseDiv.querySelector('#pause-music-vol');
+        const sfxSlider = pauseDiv.querySelector('#pause-sfx-vol');
+        const musicSelect = pauseDiv.querySelector('#pause-music-select');
+
         const removePauseOverlay = () => {
             if (document.body.contains(pauseDiv)) {
                 document.body.removeChild(pauseDiv);
+            }
+        };
+
+        const syncCallerSceneAudio = () => {
+            if (!callerGameScene) return;
+
+            const nextMusicVolume = parseFloat(musicSlider.value);
+            const nextSfxVolume = parseFloat(sfxSlider.value);
+            const nextMusicKey = musicSelect.value || DEFAULT_MUSIC_KEY;
+
+            callerGameScene.userMusicVol = nextMusicVolume;
+            callerGameScene.userSfxVol = nextSfxVolume;
+
+            if (callerGameScene.music?.key !== nextMusicKey) {
+                if (callerGameScene.music) {
+                    callerGameScene.music.stop();
+                    callerGameScene.music.destroy();
+                }
+
+                if (callerGameScene.cache?.audio?.exists?.(nextMusicKey)) {
+                    callerGameScene.music = callerGameScene.sound.add(nextMusicKey, {
+                        loop: true,
+                        volume: nextMusicVolume,
+                    });
+                } else {
+                    callerGameScene.music = null;
+                }
+            } else if (callerGameScene.music) {
+                callerGameScene.music.setVolume(nextMusicVolume);
             }
         };
 
@@ -91,14 +157,29 @@ export class Pause extends Phaser.Scene {
             removePauseOverlay();
             this.scene.stop();
             this.scene.resume(callerScene);
-            const gameScene = this.scene.get(callerScene);
-            if (gameScene) gameScene.isPaused = false;
+            if (callerGameScene) callerGameScene.isPaused = false;
         };
 
-        document.getElementById('resume-btn').addEventListener('click', reanudarJuego);
+        musicSlider.addEventListener('input', () => {
+            saveMusicVolume(localStorage, musicSlider.value);
+            syncCallerSceneAudio();
+        });
 
-        document.getElementById('menu-btn').addEventListener('click', () => {
+        sfxSlider.addEventListener('input', () => {
+            saveSfxVolume(localStorage, sfxSlider.value);
+            syncCallerSceneAudio();
+        });
+
+        musicSelect.addEventListener('change', () => {
+            saveSelectedMusic(localStorage, musicSelect.value);
+            syncCallerSceneAudio();
+        });
+
+        pauseDiv.querySelector('#resume-btn').addEventListener('click', reanudarJuego);
+
+        pauseDiv.querySelector('#menu-btn').addEventListener('click', () => {
             removePauseOverlay();
+            document.getElementById('hud-food-help')?.classList.add('d-none');
             this.scene.stop(callerScene);
             this.scene.start('MainMenu');
         });

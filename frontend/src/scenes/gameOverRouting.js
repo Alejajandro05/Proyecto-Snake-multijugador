@@ -1,6 +1,7 @@
 const REMATCH_SCENE_BY_MODE = {
     local: 'LocalGame',
     timeAttack: 'TimeAttackGame',
+    kingOfTheHill: 'KingOfTheHillGame',
     online: 'OnlineMenu',
 };
 
