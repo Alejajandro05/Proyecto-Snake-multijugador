@@ -7,6 +7,7 @@ export function normalizeLocalGameMode(value) {
         case 'timeAttack':
         case 'chaos':
         case 'kingOfTheHill':
+        case 'territory':
             return String(value).trim();
         default:
             return 'normal';
@@ -23,6 +24,8 @@ export function resolveLocalSceneKey(gameMode) {
             return 'ChaosGame';
         case 'kingOfTheHill':
             return 'KingOfTheHillGame';
+        case 'territory':
+            return 'TerritoryGame';
         case 'normal':
         default:
             return 'NormalLocalGame';

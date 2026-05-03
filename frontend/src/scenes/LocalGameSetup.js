@@ -444,7 +444,7 @@ export class LocalGameSetup extends Phaser.Scene {
                 id: 'infinite',
                 title: 'INFINITE MODE',
                 desc: 'Tablero infinito: al salir por un borde reapareces por el lado opuesto.',
-                img: '/assets/infinite_mode.png',
+                img: '/infinite_mode.png',
                 label: 'Infinite Mode',
             },
             {
@@ -458,7 +458,7 @@ export class LocalGameSetup extends Phaser.Scene {
                 id: 'chaos',
                 title: 'MODO CAOS',
                 desc: '5 vidas, sin victoria por puntuación: gana quien aguante. Efectos aleatorios en el tablero y los controles.',
-                img: '/assets/ModoCaos2.png',
+                img: '/ModoCaos2.png',
                 label: 'Modo Caos',
             },
             {
@@ -467,6 +467,13 @@ export class LocalGameSetup extends Phaser.Scene {
                 desc: 'La zona (naranja) cambia cada 6 s. Gana quien llegue antes a 100 puntos o quien conserve vidas cuando el rival se quede sin ellas.',
                 img: '/ModoReyColina.png',
                 label: 'Rey de la colina',
+            },
+            {
+                id: 'territory',
+                title: 'CONTROL DE TERRITORIO',
+                desc: 'Cada serpiente deja un rastro de su color. Si invades una casilla rival, la conquistas. Gana quien tenga mas casillas al terminar el tiempo.',
+                img: '/territorygame.png',
+                label: 'Control de territorio',
             },
         ];
 

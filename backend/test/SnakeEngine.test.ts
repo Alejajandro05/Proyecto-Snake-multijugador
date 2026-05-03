@@ -6,6 +6,10 @@ function createEngine(): SnakeEngine {
   return new SnakeEngine({ foodCount: 0, obstaclesPerQuadrant: 0 });
 }
 
+function createTerritoryEngine(): SnakeEngine {
+  return new SnakeEngine({ foodCount: 0, obstaclesPerQuadrant: 0, territoryMode: true });
+}
+
 describe("SnakeEngine – domain logic", () => {
   it("adds a player with 3 segments pointing right", () => {
     const engine = createEngine();
@@ -157,5 +161,55 @@ describe("SnakeEngine – domain logic", () => {
     engine.removePlayer("p1");
 
     assert.strictEqual(engine.getState().players.size, 0);
+  });
+
+  it("claims the new head cell for the moving player in territory mode", () => {
+    const engine = createTerritoryEngine();
+    engine.addPlayer("p1");
+
+    engine.tick();
+
+    const state = engine.getState();
+    const head = state.players.get("p1")!.segments[0];
+    const claimedCell = state.territory.find((cell) => cell.x === head.x && cell.y === head.y);
+
+    assert.ok(claimedCell);
+    assert.strictEqual(claimedCell!.ownerId, "p1");
+    assert.strictEqual(state.territoryCounts.get("p1"), 1);
+  });
+
+  it("replaces the rival ownership when a player conquers an occupied territory cell", () => {
+    const engine = createTerritoryEngine();
+    const p1 = engine.addPlayer("p1");
+
+    // @ts-ignore - direct deterministic setup for domain behavior
+    p1.segments = [
+      { x: 5 * GRID_SIZE, y: 4 * GRID_SIZE },
+    ];
+    p1.direction = "right";
+    p1.nextDirection = "right";
+
+    engine.tick();
+    engine.setNextDirection("p1", "up");
+
+    const p2 = engine.addPlayer("p2");
+
+    // @ts-ignore - direct deterministic setup for domain behavior
+    p2.segments = [
+      { x: 6 * GRID_SIZE, y: 5 * GRID_SIZE },
+    ];
+    p2.direction = "up";
+    p2.nextDirection = "up";
+    engine.tick();
+
+    const state = engine.getState();
+    const targetX = 6 * GRID_SIZE;
+    const targetY = 4 * GRID_SIZE;
+    const claimedCell = state.territory.find((cell) => cell.x === targetX && cell.y === targetY);
+
+    assert.ok(claimedCell);
+    assert.strictEqual(claimedCell!.ownerId, "p2");
+    assert.strictEqual(state.territoryCounts.get("p1"), 1);
+    assert.strictEqual(state.territoryCounts.get("p2"), 1);
   });
 });

@@ -25,6 +25,7 @@ export interface GameRuntimeConfig {
 	maxLives: number;
 	obstaclesPerQuadrant: number;
 	difficulty: GameDifficulty;
+	territoryMode: boolean;
 }
 
 type RuntimeConfigInput = Partial<GameRuntimeConfig>;
@@ -80,5 +81,6 @@ export function resolveGameRuntimeConfig(input?: RuntimeConfigInput): GameRuntim
 		maxLives: clampInt(input?.maxLives ?? MAX_LIVES, 1, 99),
 		obstaclesPerQuadrant: clampInt(input?.obstaclesPerQuadrant ?? preset.obstaclesPerQuadrant, 0, Math.max(gridCols, gridRows)),
 		difficulty,
+		territoryMode: input?.territoryMode === true,
 	};
 }
