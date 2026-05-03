@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
 import { SnakeEngine, FOOD_CONFIG } from '@shared/SnakeEngine.ts';
-import { MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig.js';
+import { MAX_LIVES, TICK_MS } from '@shared/GameConfig.js';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
+import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.js';
 import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
+import { shouldEndStandardMatchByLives, shouldEndStandardMatchByScore } from '../matchEndRules.js';
 import { shouldDieAtWall } from '../localModeHelpers.js';
 
 const P1_ID = 'player1';
@@ -109,12 +111,13 @@ export class LocalGame extends Phaser.Scene {
         this.updateLayout(this.scale.width, this.scale.height);
 
         // 5. AUDIO CORREGIDO
-        this.userMusicVol = parseFloat(localStorage.getItem('musicVolume')) || 0.2;
-        this.userSfxVol = parseFloat(localStorage.getItem('sfxVolume')) || 0.7;
+        const audioSettings = getAudioSettings(localStorage);
+        this.userMusicVol = audioSettings.musicVolume;
+        this.userSfxVol = audioSettings.sfxVolume;
 
-        const musicKey = localStorage.getItem('selectedMusic') || 'musica_in_game';
+        const musicKey = this.cache.audio.exists(audioSettings.selectedMusic) ? audioSettings.selectedMusic : DEFAULT_MUSIC_KEY;
         this.music = this.sound.add(musicKey, { loop: true, volume: this.userMusicVol });
-        this.music.play();
+        if (this.userMusicVol > 0) this.music.play();
 
         // Limpieza al cerrar
         this.events.on('shutdown', () => {
@@ -126,7 +129,8 @@ export class LocalGame extends Phaser.Scene {
         this.events.on('pause', () => { if (this.music) this.music.pause(); });
         this.events.on('resume', () => {
             this.isPaused = false;
-            if (this.music) this.music.resume();
+            if (this.music?.isPaused) this.music.resume();
+            else if (this.music && !this.music.isPlaying && this.userMusicVol > 0) this.music.play();
         });
 
         this.renderState(this.engine.getState());
@@ -312,8 +316,8 @@ export class LocalGame extends Phaser.Scene {
         if (p1) this.updateLivesHud(this.hudJ1Lives, p1.lives);
         if (p2) this.updateLivesHud(this.hudJ2Lives, p2.lives);
 
-        if (p1.score >= WIN_SCORE || p2.score >= WIN_SCORE) this.gameOver(true);
-        if (p1.lives <= 0 || p2.lives <= 0) this.gameOver(false);
+        if (shouldEndStandardMatchByScore(p1, p2)) this.gameOver(true);
+        if (shouldEndStandardMatchByLives(p1, p2)) this.gameOver(false);
     }
 
     showPlayerEffect(food, hudElement, playerId) {
@@ -342,6 +346,8 @@ export class LocalGame extends Phaser.Scene {
         const p2 = state.players.get(P2_ID);
         this.scene.start('GameOver', {
             winner: reason ? getScoreWinner(p1.score, p2.score) : getLivesWinner(p1.lives, p2.lives),
+            p1Name: this.matchSettings?.players?.p1?.name ?? 'Jugador 1',
+            p2Name: this.matchSettings?.players?.p2?.name ?? 'Jugador 2',
             p1Score: p1.score, p1Lives: p1.lives,
             p2Score: p2.score, p2Lives: p2.lives,
             reason: reason ? 'score' : 'lives',

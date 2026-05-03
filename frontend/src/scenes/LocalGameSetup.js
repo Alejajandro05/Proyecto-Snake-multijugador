@@ -281,10 +281,10 @@ export class LocalGameSetup extends Phaser.Scene {
             const p1Name = safeName(document.getElementById('p1-name')?.value, DEFAULT_CONFIG.p1.name);
             const p2Name = safeName(document.getElementById('p2-name')?.value, DEFAULT_CONFIG.p2.name);
             
-            // Provide a fallback color from the default array using modulo, since we have more skins than colors
+            // Keep local player identity colors stable even if both choose the same skin.
             const defaultColors = Array.isArray(PLAYER_COLORS) && PLAYER_COLORS.length ? PLAYER_COLORS : [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71];
-            const p1Color = defaultColors[p1SkinIndex % defaultColors.length];
-            const p2Color = defaultColors[p2SkinIndex % defaultColors.length];
+            const p1Color = defaultColors[0] ?? 0xe74c3c;
+            const p2Color = defaultColors[1] ?? 0x3498db;
 
             const p1Skin = snakeAssets[p1SkinIndex].id;
             const p2Skin = snakeAssets[p2SkinIndex].id;

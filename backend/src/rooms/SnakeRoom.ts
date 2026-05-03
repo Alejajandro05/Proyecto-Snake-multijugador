@@ -22,6 +22,7 @@ interface SnakeRoomCreateOptions {
 
 interface SnakeRoomJoinOptions {
   skinId?: string;
+  playerName?: string;
 }
 
 function toFiniteNumber(value: unknown): number | undefined {
@@ -50,6 +51,12 @@ function toSkinId(value: unknown, fallback: string): string {
   if (typeof value !== "string") return fallback;
   const normalized = value.trim();
   return normalized.length > 0 ? normalized.slice(0, 32) : fallback;
+}
+
+function toPlayerName(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized.slice(0, 24) : fallback;
 }
 
 function toOptionId(value: unknown): string | undefined {
@@ -117,6 +124,7 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
 
     const player = new Player();
     player.sessionId = client.sessionId;
+    player.playerName = toPlayerName(options?.playerName, `Jugador ${colorIndex + 1}`);
     player.skinId = playerState.skinId;
     player.color = playerState.color;
     player.alive = playerState.alive;
@@ -158,6 +166,7 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
       player.alive = playerState.alive;
       player.lives = playerState.lives;
       player.score = playerState.score;
+      player.playerName = toPlayerName(player.playerName, `Jugador ${this.state.players.size}`);
       player.skinId = playerState.skinId;
 
       this.syncSegments(player, playerState.segments);
@@ -180,7 +189,7 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
     }
   }
 
-  private syncFood(food: { x: number; y: number }[]): void {
+  private syncFood(food: { x: number; y: number; type?: string; score?: number }[]): void {
     while (this.state.food.length < food.length) {
       this.state.food.push(new Food());
     }
@@ -190,6 +199,8 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
     for (let i = 0; i < food.length; i++) {
       this.state.food[i].x = food[i].x;
       this.state.food[i].y = food[i].y;
+      this.state.food[i].type = food[i].type ?? "apple";
+      this.state.food[i].score = food[i].score ?? 0;
     }
   }
 

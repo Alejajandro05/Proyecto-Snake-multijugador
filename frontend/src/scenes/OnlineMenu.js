@@ -27,7 +27,7 @@ export class OnlineMenu extends Phaser.Scene {
     this.scale.on('resize', (gameSize) => ajustarFondo(gameSize.width, gameSize.height));
 
     this.lobbyClient = createLobbyClient();
-    this.prefs = loadOnlinePrefs();
+        this.prefs = loadOnlinePrefs();
     this.publicLobbies = [];
     this.lobbyRoom = null;
     this.renderOverlay();
@@ -488,16 +488,18 @@ export class OnlineMenu extends Phaser.Scene {
 
   attachLobbyRoom(room) {
     this.cleanupLobbyRoom(false);
-    this.lobbyRoom = room;
+        this.lobbyRoom = room;
 
     room.onStateChange((state) => {
       this.updateWaitingState(state);
       if (state.matchRoomId) {
         const isHost = room.sessionId === state.host.sessionId;
         const skinId = isHost ? state.host.skinId : state.guest.skinId;
+        const playerName = isHost ? state.host.playerName : state.guest.playerName;
         this.scene.start('OnlineGame', {
           matchRoomId: state.matchRoomId,
           skinId,
+          playerName,
           mapId: state.mapId,
         });
       }

@@ -1,16 +1,47 @@
-// Firebase Authentication Service
-// Centralized service for handling Firebase authentication operations
 import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  getAuth,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  updateProfile,
+} from 'firebase/auth';
 import { firebaseConfig } from '../config/firebaseConfig.js';
 
 let app = null;
 let auth = null;
 
-/**
- * Initialize Firebase application
- * @returns {Object} Firebase auth instance
- */
+const USERNAME_REGEX = /^[a-z0-9._-]{3,24}$/;
+
+export const normalizeUserName = (value) => String(value ?? '').trim().toLowerCase();
+
+export const buildAuthEmail = (username) => `${normalizeUserName(username)}@snakeclash.local`;
+
+export const validateUserName = (username) => {
+  const normalized = normalizeUserName(username);
+
+  if (!normalized) {
+    return { ok: false, message: 'El nombre del usuario es requerido.' };
+  }
+
+  if (!USERNAME_REGEX.test(normalized)) {
+    return {
+      ok: false,
+      message: 'El usuario debe tener 3-24 caracteres y solo puede usar letras, numeros, punto, guion o guion bajo.',
+    };
+  }
+
+  return { ok: true, normalized };
+};
+
+export const extractLeaderboardUserName = (user) => {
+  const displayName = normalizeUserName(user?.displayName ?? '');
+  if (displayName) return displayName;
+
+  const emailUserName = String(user?.email ?? '').split('@')[0];
+  return normalizeUserName(emailUserName);
+};
+
 export const initializeFirebase = () => {
   if (!app) {
     app = initializeApp(firebaseConfig);
@@ -19,10 +50,6 @@ export const initializeFirebase = () => {
   return auth;
 };
 
-/**
- * Get current Firebase auth instance
- * @returns {Object} Firebase auth instance
- */
 export const getFirebaseAuth = () => {
   if (!auth) {
     return initializeFirebase();
@@ -30,101 +57,84 @@ export const getFirebaseAuth = () => {
   return auth;
 };
 
-/**
- * Get current authenticated user
- * @returns {Promise<Object|null>} Current user or null if not authenticated
- */
-export const getCurrentUser = () => {
-  return new Promise((resolve) => {
-    const auth = getFirebaseAuth();
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      unsubscribe();
-      resolve(user);
-    });
+export const getCurrentUser = () => new Promise((resolve) => {
+  const currentAuth = getFirebaseAuth();
+  const unsubscribe = onAuthStateChanged(currentAuth, (user) => {
+    unsubscribe();
+    resolve(user);
   });
-};
+});
 
-/**
- * Check if user is currently authenticated
- * @returns {Promise<boolean>} True if authenticated
- */
 export const isUserLoggedIn = async () => {
   const user = await getCurrentUser();
   return user !== null;
 };
 
-/**
- * Register a new user with username (email) and password
- * @param {string} username - Username to use as email
- * @param {string} password - User password
- * @returns {Promise<Object>} User credentials object
- * @throws {Error} Firebase authentication error
- */
 export const registerUser = async (username, password) => {
-  const auth = getFirebaseAuth();
-  
-  // Use username as email by appending a domain
-  const email = `${username.toLowerCase()}@snakeclash.local`;
-  
+  const currentAuth = getFirebaseAuth();
+  const validation = validateUserName(username);
+  if (!validation.ok) {
+    throw new Error(validation.message);
+  }
+
   try {
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const userCredential = await createUserWithEmailAndPassword(
+      currentAuth,
+      buildAuthEmail(validation.normalized),
+      password,
+    );
+    await updateProfile(userCredential.user, {
+      displayName: validation.normalized,
+    });
     return userCredential.user;
   } catch (error) {
-    // Handle Firebase specific errors
-    throw handleFirebaseError(error);
+    throw mapFirebaseAuthError(error);
   }
 };
 
-/**
- * Login a user with username (email) and password
- * @param {string} username - Username to use as email
- * @param {string} password - User password
- * @returns {Promise<Object>} User credentials object
- * @throws {Error} Firebase authentication error
- */
 export const loginUser = async (username, password) => {
-  const auth = getFirebaseAuth();
-  
-  // Use username as email by appending a domain
-  const email = `${username.toLowerCase()}@snakeclash.local`;
-  
+  const currentAuth = getFirebaseAuth();
+  const validation = validateUserName(username);
+  if (!validation.ok) {
+    throw new Error(validation.message);
+  }
+
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(
+      currentAuth,
+      buildAuthEmail(validation.normalized),
+      password,
+    );
     return userCredential.user;
   } catch (error) {
-    // Handle Firebase specific errors
-    throw handleFirebaseError(error);
+    throw mapFirebaseAuthError(error);
   }
 };
 
-/**
- * Handle Firebase errors and return user-friendly messages
- * @param {Error} error - Firebase error object
- * @returns {Error} Processed error with user message
- */
-const handleFirebaseError = (error) => {
+export const mapFirebaseAuthError = (error) => {
   const errorCode = error.code;
   let userMessage = 'Ha ocurrido un error al registrar la cuenta.';
 
   switch (errorCode) {
     case 'auth/email-already-in-use':
-      userMessage = 'Este usuario ya está registrado.';
+      userMessage = 'Este usuario ya esta registrado.';
       break;
     case 'auth/invalid-email':
-      userMessage = 'El correo electrónico no es válido.';
+      userMessage = 'El correo electronico no es valido.';
       break;
     case 'auth/weak-password':
-      userMessage = 'La contraseña es muy débil. Debe tener al menos 6 caracteres.';
+      userMessage = 'La contrasena es muy debil. Debe tener al menos 6 caracteres.';
       break;
     case 'auth/operation-not-allowed':
-      userMessage = 'La creación de cuentas no está habilitada.';
+      userMessage = 'La creacion de cuentas no esta habilitada.';
       break;
     case 'auth/network-request-failed':
-      userMessage = 'Error de conexión. Verifica tu conexión a internet.';
+      userMessage = 'Error de conexion. Verifica tu conexion a internet.';
       break;
     case 'auth/user-not-found':
     case 'auth/wrong-password':
-      userMessage = 'El usuario no existe o la contraseña es incorrecta.';
+    case 'auth/invalid-credential':
+      userMessage = 'El usuario no existe o la contrasena es incorrecta.';
       break;
     default:
       userMessage = error.message || 'Ha ocurrido un error desconocido.';

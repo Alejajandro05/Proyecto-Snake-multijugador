@@ -1,10 +1,13 @@
 import Phaser from 'phaser';
-import { MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
+import { MAX_LIVES } from '@shared/GameConfig';
 import { createLobbyClient } from '../../net/lobbyClient.js';
-import { getCurrentUser } from '../../services/firebaseAuthService.js';
+import { extractLeaderboardUserName, getCurrentUser } from '../../services/firebaseAuthService.js';
 import { LeaderboardService } from '../../services/LeaderboardService.js';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
+import { shouldEndStandardMatchByLives, shouldEndStandardMatchByScore } from '../matchEndRules.js';
+import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.js';
+import { loadOnlinePrefs } from '../../utils/onlineStorage.js';
 
 function normalizeHttpUrlToWebSocket(url) {
     const s = String(url ?? '').trim();
@@ -54,6 +57,7 @@ export class OnlineGame extends Phaser.Scene {
         this.matchRoomId = data?.matchRoomId ?? '';
         this.playerSkinId = data?.skinId ?? '';
         this.mapId = data?.mapId ?? '';
+        this.playerName = data?.playerName ?? '';
     }
 
     async create() {
@@ -98,18 +102,20 @@ export class OnlineGame extends Phaser.Scene {
         this.latestState = null;
         this.renderState({ players: new Map(), food: [], obstacles: [] });
 
-        this.userMusicVol = localStorage.getItem('musicVolume') !== null ? parseFloat(localStorage.getItem('musicVolume')) : 0.2;
-        this.userSfxVol = localStorage.getItem('sfxVolume') !== null ? parseFloat(localStorage.getItem('sfxVolume')) : 0.7;
+        const audioSettings = getAudioSettings(localStorage);
+        this.userMusicVol = audioSettings.musicVolume;
+        this.userSfxVol = audioSettings.sfxVolume;
 
-        const musicKey = localStorage.getItem('selectedMusic') || 'musica_in_game';
+        const musicKey = this.cache.audio.exists(audioSettings.selectedMusic) ? audioSettings.selectedMusic : DEFAULT_MUSIC_KEY;
         this.music = this.sound.add(musicKey, { loop: true, volume: this.userMusicVol });
-        this.music.play();
+        if (this.userMusicVol > 0) this.music.play();
 
         this.events.on('shutdown', () => { if (this.music) this.music.stop(); });
         this.events.on('pause', () => { if (this.music) this.music.pause(); });
         this.events.on('resume', () => {
             this.isPaused = false;
-            if (this.music) this.music.resume();
+            if (this.music?.isPaused) this.music.resume();
+            else if (this.music && !this.music.isPlaying && this.userMusicVol > 0) this.music.play();
         });
 
         this.audioStateCache = new Map();
@@ -230,8 +236,8 @@ export class OnlineGame extends Phaser.Scene {
         const firstPlayer = players[0];
         const secondPlayer = players[1];
 
-        if (this.hudJ1Score) this.hudJ1Score.textContent = 'J1';
-        if (this.hudJ2Score) this.hudJ2Score.textContent = 'J2';
+        if (this.hudJ1Score) this.hudJ1Score.textContent = firstPlayer?.playerName || 'J1';
+        if (this.hudJ2Score) this.hudJ2Score.textContent = secondPlayer?.playerName || 'J2';
 
         if (this.hudJ1ScoreBig) this.hudJ1ScoreBig.textContent = `${firstPlayer?.score ?? 0}`;
         if (this.hudJ2ScoreBig) this.hudJ2ScoreBig.textContent = `${secondPlayer?.score ?? 0}`;
@@ -246,7 +252,11 @@ export class OnlineGame extends Phaser.Scene {
         try {
             const client = createLobbyClient();
             const currentUser = await getCurrentUser();
-            const options = { skinId: this.playerSkinId };
+            const onlinePrefs = loadOnlinePrefs();
+            const options = {
+                skinId: this.playerSkinId,
+                playerName: this.playerName || onlinePrefs.playerName || 'Jugador',
+            };
             if (currentUser) {
                 options.firebaseUid = currentUser.uid;
             }
@@ -355,12 +365,12 @@ export class OnlineGame extends Phaser.Scene {
         const { firstPlayer, secondPlayer } = this.syncHudFromPlayers(state);
 
         if (firstPlayer && secondPlayer) {
-            if (firstPlayer.score >= WIN_SCORE || secondPlayer.score >= WIN_SCORE) {
+            if (shouldEndStandardMatchByScore(firstPlayer, secondPlayer)) {
                 this.gameOver(true);
                 return;
             }
 
-            if (firstPlayer.lives <= 0 || secondPlayer.lives <= 0) {
+            if (shouldEndStandardMatchByLives(firstPlayer, secondPlayer)) {
                 this.gameOver(false);
             }
         }
@@ -375,6 +385,8 @@ export class OnlineGame extends Phaser.Scene {
         const playerEntries = this.getOrderedPlayerEntries(this.latestState);
         const [p1SessionId, p1] = playerEntries[0] ?? [];
         const [p2SessionId, p2] = playerEntries[1] ?? [];
+        const p1Name = p1?.playerName || 'Jugador 1';
+        const p2Name = p2?.playerName || 'Jugador 2';
 
         if (!p1 || !p2) {
             this.scene.start('MainMenu');
@@ -393,6 +405,8 @@ export class OnlineGame extends Phaser.Scene {
         if (reason) {
             this.scene.start('GameOver', {
                 winner: getScoreWinner(p1.score, p2.score),
+                p1Name,
+                p2Name,
                 p1Score: p1.score,
                 p1Lives: p1.lives,
                 p2Score: p2.score,
@@ -404,6 +418,8 @@ export class OnlineGame extends Phaser.Scene {
         } else {
             this.scene.start('GameOver', {
                 winner: getLivesWinner(p1.lives, p2.lives),
+                p1Name,
+                p2Name,
                 p1Score: p1.score,
                 p1Lives: p1.lives,
                 p2Score: p2.score,
@@ -415,19 +431,13 @@ export class OnlineGame extends Phaser.Scene {
         }
     }
 
-    getUserNameFromFirebaseUser(user) {
-        const emailUserName = String(user?.email ?? '').split('@')[0]?.trim();
-        const displayName = String(user?.displayName ?? '').trim();
-        return displayName || emailUserName || '';
-    }
-
     async recordWinIfCurrentUserWon(currentSessionId, winnerSessionId) {
         if (!currentSessionId || currentSessionId !== winnerSessionId) return;
 
         const currentUser = await getCurrentUser();
         if (!currentUser) return;
 
-        const userName = this.getUserNameFromFirebaseUser(currentUser);
+        const userName = extractLeaderboardUserName(currentUser);
         if (!userName) return;
 
         await LeaderboardService.incrementWinCount(userName);

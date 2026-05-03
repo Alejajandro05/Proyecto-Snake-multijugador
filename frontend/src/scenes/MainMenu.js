@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
-import { getCurrentUser } from '../services/firebaseAuthService.js';
+import { extractLeaderboardUserName, getCurrentUser } from '../services/firebaseAuthService.js';
 import { LeaderboardService } from '../services/LeaderboardService.js';
+import { getAudioSettings, saveMusicVolume, saveSelectedMusic, saveSfxVolume } from '../utils/audioSettings.js';
+
+const MENU_MUSIC_KEYS = ['musica_in_game', 'musica2', 'musica3'];
 
 export class MainMenu extends Phaser.Scene {
     constructor() {
@@ -22,9 +25,10 @@ export class MainMenu extends Phaser.Scene {
         ajustarFondo(this.scale.width, this.scale.height);
         this.scale.on('resize', (gameSize) => ajustarFondo(gameSize.width, gameSize.height));
 
-        const savedMusicVol = localStorage.getItem('musicVolume') !== null ? parseFloat(localStorage.getItem('musicVolume')) : 0.2;
-        const savedSfxVol = localStorage.getItem('sfxVolume') !== null ? parseFloat(localStorage.getItem('sfxVolume')) : 0.7;
-        const savedMusicKey = localStorage.getItem('selectedMusic') || 'musica_in_game';
+        const audioSettings = getAudioSettings(localStorage, MENU_MUSIC_KEYS);
+        const savedMusicVol = audioSettings.musicVolume;
+        const savedSfxVol = audioSettings.sfxVolume;
+        const savedMusicKey = audioSettings.selectedMusic;
 
         this.menuMusic = this.sound.add(savedMusicKey, { loop: true, volume: savedMusicVol });
 
@@ -213,6 +217,14 @@ export class MainMenu extends Phaser.Scene {
             if (this.musicTimeout) clearTimeout(this.musicTimeout);
         };
 
+        const rebuildMenuMusic = (musicKey, volume) => {
+            if (this.menuMusic) {
+                this.menuMusic.stop();
+                this.menuMusic.destroy();
+            }
+            this.menuMusic = this.sound.add(musicKey, { loop: true, volume });
+        };
+
         document.getElementById('btn-local').addEventListener('click', () => {
             detenerAudioPrueba();
             clearMenu();
@@ -241,16 +253,16 @@ export class MainMenu extends Phaser.Scene {
 
         sliderMusic.addEventListener('input', (e) => {
             const vol = parseFloat(e.target.value);
-            localStorage.setItem('musicVolume', vol);
+            saveMusicVolume(localStorage, vol);
             this.menuMusic.setVolume(vol);
-            if (!this.menuMusic.isPlaying) this.menuMusic.play();
+            if (vol > 0 && !this.menuMusic.isPlaying) this.menuMusic.play();
             if (this.musicTimeout) clearTimeout(this.musicTimeout);
             this.musicTimeout = setTimeout(() => { this.menuMusic.pause(); }, 2000);
         });
 
         sliderSfx.addEventListener('input', (e) => {
             const vol = parseFloat(e.target.value);
-            localStorage.setItem('sfxVolume', vol);
+            saveSfxVolume(localStorage, vol);
             if (this.time.now > this.lastSfxTime + 150) {
                 this.sound.play('sonido_choque', { volume: vol });
                 this.lastSfxTime = this.time.now;
@@ -278,15 +290,14 @@ export class MainMenu extends Phaser.Scene {
         const musicSelect = document.getElementById('music-select');
         musicSelect.addEventListener('change', (e) => {
             const newKey = e.target.value;
-            localStorage.setItem('selectedMusic', newKey);
+            saveSelectedMusic(localStorage, newKey);
             if (this.menuMusic.isPlaying || this.musicTimeout) {
-                this.menuMusic.stop();
-                this.menuMusic = this.sound.add(newKey, { loop: true, volume: parseFloat(sliderMusic.value) });
-                this.menuMusic.play();
+                rebuildMenuMusic(newKey, parseFloat(sliderMusic.value));
+                if (parseFloat(sliderMusic.value) > 0) this.menuMusic.play();
                 if (this.musicTimeout) clearTimeout(this.musicTimeout);
                 this.musicTimeout = setTimeout(() => { this.menuMusic.pause(); }, 2000);
             } else {
-                this.menuMusic = this.sound.add(newKey, { loop: true, volume: parseFloat(sliderMusic.value) });
+                rebuildMenuMusic(newKey, parseFloat(sliderMusic.value));
             }
         });
     }
@@ -317,7 +328,7 @@ export class MainMenu extends Phaser.Scene {
                 return;
             }
 
-            const userName = this.getUserNameFromFirebaseUser(currentUser);
+            const userName = extractLeaderboardUserName(currentUser);
             const userIndex = sortedEntries.findIndex((entry) => entry.userName === userName);
 
             userRankElement.textContent = userIndex >= 0
@@ -339,12 +350,6 @@ export class MainMenu extends Phaser.Scene {
                 <span class="leaderboard-score">${entry.winCount}</span>
             </div>
         `;
-    }
-
-    getUserNameFromFirebaseUser(user) {
-        const emailUserName = String(user?.email ?? '').split('@')[0]?.trim();
-        const displayName = String(user?.displayName ?? '').trim();
-        return displayName || emailUserName || '';
     }
 
     escapeHtml(value) {
