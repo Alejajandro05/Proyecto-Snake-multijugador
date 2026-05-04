@@ -250,6 +250,7 @@ export class OnlineGame extends Phaser.Scene {
                 rightLives: this.hudJ2Lives,
             },
             updateLivesHud: this.updateLivesHud.bind(this),
+            currentSessionId: this.room?.sessionId,
         });
 
         if (this.hudHelp) {
