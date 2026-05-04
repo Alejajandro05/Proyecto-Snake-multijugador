@@ -1,5 +1,5 @@
-export function shouldEndStandardMatchByScore() {
-  return false;
+export function shouldEndStandardMatchByScore(p1, p2, max_score) {
+  return (Number(p1?.score) || 0) >= max_score || (Number(p2?.score) || 0) >= max_score;
 }
 
 export function shouldEndStandardMatchByLives(p1, p2) {

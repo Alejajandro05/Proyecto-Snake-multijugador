@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { SnakeEngine, FOOD_CONFIG } from '@shared/SnakeEngine.ts';
-import { MAX_LIVES, TICK_MS } from '@shared/GameConfig.js';
+import { MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig.js';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
 import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.js';
@@ -310,7 +310,7 @@ export class LocalGame extends Phaser.Scene {
         if (p1) this.updateLivesHud(this.hudJ1Lives, p1.lives);
         if (p2) this.updateLivesHud(this.hudJ2Lives, p2.lives);
 
-        if (shouldEndStandardMatchByScore(p1, p2)) this.gameOver(true);
+        if (shouldEndStandardMatchByScore(p1, p2, WIN_SCORE)) this.gameOver(true);
         if (shouldEndStandardMatchByLives(p1, p2)) this.gameOver(false);
     }
 

@@ -58,7 +58,7 @@ export const FOOD_CONFIG: Record<string, FoodConfigItem> = {
     score: -2,
     weight: 10,
     effect: (player) => {
-      player.speed = 3;
+      player.speed = 4;
       player.speedEffectRemaining = Math.max(player.speedEffectRemaining, 50);
     },
     hudEffect: "-2, speed reduce",
@@ -134,7 +134,7 @@ export class SnakeEngine {
       score: 0,
       segments,
       lastEatenFood: null,
-      speed: 1,
+      speed: 2,
       moveCounter: 0,
       speedEffectRemaining: 0
     };
@@ -189,7 +189,7 @@ export class SnakeEngine {
         player.speedEffectRemaining--;
 
         if (player.speedEffectRemaining <= 0) {
-        player.speed = 1;
+        player.speed = 2;
         }
       }
 
@@ -350,7 +350,7 @@ export class SnakeEngine {
     player.direction = 'right';
     player.nextDirection = 'right';
     this.inputQueues.set(id, []);
-    player.speed = 1;
+    player.speed = 2;
     player.moveCounter = 0;
     player.speedEffectRemaining = 0;
     player.alive = true;
