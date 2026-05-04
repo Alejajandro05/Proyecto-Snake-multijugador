@@ -12,6 +12,7 @@ const DEFAULT_GUEST_SKIN_ID = onlineOptionCatalogs.skins[1]?.id ?? DEFAULT_SKIN_
 interface LobbyRoomCreateOptions {
   visibility?: unknown;
   gameMode?: unknown;
+  difficulty?: unknown;
   mapId?: unknown;
   maxPlayers?: unknown;
   playerName?: unknown;
@@ -20,6 +21,7 @@ interface LobbyRoomCreateOptions {
 
 interface LobbyRoomStartMatchOptions {
   gameMode?: unknown;
+  difficulty?: unknown;
   mapId?: unknown;
 }
 
@@ -34,6 +36,7 @@ interface LobbyRegistryEntry {
   inviteCode: string;
   status: string;
   gameMode: string;
+  difficulty: string;
   mapId: string;
   hostName: string;
   playerCount: number;
@@ -108,6 +111,11 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
       onlineOptionCatalogs.modes.map((mode) => mode.id),
       this.state.gameMode
     );
+    this.state.difficulty = resolveCatalogOption(
+      options?.difficulty,
+      onlineOptionCatalogs.difficulties.map((difficulty) => difficulty.id),
+      this.state.difficulty
+    );
     this.state.mapId = resolveCatalogOption(
       options?.mapId,
       onlineOptionCatalogs.maps.map((map) => map.id),
@@ -136,6 +144,11 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
           payload?.gameMode ?? this.state.gameMode,
           onlineOptionCatalogs.modes.map((mode) => mode.id),
           this.state.gameMode
+        ),
+        difficulty: resolveCatalogOption(
+          payload?.difficulty ?? this.state.difficulty,
+          onlineOptionCatalogs.difficulties.map((difficulty) => difficulty.id),
+          this.state.difficulty
         ),
         mapId: resolveCatalogOption(
           payload?.mapId ?? this.state.mapId,
@@ -197,6 +210,7 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
         inviteCode: this.state.inviteCode,
         status: this.state.status,
         gameMode: this.state.gameMode,
+        difficulty: this.state.difficulty,
         mapId: this.state.mapId,
         hostName: this.state.host.playerName,
         playerCount: this.state.players.size,
@@ -214,6 +228,7 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
       inviteCode: this.state.inviteCode,
       status: this.state.status,
       gameMode: this.state.gameMode,
+      difficulty: this.state.difficulty,
       mapId: this.state.mapId,
       hostName: this.state.host.playerName,
       playerCount: this.state.players.size,

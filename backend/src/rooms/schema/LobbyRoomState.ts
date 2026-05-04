@@ -8,6 +8,7 @@ export class LobbyRoomState extends Schema {
   @type("string") visibility: string = "public";
   @type("string") inviteCode: string = "";
   @type("string") gameMode: string = "classic";
+  @type("string") difficulty: string = "normal";
   @type("string") mapId: string = "arena01";
   @type("string") matchRoomId: string = "";
   @type("number") maxPlayers: number = 2;
@@ -86,6 +87,7 @@ export class LobbyRoomState extends Schema {
     summary.lobbyId = this.lobbyId;
     summary.hostName = hostPlayer?.playerName ?? "";
     summary.gameMode = this.gameMode;
+    summary.difficulty = this.difficulty;
     summary.mapId = this.mapId;
     summary.playerCount = players.filter((player) => player.connected).length;
     summary.maxPlayers = this.maxPlayers;

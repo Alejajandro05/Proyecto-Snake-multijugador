@@ -7,6 +7,12 @@ export const onlineModes = freezeOptions([
   { id: "duel", label: "Duel" },
 ]);
 
+export const onlineDifficulties = freezeOptions([
+  { id: "easy", label: "Easy" },
+  { id: "normal", label: "Medium" },
+  { id: "hard", label: "Hard" },
+]);
+
 export const onlineMaps = freezeOptions([
   { id: "arena01", label: "Arena 01" },
   { id: "arena02", label: "Arena 02" },
@@ -31,6 +37,7 @@ export const onlineSkins = freezeOptions([
 
 export const onlineOptionCatalogs = Object.freeze({
   modes: onlineModes,
+  difficulties: onlineDifficulties,
   maps: onlineMaps,
   skins: onlineSkins,
 });

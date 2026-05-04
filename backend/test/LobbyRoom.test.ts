@@ -12,13 +12,16 @@ import { onlineOptionCatalogs } from "../../shared/src/catalogs/onlineOptions.js
 describe("shared online option catalogs", () => {
   it("exposes real snake and arena ids for online selection", () => {
     assert.ok(onlineOptionCatalogs.modes.length > 0);
+    assert.ok(onlineOptionCatalogs.difficulties.length > 0);
     assert.ok(onlineOptionCatalogs.maps.length > 0);
 
     const skinIds = onlineOptionCatalogs.skins.map((skin) => skin.id);
     const mapIds = onlineOptionCatalogs.maps.map((map) => map.id);
+    const difficultyIds = onlineOptionCatalogs.difficulties.map((difficulty) => difficulty.id);
     assert.ok(skinIds.includes("player1"));
     assert.ok(skinIds.includes("player2"));
     assert.ok(skinIds.includes("snake10"));
+    assert.deepStrictEqual(difficultyIds, ["easy", "normal", "hard"]);
     assert.ok(mapIds.includes("arena01"));
     assert.ok(mapIds.includes("arena06"));
   });
@@ -45,6 +48,7 @@ describe("LobbyRoomState", () => {
     assert.equal(state.visibility, "public");
     assert.equal(state.inviteCode, "");
     assert.equal(state.gameMode, "classic");
+    assert.equal(state.difficulty, "normal");
     assert.equal(state.mapId, "arena01");
     assert.equal(state.maxPlayers, 2);
     assert.equal(state.host.sessionId, "");
@@ -91,6 +95,7 @@ describe("LobbyRoomState", () => {
     assert.equal(initialSummary.lobbyId, "lobby-123");
     assert.equal(initialSummary.hostName, "Host");
     assert.equal(initialSummary.gameMode, "classic");
+    assert.equal(initialSummary.difficulty, "normal");
     assert.equal(initialSummary.mapId, "arena01");
     assert.equal(initialSummary.playerCount, 1);
     assert.equal(initialSummary.maxPlayers, 2);
@@ -211,6 +216,7 @@ describe("LobbyRoom", () => {
     const room = await colyseus.createRoom<LobbyRoomState>("lobby_room", {
       visibility: "public",
       gameMode: "duel",
+      difficulty: "hard",
       mapId: "arena02",
     });
 
@@ -230,7 +236,10 @@ describe("LobbyRoom", () => {
 
     const snakeRoom = colyseus.getRoomById(room.state.matchRoomId);
     assert.equal(room.state.gameMode, "duel");
+    assert.equal(room.state.difficulty, "hard");
     assert.equal(room.state.mapId, "arena02");
+    assert.equal(snakeRoom.state.difficulty, "hard");
+    assert.equal(snakeRoom.state.tickMs, 110);
     assert.equal(snakeRoom.state.mapId, "arena02");
     assert.equal(snakeRoom.metadata?.gameMode, "duel");
     assert.equal(snakeRoom.metadata?.lobbyId, room.roomId);
