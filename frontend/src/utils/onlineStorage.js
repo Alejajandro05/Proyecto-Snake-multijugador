@@ -5,6 +5,7 @@ const DEFAULT_ONLINE_PREFS = Object.freeze({
   hostSkinId: 'player1',
   guestSkinId: 'player1',
   gameMode: 'classic',
+  difficulty: 'normal',
   mapId: 'arena01',
   visibility: 'public',
 });

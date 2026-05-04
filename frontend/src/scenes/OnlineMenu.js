@@ -135,6 +135,9 @@ export class OnlineMenu extends Phaser.Scene {
               <div class="col-12 col-md-6 col-lg-4">
                 ${this.renderSelectBlock('Modo', 'online-create-mode', onlineOptionCatalogs.modes, this.prefs.gameMode)}
               </div>
+              <div class="col-12 col-md-6 col-lg-4">
+                ${this.renderSelectBlock('Dificultad', 'online-create-difficulty', onlineOptionCatalogs.difficulties, this.prefs.difficulty)}
+              </div>
               <div class="col-12">
                 <div class="w-100 border-bottom border-secondary opacity-50 my-1"></div>
               </div>
@@ -215,6 +218,7 @@ export class OnlineMenu extends Phaser.Scene {
               <div class="col-12 col-md-6"><div class="p-3 rounded-3" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1);"><strong>Host:</strong> <span id="waiting-host-name" class="text-warning">-</span></div></div>
               <div class="col-12 col-md-6"><div class="p-3 rounded-3" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1);"><strong>Invitado:</strong> <span id="waiting-guest-name" class="text-info">Esperando...</span></div></div>
               <div class="col-12 col-md-4"><div class="p-3 rounded-3" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1);"><strong>Modo:</strong> <span id="waiting-mode">-</span></div></div>
+              <div class="col-12 col-md-4"><div class="p-3 rounded-3" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1);"><strong>Dificultad:</strong> <span id="waiting-difficulty">-</span></div></div>
               <div class="col-12 col-md-4"><div class="p-3 rounded-3" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1);"><strong>Mapa:</strong> <span id="waiting-map">-</span></div></div>
               <div class="col-12 col-md-4"><div class="p-3 rounded-3" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1);"><strong>Visibilidad:</strong> <span id="waiting-visibility">-</span></div></div>
               <div class="col-12 d-none" id="waiting-code-wrap"><div class="p-3 rounded-3 text-center" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1);"><strong>Código:</strong> <span id="waiting-code" class="text-success fw-bold fs-5">-</span></div></div>
@@ -378,6 +382,7 @@ export class OnlineMenu extends Phaser.Scene {
       this.prefs = saveOnlinePrefs({
         playerName: this.overlayRoot.querySelector('#online-create-name').value.trim() || 'Jugador',
         gameMode: this.overlayRoot.querySelector('#online-create-mode').value,
+        difficulty: this.overlayRoot.querySelector('#online-create-difficulty').value,
         hostSkinId: this.overlayRoot.querySelector('#online-create-skin').value,
         mapId: this.overlayRoot.querySelector('#online-create-map').value,
         visibility: this.overlayRoot.querySelector('#online-create-visibility').value,
@@ -387,6 +392,7 @@ export class OnlineMenu extends Phaser.Scene {
         playerName: this.prefs.playerName,
         skinId: this.prefs.hostSkinId,
         gameMode: this.prefs.gameMode,
+        difficulty: this.prefs.difficulty,
         mapId: this.prefs.mapId,
         visibility: this.prefs.visibility,
       });
@@ -500,6 +506,7 @@ export class OnlineMenu extends Phaser.Scene {
           matchRoomId: state.matchRoomId,
           skinId,
           playerName,
+          difficulty: state.difficulty,
           mapId: state.mapId,
         });
       }
@@ -525,11 +532,13 @@ export class OnlineMenu extends Phaser.Scene {
     const visibility = state?.visibility ?? 'public';
     const inviteCode = state?.inviteCode ?? '';
     const gameMode = state?.gameMode ?? '-';
+    const difficulty = state?.difficulty ?? 'normal';
     const mapId = state?.mapId ?? '-';
 
     this.overlayRoot.querySelector('#waiting-host-name').textContent = host.playerName || 'Pendiente';
     this.overlayRoot.querySelector('#waiting-guest-name').textContent = guest.playerName || 'Esperando...';
     this.overlayRoot.querySelector('#waiting-mode').textContent = gameMode;
+    this.overlayRoot.querySelector('#waiting-difficulty').textContent = difficulty;
     this.overlayRoot.querySelector('#waiting-map').textContent = mapId;
     this.overlayRoot.querySelector('#waiting-visibility').textContent = visibility === 'private' ? 'Privada' : 'Publica';
     this.overlayRoot.querySelector('#waiting-status').textContent = status === 'ready'
