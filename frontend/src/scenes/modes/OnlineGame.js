@@ -8,6 +8,7 @@ import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
 import { shouldEndStandardMatchByLives, shouldEndStandardMatchByScore } from '../matchEndRules.js';
 import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.js';
 import { loadOnlinePrefs } from '../../utils/onlineStorage.js';
+import { syncOnlineHudIdentity } from './onlineHudIdentity.js';
 
 function normalizeHttpUrlToWebSocket(url) {
     const s = String(url ?? '').trim();
@@ -58,6 +59,7 @@ export class OnlineGame extends Phaser.Scene {
         this.playerSkinId = data?.skinId ?? '';
         this.mapId = data?.mapId ?? '';
         this.playerName = data?.playerName ?? '';
+        this.selectedDifficulty = data?.difficulty ?? 'normal';
     }
 
     async create() {
@@ -232,20 +234,32 @@ export class OnlineGame extends Phaser.Scene {
     }
 
     syncHudFromPlayers(state) {
-        const players = this.getOrderedPlayers(state);
-        const firstPlayer = players[0];
-        const secondPlayer = players[1];
+        const summary = syncOnlineHudIdentity({
+            state: {
+                ...state,
+                difficulty: state?.difficulty ?? this.selectedDifficulty,
+            },
+            hud: {
+                leftPanel: this.hudLeftPlayer,
+                rightPanel: this.hudRightPlayer,
+                leftName: this.hudJ1Score,
+                rightName: this.hudJ2Score,
+                leftScore: this.hudJ1ScoreBig,
+                rightScore: this.hudJ2ScoreBig,
+                leftLives: this.hudJ1Lives,
+                rightLives: this.hudJ2Lives,
+            },
+            updateLivesHud: this.updateLivesHud.bind(this),
+        });
 
-        if (this.hudJ1Score) this.hudJ1Score.textContent = firstPlayer?.playerName || 'J1';
-        if (this.hudJ2Score) this.hudJ2Score.textContent = secondPlayer?.playerName || 'J2';
+        if (this.hudHelp) {
+            const firstName = summary.firstPlayer?.playerName || 'J1';
+            const secondName = summary.secondPlayer?.playerName || 'J2';
+            const mapId = state?.mapId ?? this.mapId ?? 'arena01';
+            this.hudHelp.textContent = `${summary.difficultyLabel} | ${mapId} | ${firstName} (WASD) vs ${secondName} (Flechas) - ESC: Menu`;
+        }
 
-        if (this.hudJ1ScoreBig) this.hudJ1ScoreBig.textContent = `${firstPlayer?.score ?? 0}`;
-        if (this.hudJ2ScoreBig) this.hudJ2ScoreBig.textContent = `${secondPlayer?.score ?? 0}`;
-
-        if (this.hudJ1Lives) this.updateLivesHud(this.hudJ1Lives, firstPlayer?.lives ?? MAX_LIVES);
-        if (this.hudJ2Lives) this.updateLivesHud(this.hudJ2Lives, secondPlayer?.lives ?? MAX_LIVES);
-
-        return { firstPlayer, secondPlayer };
+        return summary;
     }
 
     async connectToServer() {
