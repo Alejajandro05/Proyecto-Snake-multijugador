@@ -475,6 +475,13 @@ export class LocalGameSetup extends Phaser.Scene {
                 img: '/territorygame.png',
                 label: 'Control de territorio',
             },
+            {
+                id: 'captureTheFlag',
+                title: 'CAPTURE THE FLAG',
+                desc: 'Roba la bandera rival y vuelve a tu base. Solo puntuas si tu propia bandera sigue en casa.',
+                img: '/modoCTF.png',
+                label: 'Capture the Flag',
+            },
         ];
 
         let modeIndex = Math.max(0, MODES.findIndex((m) => m.id === initialGameMode));
@@ -559,4 +566,3 @@ export class LocalGameSetup extends Phaser.Scene {
             .replaceAll("'", '&#039;');
     }
 }
-

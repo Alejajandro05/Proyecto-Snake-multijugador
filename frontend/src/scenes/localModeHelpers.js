@@ -8,6 +8,7 @@ export function normalizeLocalGameMode(value) {
         case 'chaos':
         case 'kingOfTheHill':
         case 'territory':
+        case 'captureTheFlag':
             return String(value).trim();
         default:
             return 'normal';
@@ -26,6 +27,8 @@ export function resolveLocalSceneKey(gameMode) {
             return 'KingOfTheHillGame';
         case 'territory':
             return 'TerritoryGame';
+        case 'captureTheFlag':
+            return 'CaptureTheFlagGame';
         case 'normal':
         default:
             return 'NormalLocalGame';
