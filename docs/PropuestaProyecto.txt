@@ -453,6 +453,73 @@ de cierto tiempo para que el mapa cambie durante la partida. \\
 \textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (C)
 \end{tcolorbox}
 
+\begin{tcolorbox}[title=HU-XXX: Tutorial básico del juego]
+\textbf{Descripción:} Como jugador, quiero disponer de un tutorial básico para aprender las mecánicas principales del juego antes de comenzar una partida. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+\item El jugador puede acceder al tutorial desde el menú principal.
+\item El tutorial explica los controles básicos del juego.
+\item El tutorial enseña cómo mover la serpiente.
+\item El tutorial explica cómo recoger manzanas y ganar puntos.
+\item El tutorial muestra las condiciones de victoria y derrota.
+\item El jugador puede salir del tutorial en cualquier momento.
+\item El jugador puede completar el tutorial y regresar al menú principal.
+\end{itemize}
+\textbf{Estimación:} 12h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (B)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-027: Contador previo al inicio de la partida]
+\textbf{Descripción:} Como jugador, quiero que se previsualice momentáneamente el estado inicial de la partida antes de empezar para adaptarme a las condiciones iniciales. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+\item Antes de comenzar la partida se muestra una cuenta atrás.
+\item La cuenta atrás aparece en pantalla de forma visible.
+\item Durante la cuenta atrás los jugadores pueden visualizar el mapa y las posiciones iniciales.
+\item El juego comienza automáticamente al finalizar el contador.
+\item Durante la cuenta atrás los jugadores no pueden mover la serpiente.
+\end{itemize}
+\textbf{Estimación:} 3h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (A)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-028: Migrar modos locales a online]
+\textbf{Descripción:} Como jugador, quiero poder jugar los modos disponibles también en formato online para competir con otros jugadores sin limitarme al juego local. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+\item Los modos locales seleccionados pueden ejecutarse en partidas online.
+\item Los jugadores online comparten el mismo estado de partida.
+\item Las acciones de cada jugador se sincronizan correctamente.
+\item El sistema mantiene las reglas específicas de cada modo de juego.
+\item La partida online finaliza correctamente según las condiciones del modo elegido.
+\end{itemize}
+\textbf{Estimación:} 15h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (A)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-XXX: Configuración de controles]
+\textbf{Descripción:} Como jugador, quiero poder configurar los controles del juego para adaptarlos a mis preferencias y jugar con mayor comodidad. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+\item El jugador puede acceder a la configuración de controles desde el menú.
+\item El jugador puede cambiar las teclas de movimiento.
+\item El sistema guarda la configuración seleccionada.
+\item Los nuevos controles funcionan correctamente durante la partida.
+\item Existe una opción para restaurar los controles por defecto.
+\end{itemize}
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (D)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-XXX: Jugar contra la IA en modo local]
+\textbf{Descripción:} Como jugador, quiero poder jugar contra una inteligencia artificial en modo local para practicar y disfrutar del juego cuando no haya otros jugadores disponibles. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+\item El jugador puede seleccionar el modo contra IA desde el menú.
+\item La IA controla automáticamente una serpiente rival.
+\item La IA puede desplazarse por el mapa y recoger manzanas.
+\item La IA evita colisiones básicas con paredes y obstáculos.
+\item La partida finaliza correctamente cuando un jugador pierde o se cumple la condición de victoria.
+\end{itemize}
+\textbf{Estimación:} 20h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (D)
+\end{tcolorbox}
+
 
 % --- Epics originales
 \begin{tcolorbox}[title=EPIC-GAME-01: Lógica básica del juego]
