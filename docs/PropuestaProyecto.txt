@@ -387,31 +387,7 @@ de cierto tiempo para que el mapa cambie durante la partida. \\
 \textbf{Estimación:} 6h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-027: Salto corto de tres casillas (Modificada)]
-\textbf{Descripción:} Como jugador, quiero poder realizar un salto corto de tres casillas para evitar obstáculos o cambiar rápidamente de posición. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-    \item El jugador puede activar la acción de salto.
-    \item El salto mueve la serpiente tres casillas en la dirección actual.
-    \item El salto ocurre instantáneamente.
-    \item Esta acción da lugar a reducción de puntuación para evitar su uso deliberado, en todo caso la puntuación no podrá ser negativa, si no dispone de suficiente puntuación para efectuar la acción no se le permitirá hacerla.
-\end{itemize}
-\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-028: Disparo a cinco casillas de distancia (Modificada)]
-\textbf{Descripción:} Como jugador, quiero poder realizar un disparo hacia adelante para interactuar con elementos a distancia. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-    \item El jugador puede activar la acción de disparo.
-    \item El disparo se realiza en línea recta.
-    \item El alcance máximo es de cinco casillas.
-    \item Esta acción da lugar a reducción de puntuación para evitar su uso deliberado, en todo caso la puntuación no podrá ser negativa, si no dispone de suficiente puntuación para efectuar la acción no se le permitirá hacerla.
-\end{itemize}
-\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-029: Tutorial]
+\begin{tcolorbox}[title=HU-027: Tutorial]
 \textbf{Descripción:} Como jugador principiante, quiero que se me introduzca al inicio para aprender el juego. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -424,7 +400,7 @@ de cierto tiempo para que el mapa cambie durante la partida. \\
 
 % Barrera spint1 - sprin2
 
-\begin{tcolorbox}[title=HU-030: Configuración de controles]
+\begin{tcolorbox}[title=HU-028: Configuración de controles]
 \textbf{Descripción:} Como jugador, quiero reasignar las teclas de movimiento y acciones especiales. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -435,7 +411,7 @@ de cierto tiempo para que el mapa cambie durante la partida. \\
 \textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-031: Iniciar partida contra ordenador]
+\begin{tcolorbox}[title=HU-029: Iniciar partida contra ordenador]
 \textbf{Descripción:} Como jugador, quiero poder iniciar una partida contra una IA para jugar sin necesidad de otro jugador. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -446,7 +422,7 @@ de cierto tiempo para que el mapa cambie durante la partida. \\
 \textbf{Estimación:} 2h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (C)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-032: Movimiento automático de la serpiente IA]
+\begin{tcolorbox}[title=HU-030: Movimiento automático de la serpiente IA]
 \textbf{Descripción:} Como jugador, quiero que la serpiente controlada por IA se mueva automáticamente para que actúe como oponente. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -456,7 +432,7 @@ de cierto tiempo para que el mapa cambie durante la partida. \\
 \textbf{Estimación:} 4h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (C)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-033: IA cambia dirección hacia la manzana]
+\begin{tcolorbox}[title=HU-031: IA cambia dirección hacia la manzana]
 \textbf{Descripción:} Como jugador, quiero que la IA cambie dirección cuando está alineada con la manzana para intentar comerla. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -466,7 +442,7 @@ de cierto tiempo para que el mapa cambie durante la partida. \\
 \textbf{Estimación:} 4h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (C)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-034: IA evita fronteras y serpientes]
+\begin{tcolorbox}[title=HU-032: IA evita fronteras y serpientes]
 \textbf{Descripción:} Como jugador, quiero que la IA evite colisiones básicas para que el juego sea más interesante. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
