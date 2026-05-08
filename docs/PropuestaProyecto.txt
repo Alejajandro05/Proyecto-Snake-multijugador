@@ -46,7 +46,7 @@
     \vspace*{1cm}
     
     {\Huge \textbf{Sincro-Snake: Multijugador Real-Time}}\\[0.5cm]
-    {\Large \textbf{Grupo 3}}\\[2cm]
+    {\Large \textbf{Grupo 13}}\\[2cm]
 
     \includegraphics[width=0.8\textwidth]{images/portada_snake.jpg}\\[1cm] 
     
@@ -78,8 +78,8 @@ Siguiendo el calendario oficial 2026, el plan de trabajo se divide en los hitos 
 \hline
 \rowcolor{gray!20} \textbf{Fases} & \textbf{Duración} & \textbf{Hitos de Usuario} \\ \hline
 \textbf{Sprint Zero} & 160h & Definición de visión, arquitectura base y validación del modo local (MVP). \\ \hline
-\textbf{Sprint Uno} & 120h & Implementación del Matchmaking online y sincronización de red (Anti-lag). \\ \hline
-\textbf{Sprint Dos} & 90h & Despliegue de IA, Power-ups, Leaderboard y pulido final de interfaz. \\ \hline
+\textbf{Sprint Uno} & 120h & Implementación del ecosistema online y adición de funcionalidades. \\ \hline
+\textbf{Sprint Dos} & 90h & Despliegue de IA, configuración avanzada y adaptación de controles a dispositivos táctiles. \\ \hline
 \end{tabularx}
 \caption{Cronograma adaptado al calendario escolar 2026.}
 \end{table}
@@ -92,7 +92,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \subsection{Historias de Usuario (Funcionalidades)}
 
 % --- Epic Lógica básica del juego
-\begin{tcolorbox}[title=HU-001: Spawn inicial del jugador y longitud inicial]
+\begin{tcolorbox}[title=HU-001: Spawn inicial del jugador y longitud inicial (Hecha)]
 \textbf{Descripción:} Como jugador, quiero que mi serpiente aparezca automáticamente al comenzar la partida con una longitud inicial para poder empezar a jugar. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -104,7 +104,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 6h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-002: Movimiento de la serpiente]
+\begin{tcolorbox}[title=HU-002: Movimiento de la serpiente (Hecha)]
 \textbf{Descripción:} Como jugador, quiero controlar la dirección de la serpiente mediante el teclado para poder moverme por el mapa y buscar manzanas. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -117,7 +117,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 12h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-003: Comer manzana y nueva manzana]
+\begin{tcolorbox}[title=HU-003: Comer manzana y nueva manzana (Hecha)]
 \textbf{Descripción:} Como jugador, quiero que después de comer una manzana aparezca una nueva en el campo de juego para que el juego continúe. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -130,7 +130,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-004: Crecimiento de la serpiente]
+\begin{tcolorbox}[title=HU-004: Crecimiento de la serpiente (Hecha)]
 \textbf{Descripción:} Como jugador, quiero que la serpiente aumente su longitud cuando come una manzana para poder acercarme a la condición de victoria. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -142,7 +142,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-005: Generación de obstáculos en el mapa]
+\begin{tcolorbox}[title=HU-005: Generación de obstáculos en el mapa (Hecha)]
 \textbf{Descripción:} Como jugador, quiero que aparezcan obstáculos en el mapa para que el juego sea más desafiante. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -154,7 +154,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-006: Sistema de colisiones]
+\begin{tcolorbox}[title=HU-006: Sistema de colisiones (Hecha)]
 \textbf{Descripción:} Como jugador, quiero que el juego detecte colisiones con elementos del mapa para que las reglas del juego se apliquen correctamente. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -166,7 +166,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 12h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-007: Muerte de la serpiente]
+\begin{tcolorbox}[title=HU-007: Muerte de la serpiente (Hecha)]
 \textbf{Descripción:} Como jugador, quiero que el juego detecte cuando la serpiente muere para que la partida termine correctamente. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -178,7 +178,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-008: Pantalla de fin de partida]
+\begin{tcolorbox}[title=HU-008: Pantalla de fin de partida (Hecha)]
 \textbf{Descripción:} Como jugador, quiero ver una pantalla de resultado al terminar la partida para conocer si gané o perdí. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -189,7 +189,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-009: Condición de victoria por longitud]
+\begin{tcolorbox}[title=HU-009: Condición de victoria por longitud (Hecha)]
 \textbf{Descripción:} Como jugador, quiero ganar la partida cuando mi serpiente alcance el doble de longitud inicial para tener un objetivo claro durante la partida. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -200,7 +200,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-010: Acceso al Menú Principal]
+\begin{tcolorbox}[title=HU-010: Acceso al Menú Principal (Hecha)]
 \textbf{Descripción:} Como jugador, quiero que se muestre automáticamente el menú principal al iniciar el juego para poder elegir mi siguiente acción sin demoras. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -211,7 +211,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 6h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-011: Selección de modo de juego desde el menú]
+\begin{tcolorbox}[title=HU-011: Selección de modo de juego desde el menú (Hecha)]
 \textbf{Descripción:} Como jugador, quiero poder seleccionar el modo de juego (Local 1vs1, vs IA o Online 1vs1) directamente desde el menú principal para comenzar la partida deseada. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -233,7 +233,18 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-013: Sistema de Matchmaking]
+\begin{tcolorbox}[title=HU-013: Política de privacidad (Nueva)]
+\textbf{Descripción:} Como delegado de protección de datos, quiero que se cumpla el Reglamento General de Protección de Datos (RGPD), vigente en Europa, para que el sitio web no incumpla ninguna ley. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item La pagina \textquotedbl Política de privacidad\textquotedbl existe.
+    \item La pagina debe explicar el procesamiento de los datos del usuario.
+    \item La pagina cumpla el RGPD.
+\end{itemize}
+\textbf{Estimación:} 15h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-014: Sistema de Matchmaking]
 \textbf{Descripción:} Como jugador, quiero que el sistema busque automáticamente un oponente para una partida 1vs1 online. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -244,7 +255,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 12h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-014: Sincronización en tiempo real]
+\begin{tcolorbox}[title=HU-015: Sincronización en tiempo real]
 \textbf{Descripción:} Como jugador, quiero que los movimientos de ambas serpientes se sincronicen en tiempo real sin lag perceptible. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -252,10 +263,10 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
     \item No se producen “teleports” ni colisiones fantasma.
     \item La partida es justa para ambos jugadores.
 \end{itemize}
-\textbf{Estimación:} 15h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-015: Lobby / Sala de espera]
+\begin{tcolorbox}[title=HU-016: Lobby / Sala de espera]
 \textbf{Descripción:} Como jugador, quiero ver una sala de espera mientras se empareja o se espera a un amigo. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -266,7 +277,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-016: Manejo de desconexiones]
+\begin{tcolorbox}[title=HU-017: Manejo de desconexiones]
 \textbf{Descripción:} Como jugador, quiero que el juego gestione correctamente las desconexiones para no arruinar la experiencia. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -278,7 +289,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 9h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-017: Salir del juego desde el menú]
+\begin{tcolorbox}[title=HU-018: Salir del juego desde el menú (Hecha)]
 \textbf{Descripción:} Como jugador, quiero poder cerrar el juego de forma segura desde el menú principal. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -288,7 +299,17 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 3h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-018: Visualización de Leaderboard en el menú]
+\begin{tcolorbox}[title=HU-019: Sistema de usuarios (Nueva)]
+\textbf{Descripción:} Como jugador, quiero tener cuenta propia para que se guarde mi progreso y configuraciones en el juego. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Menú para iniciar sesion / registrarse
+    \item Persistencia de los datos del usuario
+\end{itemize}
+\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-020: Visualización de Leaderboard en el menú]
 \textbf{Descripción:} Como jugador, quiero ver el ranking global o de amigos directamente desde el menú principal para motivarme y comparar puntuaciones. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -296,163 +317,56 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
     \item Muestra al menos top 10 y mi posición.
     \item Se actualiza con datos del servidor (futuro).
 \end{itemize}
-\textbf{Estimación:} 7h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\textbf{Estimación:} 6h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-019: Acceso a Configuración y Personalización desde menú]
-\textbf{Descripción:} Como jugador, quiero acceder rápidamente a las pantallas de configuración y personalización desde el menú principal para ajustar el juego a mi gusto. \\
+\begin{tcolorbox}[title=HU-021: Sonidos de eventos (Modificada)]
+\textbf{Descripción:} Como jugador, quiero que el juego tenga sonidos, como música de fondo o sonidos tras pasar cierta acción. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
-    \item Botones dedicados para Configuración y Personalización.
-    \item Al hacer clic se abre la pantalla correspondiente sin perder progreso.
-    \item Se puede volver al menú principal fácilmente.
+    \item Música de fondo durante el menú y la partida.
+    \item Efecto de sonido al morir y comer manzana.
 \end{itemize}
 \textbf{Estimación:} 5h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-020: Ajustes de audio y gráficos]
-\textbf{Descripción:} Como jugador, quiero ajustar el volumen de música y efectos sonoros y la calidad gráfica. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-    \item Sliders de volumen y calidad.
-    \item Cambios se aplican en tiempo real.
-    \item Se guardan las preferencias.
-\end{itemize}
-\textbf{Estimación:} 7h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-021: Configuración de controles]
-\textbf{Descripción:} Como jugador, quiero reasignar las teclas de movimiento y acciones especiales. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-    \item Interfaz para cambiar WASD/flechas y teclas de salto/disparo.
-    \item Se detecta conflicto de teclas.
-    \item Preferencias se guardan.
-\end{itemize}
-\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-022: Iniciar partida contra ordenador]
-\textbf{Descripción:} Como jugador, quiero poder iniciar una partida contra una IA para jugar sin necesidad de otro jugador. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-\item El jugador puede seleccionar el modo 1 vs IA.
-\item El sistema genera una serpiente controlada por IA.
-\item La partida comienza normalmente.
-\end{itemize}
-\textbf{Estimación:} 2h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-023: Movimiento automático de la serpiente IA]
-\textbf{Descripción:} Como jugador, quiero que la serpiente controlada por IA se mueva automáticamente para que actúe como oponente. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-\item La serpiente IA se mueve sin intervención del jugador.
-\item La IA decide su dirección automáticamente.
-\end{itemize}
-\textbf{Estimación:} 4h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-024: IA cambia dirección hacia la manzana]
-\textbf{Descripción:} Como jugador, quiero que la IA cambie dirección cuando está alineada con la manzana para intentar comerla. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-\item Si la IA está alineada horizontal o verticalmente con la manzana, cambia dirección.
-\item La IA intenta moverse hacia la manzana.
-\end{itemize}
-\textbf{Estimación:} 4h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-025: IA evita fronteras y serpientes]
-\textbf{Descripción:} Como jugador, quiero que la IA evite colisiones básicas para que el juego sea más interesante. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-\item La IA detecta cercanía con bordes del mapa.
-\item La IA cambia dirección para evitar colisiones.
-\item La IA intenta evitar otras serpientes.
-\end{itemize}
-\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-026: Obstáculos con duración limitada]
-\textbf{Descripción:} Como jugador, quiero que algunos obstáculos desaparezcan después de cierto tiempo para que el mapa cambie durante la partida. \\
+\begin{tcolorbox}[title=HU-022: Obstáculos con duración limitada]
+\textbf{Descripción:} Como jugador, quiero que algunos obstáculos desaparezcan y reaparezcan después
+de cierto tiempo para que el mapa cambie durante la partida. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
     \item Cada obstáculo tiene un contador de duración.
     \item El contador disminuye con cada movimiento del juego.
-    \item Cuando el contador llega a cero, el obstáculo desaparece.
+    \item Cuando el contador llega a cero, el obstáculo desaparece y reaparece otro en una posición disponible.
 \end{itemize}
-\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\textbf{Estimación:} 4h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-027: Salto corto de tres casillas]
-\textbf{Descripción:} Como jugador, quiero poder realizar un salto corto de tres casillas para evitar obstáculos o cambiar rápidamente de posición. \\
+\begin{tcolorbox}[title=HU-23: Diferentes tipos de manzanas (Nueva)]
+\textbf{Descripción:} Como jugador, quiero que existan distintos tipos de consumibles que den lugar a diferentes situaciones en el juego.
+ \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
-    \item El jugador puede activar la acción de salto.
-    \item El salto mueve la serpiente tres casillas en la dirección actual.
-    \item El salto ocurre instantáneamente.
+    \item Consumible que de más puntuación
+    \item Consumible que reste puntuación (a sí mismo o rivales)
+    \item Consumible que otorgue invulnerabilidad
+    \item etc.
 \end{itemize}
-\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-028: Penalización de longitud por salto]
-\textbf{Descripción:} Como jugador, quiero que al realizar un salto se reduzca la longitud de la serpiente para equilibrar el uso de la habilidad. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-    \item Cuando se realiza un salto corto, la serpiente pierde una unidad de longitud.
-    \item La pérdida ocurre inmediatamente después del salto.
-    \item La longitud nunca puede ser menor a un bloque.
-\end{itemize}
-\textbf{Estimación:} 6h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-029: Disparo a cinco casillas de distancia]
-\textbf{Descripción:} Como jugador, quiero poder realizar un disparo hacia adelante para interactuar con elementos a distancia. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-    \item El jugador puede activar la acción de disparo.
-    \item El disparo se realiza en línea recta.
-    \item El alcance máximo es de cinco casillas.
-\end{itemize}
-\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-030: Penalización de longitud por disparo]
-\textbf{Descripción:} Como jugador, quiero que disparar reduzca la longitud de mi serpiente para evitar abusar de esta habilidad. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-    \item Cada disparo reduce la longitud de la serpiente en una unidad.
-    \item La penalización ocurre inmediatamente después del disparo.
-    \item La longitud mínima se mantiene en un bloque.
-\end{itemize}
-\textbf{Estimación:} 6h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
-\end{tcolorbox}
-
-
-\begin{tcolorbox}[title=HU-031: Selección de skins para serpiente]
-\textbf{Descripción:} Como jugador, quiero elegir diferentes apariencias (colores y diseños) para mi serpiente. \\
+\begin{tcolorbox}[title=HU-024: Selección de skins para objetos]
+\textbf{Descripción:} Como jugador, quiero elegir diferentes apariencias (colores y diseños) para mi serpiente, obstáculos y manzanas. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
     \item Galería de skins con vista previa.
     \item Cambio instantáneo en el juego.
     \item Las skins se guardan y persisten.
 \end{itemize}
-\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could(C)
+\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should(S)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-032: Personalización de obstáculos y manzanas]
-\textbf{Descripción:} Como jugador, quiero cambiar el aspecto visual de obstáculos y manzanas. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-    \item Opciones de skins para obstáculos y manzanas.
-    \item Vista previa en tiempo real.
-    \item Integración con el sistema de skins existente.
-\end{itemize}
-\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-033: Temas de fondo y tablero]
+\begin{tcolorbox}[title=HU-025: Temas de fondo y tablero]
 \textbf{Descripción:} Como jugador, quiero seleccionar diferentes fondos y estilos de tablero. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -460,8 +374,109 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
     \item Aplicación inmediata al mapa.
     \item Persistencia de la elección.
 \end{itemize}
-\textbf{Estimación:} 7h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\textbf{Estimación:} 7h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-026: Definir opciones de la partida (Nueva)]
+\textbf{Descripción:} Como jugador, quiero poder fijar a mi gusto las opciones de la partida para adaptarla mejor a mis preferencias. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Menú prepartida para determinar la cantidad de objetos, tamaño del tablero, etc.
+    \item Las opciones elegidas se establecen para iniciar la partida.
+\end{itemize}
+\textbf{Estimación:} 6h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-027: Salto corto de tres casillas (Modificada)]
+\textbf{Descripción:} Como jugador, quiero poder realizar un salto corto de tres casillas para evitar obstáculos o cambiar rápidamente de posición. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item El jugador puede activar la acción de salto.
+    \item El salto mueve la serpiente tres casillas en la dirección actual.
+    \item El salto ocurre instantáneamente.
+    \item Esta acción da lugar a reducción de puntuación para evitar su uso deliberado, en todo caso la puntuación no podrá ser negativa, si no dispone de suficiente puntuación para efectuar la acción no se le permitirá hacerla.
+\end{itemize}
+\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-028: Disparo a cinco casillas de distancia (Modificada)]
+\textbf{Descripción:} Como jugador, quiero poder realizar un disparo hacia adelante para interactuar con elementos a distancia. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item El jugador puede activar la acción de disparo.
+    \item El disparo se realiza en línea recta.
+    \item El alcance máximo es de cinco casillas.
+    \item Esta acción da lugar a reducción de puntuación para evitar su uso deliberado, en todo caso la puntuación no podrá ser negativa, si no dispone de suficiente puntuación para efectuar la acción no se le permitirá hacerla.
+\end{itemize}
+\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-029: Tutorial]
+\textbf{Descripción:} Como jugador principiante, quiero que se me introduzca al inicio para aprender el juego. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item El juego me indica los controles básicos.
+    \item El juego me indica cuál es el objetivo ganador.
+    \item El juego me introduce las principales funcionalidades
+\end{itemize}
+\textbf{Estimación:} 12h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\end{tcolorbox}
+
+% Barrera spint1 - sprin2
+
+\begin{tcolorbox}[title=HU-030: Configuración de controles]
+\textbf{Descripción:} Como jugador, quiero reasignar las teclas de movimiento y acciones especiales. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Interfaz para cambiar WASD/flechas y teclas de salto/disparo.
+    \item Se detecta conflicto de teclas.
+    \item Preferencias se guardan.
+\end{itemize}
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-031: Iniciar partida contra ordenador]
+\textbf{Descripción:} Como jugador, quiero poder iniciar una partida contra una IA para jugar sin necesidad de otro jugador. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+\item El jugador puede seleccionar el modo 1 vs IA.
+\item El sistema genera una serpiente controlada por IA.
+\item La partida comienza normalmente.
+\end{itemize}
+\textbf{Estimación:} 2h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (C)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-032: Movimiento automático de la serpiente IA]
+\textbf{Descripción:} Como jugador, quiero que la serpiente controlada por IA se mueva automáticamente para que actúe como oponente. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+\item La serpiente IA se mueve sin intervención del jugador.
+\item La IA decide su dirección automáticamente.
+\end{itemize}
+\textbf{Estimación:} 4h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (C)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-033: IA cambia dirección hacia la manzana]
+\textbf{Descripción:} Como jugador, quiero que la IA cambie dirección cuando está alineada con la manzana para intentar comerla. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+\item Si la IA está alineada horizontal o verticalmente con la manzana, cambia dirección.
+\item La IA intenta moverse hacia la manzana.
+\end{itemize}
+\textbf{Estimación:} 4h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (C)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-034: IA evita fronteras y serpientes]
+\textbf{Descripción:} Como jugador, quiero que la IA evite colisiones básicas para que el juego sea más interesante. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+\item La IA detecta cercanía con bordes del mapa.
+\item La IA cambia dirección para evitar colisiones.
+\item La IA intenta evitar otras serpientes.
+\end{itemize}
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (C)
+\end{tcolorbox}
+
 
 % --- Epics originales
 \begin{tcolorbox}[title=EPIC-GAME-01: Lógica básica del juego]
@@ -576,8 +591,16 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 
 \newpage
 
-\section{Organización del Sprint Zero}
-El Sprint Zero (marzo 2026) se centra en eliminar riesgos de conocimiento.
+\section{Retrospectiva del Sprint Zero}
+Durante el desarrollo del Sprint 0 se construyeron desde cero tanto la lógica principal del juego como las distintas escenas gráficas, logrando una versión funcional que permite jugar de manera adecuada.
+
+Se completaron todas las historias de usuario planificadas dentro de los tiempos estimados. El trabajo se distribuyó de forma equilibrada entre los miembros del equipo, lo que permitió avanzar de manera eficiente y coordinada en las distintas áreas del proyecto.
+
+Como aspecto a mejorar, la presentación del producto (demo) no alcanzó el nivel esperado. Aunque el juego era funcional, se trataba de una versión muy básica, con pocos elementos diferenciales que resultaran atractivos o destacables para su exhibición.
+
+
+\section{Organización del Sprint Uno}
+El Sprint Zero (abril 2026) se centra en implementar el juego online y añadir funcionalidades in-game.
 
 \subsection{Pila del Sprint (Selección de HUs)}
 De acuerdo con el manual, seleccionamos historias de valor de usuario para validar el stack tecnológico:
@@ -588,30 +611,38 @@ De acuerdo con el manual, seleccionamos historias de valor de usuario para valid
 \hline
 \rowcolor[HTML]{EFEFEF} 
 \textbf{ID} & \textbf{Historia de Usuario} & \textbf{Tiempo Ideal} \\ \hline
-HU-001 & Spawn inicial del jugador y longitud inicial & 6h \\ \hline
-HU-002 & Movimiento de la serpiente & 12h \\ \hline
-HU-003 & Comer manzana y nueva manzana & 8h \\ \hline
-HU-004 & Crecimiento de la serpiente & 8h \\ \hline
-HU-005 & Generación de obstáculos en el mapa & 10h \\ \hline
-HU-006 & Sistema de colisiones & 12h \\ \hline
-HU-007 & Muerte de la serpiente & 10h \\ \hline
-HU-008 & Pantalla de fin de partida & 8h \\ \hline
-HU-009 & Condición de victoria por longitud & 8h \\ \hline
-HU-010 & Acceso al Menú Principal & 6h \\ \hline
-HU-011 & Selección de modo de juego desde el menú & 8h \\ \hline
-HU-017 & Salir del juego desde el menú & 3h \\ \hline
+HU-012 & Conexión al servidor & 10h \\ \hline
+HU-013 & Política de privacidad & 15h \\ \hline
+HU-014 & Sistema de matchmaking & 12h \\ \hline
+HU-015 & Sincronización en tiempo real & 8h \\ \hline
+HU-016 & Lobby / Sala de espera & 8h \\ \hline
+HU-017 & Manejo de desconexiones & 9h \\ \hline
+HU-019 & Sistema de usuarios & 10h \\ \hline
+HU-020 & Visualización de Leaderboard en el menú & 6h \\ \hline
+HU-021 & Sonido de eventos & 5h \\ \hline
+HU-022 & Obstáculos con duración limitada & 4h \\ \hline
+HU-023 & Diferentes tipos de manzanas & 8h \\ \hline
+HU-024 & Selección de skins para objetos & 10h \\ \hline
+HU-025 & Temas de fondo y tablero & 7h \\ \hline
+HU-026 & Definir opciones de la partida & 6h \\ \hline
+
 \rowcolor[HTML]{F2F2F2}
-\textbf{TOTAL} & & \textbf{99h} \\ \hline
+\textbf{TOTAL} & & \textbf{118h} \\ \hline
 \end{tabularx}
 \end{table}
 
+\newpage
+
 \subsection{Razonamiento de Selección}
-Siguiendo la \textbf{Ingeniería Concurrente} de Scrum Manager, priorizamos un conjunto de historias de usuario que permiten validar de forma paralela tanto la lógica central del juego como la interacción básica del usuario, reduciendo riesgos técnicos desde las primeras iteraciones.
+Siguiendo la \textbf{Ingeniería Concurrente} de Scrum Manager, se priorizó un conjunto de historias de usuario orientadas tanto a garantizar el correcto funcionamiento del modo online como a ampliar las funcionalidades del juego, con el objetivo de enriquecer la experiencia del usuario.
 
-En primer lugar, seleccionamos las HU relacionadas con la lógica base del juego (HU-001 a HU-004), ya que establecen el núcleo funcional: el spawn inicial, el movimiento de la serpiente, la interacción con la manzana y su crecimiento. Estas historias permiten validar de manera temprana el bucle principal de juego y comprobar que los sistemas de actualización de estado funcionan correctamente de forma integrada.
+Tras un primer sprint enfocado en la construcción de la base del juego, en este nuevo sprint se busca mejorar la usabilidad y aumentar la interacción del jugador.
 
-A continuación, incorporamos las HU vinculadas a la gestión del entorno y reglas del juego (HU-005 a HU-007), como la generación de obstáculos, el sistema de colisiones y la muerte de la serpiente. Estas funcionalidades se desarrollan en paralelo a la lógica base, permitiendo verificar la coherencia del comportamiento del juego ante eventos críticos y asegurando que las mecánicas principales sean robustas antes de añadir complejidad adicional.
+En primer lugar, se seleccionaron las historias de usuario relacionadas con el modo online, haciendo especial énfasis en la correcta sincronización con el servidor y la implementación de un sistema de gestión de usuarios.
 
-Finalmente, se abordan las HU orientadas a la interfaz y flujo de usuario (HU-008 en adelante), incluyendo la pantalla de fin de partida, condiciones de victoria y el sistema de menús. Estas historias permiten construir la experiencia completa del usuario una vez validado el núcleo jugable, facilitando pruebas de usabilidad y preparando el producto para iteraciones futuras con modos de juego más avanzados.
+A continuación, se priorizaron funcionalidades clave que aportan dinamismo al juego, como la incorporación de distintos tipos de manzanas y la configuración de partidas.
+
+Finalmente, se incluyeron historias de usuario orientadas a la personalización, con el objetivo de aumentar el realismo y la inmersión. Entre estas mejoras se encuentran la implementación de skins para la serpiente, obstáculos, manzanas y tablero, así como la incorporación de efectos de sonido asociados a los eventos del juego.
+
 
 \end{document}
