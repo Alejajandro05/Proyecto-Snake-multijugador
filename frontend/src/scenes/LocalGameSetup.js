@@ -136,7 +136,7 @@ export class LocalGameSetup extends Phaser.Scene {
                 }
             </style>
             <div class="w-100 px-3 d-flex flex-column align-items-center" style="max-width: 900px;">
-                <button id="btn-setup-back" class="btn btn-sm btn-outline-light fw-semibold align-self-start mb-3" type="button" style="border-radius: 999px; padding: 8px 14px;">
+                <button id="btn-setup-back" class="btn btn-sm btn-outline-light fw-semibold align-self-start mb-3 pixel-btn pixel-btn-secondary" type="button" style="padding: 8px 14px;">
                     ← Volver
                 </button>
                 <div class="local-setup-card rounded-4 shadow-lg p-4 p-md-4 d-flex flex-column align-items-center w-100" style="background: rgba(15, 23, 42, 0.86); border: 1px solid rgba(255,255,255,0.14); backdrop-filter: blur(6px);">
@@ -148,16 +148,16 @@ export class LocalGameSetup extends Phaser.Scene {
                     <div class="w-75 border-bottom border-secondary opacity-50 mb-4"></div>
 
                     <div class="d-flex gap-3 mb-4 w-100 justify-content-center flex-wrap">
-                        <button id="btn-diff-easy" type="button" class="btn rounded-pill px-4 py-2 fw-bold diff-btn" data-difficulty="easy" style="min-width: 120px;">Easy</button>
-                        <button id="btn-diff-normal" type="button" class="btn rounded-pill px-4 py-2 fw-bold diff-btn" data-difficulty="normal" style="min-width: 120px;">Medium</button>
-                        <button id="btn-diff-hard" type="button" class="btn rounded-pill px-4 py-2 fw-bold diff-btn" data-difficulty="hard" style="min-width: 120px;">Hard</button>
+                        <button id="btn-diff-easy" type="button" class="btn rounded-pill px-4 py-2 fw-bold diff-btn pixel-btn pixel-btn-secondary" data-difficulty="easy" style="min-width: 120px;">Easy</button>
+                        <button id="btn-diff-normal" type="button" class="btn rounded-pill px-4 py-2 fw-bold diff-btn pixel-btn pixel-btn-secondary" data-difficulty="normal" style="min-width: 120px;">Medium</button>
+                        <button id="btn-diff-hard" type="button" class="btn rounded-pill px-4 py-2 fw-bold diff-btn pixel-btn pixel-btn-secondary" data-difficulty="hard" style="min-width: 120px;">Hard</button>
                         <input id="difficulty" type="hidden" value="${initialDifficulty}" />
                     </div>
 
                     <div class="w-75 border-bottom border-secondary opacity-50 mb-4"></div>
 
                     <div class="d-flex flex-column align-items-center mb-4 w-100">
-                        <button id="btn-open-mode" type="button" class="btn rounded-pill px-4 py-2 fw-bold mode-select-btn" style="min-width: 280px;">
+                        <button id="btn-open-mode" type="button" class="btn rounded-pill px-4 py-2 fw-bold mode-select-btn pixel-btn pixel-btn-accent" style="min-width: 280px;">
                             Seleccionar modo de juego
                         </button>
                         <div id="mode-selected-label" class="mt-2 small" style="color: rgba(255,255,255,0.75);">
@@ -173,10 +173,10 @@ export class LocalGameSetup extends Phaser.Scene {
                             <select id="p1-profile-select" class="form-select form-select-sm profile-select mb-2"></select>
                             <input id="p1-name" class="form-control bg-transparent text-white text-center fs-5 fw-bold mb-3 custom-input" placeholder="Jugador 1" maxlength="16" value="${initialP1Name}" style="max-width: 200px;" />
                             <div class="d-flex align-items-center gap-3">
-                                <button id="p1-prev" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height: 1;">&lsaquo;</button>
+                                <button id="p1-prev" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow pixel-btn pixel-btn-link pixel-btn-small" style="line-height: 1;">&lsaquo;</button>
                                 <div id="p1-skin-container" class="rounded-4 d-flex align-items-center justify-content-center shadow-sm" style="width: 160px; height: 160px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); transition: border-color 0.3s; padding: 10px;">
                                 </div>
-                                <button id="p1-next" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height: 1;">&rsaquo;</button>
+                                <button id="p1-next" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow pixel-btn pixel-btn-link pixel-btn-small" style="line-height: 1;">&rsaquo;</button>
                             </div>
                             <div class="badge rounded-pill mt-3 px-3 py-2" style="background: rgba(222, 26, 88, 0.22); color: #fff; border: 1px solid rgba(222, 26, 88, 0.4); letter-spacing: 1px;">WASD</div>
                         </div>
@@ -185,10 +185,10 @@ export class LocalGameSetup extends Phaser.Scene {
                             <select id="p2-profile-select" class="form-select form-select-sm profile-select mb-2"></select>
                             <input id="p2-name" class="form-control bg-transparent text-white text-center fs-5 fw-bold mb-3 custom-input" placeholder="Jugador 2" maxlength="16" value="${initialP2Name}" style="max-width: 200px;" />
                             <div class="d-flex align-items-center gap-3">
-                                <button id="p2-prev" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height: 1;">&lsaquo;</button>
+                                <button id="p2-prev" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow pixel-btn pixel-btn-link pixel-btn-small" style="line-height: 1;">&lsaquo;</button>
                                 <div id="p2-skin-container" class="rounded-4 d-flex align-items-center justify-content-center shadow-sm" style="width: 160px; height: 160px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); transition: border-color 0.3s; padding: 10px;">
                                 </div>
-                                <button id="p2-next" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height: 1;">&rsaquo;</button>
+                                <button id="p2-next" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow pixel-btn pixel-btn-link pixel-btn-small" style="line-height: 1;">&rsaquo;</button>
                             </div>
                             <div class="badge rounded-pill mt-3 px-3 py-2" style="background: rgba(56, 189, 248, 0.18); color: #fff; border: 1px solid rgba(56, 189, 248, 0.35); letter-spacing: 1px;">FLECHAS</div>
                         </div>
@@ -202,8 +202,8 @@ export class LocalGameSetup extends Phaser.Scene {
                     </div>
 
                     <div class="w-100 d-flex justify-content-center mt-3">
-                        <button id="btn-create-local-game" class="btn btn-lg fw-bold text-white shadow rounded-pill"
-                            style="padding: 14px 18px; background: linear-gradient(90deg, #DE1A58, #8F0177); border: 2px solid rgba(246, 125, 49, 0.85); font-family: 'Montserrat', sans-serif; min-width: 280px; width: 60%;">
+                        <button id="btn-create-local-game" class="btn btn-lg fw-bold text-white shadow rounded-pill pixel-btn pixel-btn-accent"
+                            style="padding: 14px 18px; min-width: 280px; width: 60%;">
                             Crear Partida
                         </button>
                     </div>
@@ -217,18 +217,18 @@ export class LocalGameSetup extends Phaser.Scene {
                             <h2 id="mode-modal-title" class="mode-modal-title">SELECCIONA MODO DE JUEGO</h2>
                             <p class="mode-modal-subtitle">Usa las flechas para ver más modos.</p>
                         </div>
-                        <button id="mode-close" class="mode-close" type="button">Cerrar</button>
+                        <button id="mode-close" class="mode-close pixel-btn pixel-btn-link pixel-btn-small" type="button">Cerrar</button>
                     </div>
 
                     <div class="mode-carousel">
-                        <button id="mode-prev" class="mode-arrow" type="button" aria-label="Anterior">‹</button>
+                        <button id="mode-prev" class="mode-arrow pixel-btn pixel-btn-link pixel-btn-small" type="button" aria-label="Anterior">‹</button>
                         <div id="mode-card-slot"></div>
-                        <button id="mode-next" class="mode-arrow" type="button" aria-label="Siguiente">›</button>
+                        <button id="mode-next" class="mode-arrow pixel-btn pixel-btn-link pixel-btn-small" type="button" aria-label="Siguiente">›</button>
                     </div>
 
                     <div class="mode-modal-footer">
-                        <button id="mode-cancel" class="mode-cancel" type="button">Cancelar</button>
-                        <button id="mode-choose" class="mode-choose" type="button">Elegir este modo</button>
+                        <button id="mode-cancel" class="mode-cancel pixel-btn pixel-btn-link pixel-btn-small" type="button">Cancelar</button>
+                        <button id="mode-choose" class="mode-choose pixel-btn pixel-btn-accent" type="button">Elegir este modo</button>
                     </div>
                 </div>
             </div>
@@ -285,7 +285,7 @@ export class LocalGameSetup extends Phaser.Scene {
             if (!root) return;
 
             root.innerHTML = mapAssets.map((map, index) => `
-                <button type="button" class="map-option rounded-3 p-2 text-center ${index === mapIndex ? 'active' : ''}" data-map-index="${index}" style="width: 112px;">
+                <button type="button" class="map-option rounded-3 p-2 text-center ${index === mapIndex ? 'active' : ''} pixel-btn pixel-btn-link pixel-btn-small" data-map-index="${index}" style="width: 112px;">
                     <span class="d-block rounded-2 mb-2" style="height: 42px; background: url('/${map.floor.path}') center/32px 32px repeat; image-rendering: pixelated;"></span>
                     <span class="small fw-semibold">${map.label}</span>
                 </button>

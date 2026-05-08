@@ -190,15 +190,15 @@ export class MainMenu extends Phaser.Scene {
                 <div class="position-absolute top-50 start-50 translate-middle d-flex flex-column align-items-center" style="margin-top: -50px; width: 100%; max-width: 400px;">
 
                     <div class="d-flex flex-column gap-3 w-100 align-items-center">
-                        <button id="btn-local" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #DE1A58; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">
+                        <button id="btn-local" class="btn text-white fw-bold shadow menu-btn w-100 pixel-btn pixel-btn-accent" style="padding: 14px; font-size: 1.2rem; max-width: 280px;">
                             JUEGO LOCAL
                         </button>
 
-                        <button id="btn-online" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #8F0177; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">
+                        <button id="btn-online" class="btn text-white fw-bold shadow menu-btn w-100 pixel-btn pixel-btn-accent" style="padding: 14px; font-size: 1.2rem; max-width: 280px;">
                             1 VS 1 ONLINE
                         </button>
 
-                        <button id="btn-opciones" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #1A05A2; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">
+                        <button id="btn-opciones" class="btn text-white fw-bold shadow menu-btn w-100 pixel-btn pixel-btn-accent" style="padding: 14px; font-size: 1.2rem; max-width: 280px;">
                             OPCIONES
                         </button>
                     </div>
@@ -241,7 +241,7 @@ export class MainMenu extends Phaser.Scene {
                     </select>
                 </div>
 
-                <button id="btn-volver" class="btn text-white fw-bold shadow mt-3 menu-btn" style="width: 100%; padding: 12px; background-color: #334155; border: 2px solid #94A3B8; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.1rem;">
+                <button id="btn-volver" class="btn text-white fw-bold shadow mt-3 menu-btn pixel-btn pixel-btn-secondary" style="width: 100%; padding: 12px; font-size: 1.1rem;">
                     VOLVER
                 </button>
             </div>

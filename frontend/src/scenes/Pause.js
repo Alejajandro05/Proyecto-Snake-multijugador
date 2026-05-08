@@ -109,8 +109,8 @@ export class Pause extends Phaser.Scene {
                                 </div>
 
                                 <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
-                                    <button id="resume-btn" class="btn btn-secondary px-5 py-3 fw-bold" style="border-radius: 50px; min-width: 180px;">Reanudar</button>
-                                    <button id="menu-btn" class="btn btn-secondary px-5 py-3 fw-bold" style="border-radius: 50px; min-width: 180px;">Salir al Menu</button>
+                                    <button id="resume-btn" class="btn btn-lg px-5 py-3 fw-bold pixel-btn pixel-btn-accent" style="min-width: 180px;">Reanudar</button>
+                                    <button id="menu-btn" class="btn btn-lg px-5 py-3 fw-bold pixel-btn pixel-btn-secondary" style="min-width: 180px;">Salir al Menu</button>
                                 </div>
                             </div>
                         </div>

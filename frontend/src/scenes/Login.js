@@ -49,8 +49,8 @@ export class Login extends Phaser.Scene {
             <div id="validation-message" class="text-danger text-start mb-3" style="min-height: 1.4rem; font-size: 0.95rem;"></div>
 
             <div class="d-flex justify-content-between gap-2 flex-row">
-              <button id="btn-login-back" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleBack}">VOLVER</button>
-              <button id="btn-login-submit" class="btn text-white fw-bold shadow" style="${btnStyleSubmit}">Iniciar Sesión</button>
+              <button id="btn-login-back" class="btn text-white fw-bold shadow menu-btn pixel-btn pixel-btn-secondary" style="width: 280px;">VOLVER</button>
+              <button id="btn-login-submit" class="btn text-white fw-bold shadow pixel-btn pixel-btn-accent" style="width: 280px;">Iniciar Sesión</button>
             </div>
           </form>
 
