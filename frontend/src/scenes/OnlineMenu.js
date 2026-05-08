@@ -64,9 +64,7 @@ export class OnlineMenu extends Phaser.Scene {
     overlay.innerHTML = `
       <div class="w-100 px-2 px-sm-3 d-flex flex-column align-items-center" style="max-width: 960px; min-height: 0;">
         <div class="online-menu-card w-100 rounded-4 text-center p-3 p-md-4 d-flex flex-column align-items-stretch">
-        <h1 class="fw-bold text-white mb-3 mb-md-4 online-menu-title">
-            SNAKE CLASH
-        </h1>
+
           <style>
             #online-menu-overlay .online-skin-arrow { transition: transform 0.2s; cursor: pointer; }
             #online-menu-overlay .online-skin-arrow:hover { transform: scale(1.2); }
@@ -91,13 +89,7 @@ export class OnlineMenu extends Phaser.Scene {
                 margin-top: 0.25rem;
               }
             }
-            #online-menu-overlay .online-menu-title {
-              font-family: 'Teko', sans-serif;
-              text-shadow: 0px 4px 20px #F67D31, 0px 0px 10px #F67D31;
-              letter-spacing: 2px;
-              font-size: clamp(2.1rem, 9vw, 4.75rem);
-              line-height: 1.05;
-            }
+
             #online-menu-overlay .online-menu-card {
               flex: 0 1 auto;
               min-height: 0;

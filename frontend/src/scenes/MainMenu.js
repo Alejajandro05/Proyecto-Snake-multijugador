@@ -188,9 +188,6 @@ export class MainMenu extends Phaser.Scene {
             </style>
             <div id="pantalla-principal" class="w-100 h-100 position-relative">
                 <div class="position-absolute top-50 start-50 translate-middle d-flex flex-column align-items-center" style="margin-top: -50px; width: 100%; max-width: 400px;">
-                    <h1 class="display-1 fw-bold text-white mb-5 text-center" style="font-family: 'Teko', sans-serif; text-shadow: 0px 4px 20px #F67D31, 0px 0px 10px #F67D31; letter-spacing: 2px;">
-                        SNAKE CLASH
-                    </h1>
 
                     <div class="d-flex flex-column gap-3 w-100 align-items-center">
                         <button id="btn-local" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #DE1A58; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">

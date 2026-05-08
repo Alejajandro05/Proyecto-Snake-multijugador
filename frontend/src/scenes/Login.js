@@ -30,9 +30,6 @@ export class Login extends Phaser.Scene {
 
     overlay.innerHTML = `
       <div class="text-center" style="margin-top: -40px; width: 100%; max-width: 960px;">
-        <h1 class="display-1 fw-bold text-white mb-4" style="font-family: 'Teko', sans-serif; text-shadow: 0px 4px 20px #F67D31, 0px 0px 10px #F67D31; letter-spacing: 2px;">
-            SNAKE CLASH
-        </h1>
 
         <div class="mx-auto p-4" style="background: rgba(15, 23, 42, 0.85); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 12px; backdrop-filter: blur(5px); max-width: 520px;">
           <h2 class="text-white text-center fw-bold mb-3" style="font-family: 'Montserrat', sans-serif;">Iniciar Sesión</h2>
