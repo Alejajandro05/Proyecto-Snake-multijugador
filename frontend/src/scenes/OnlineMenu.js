@@ -14,10 +14,10 @@ export class OnlineMenu extends Phaser.Scene {
   }
 
   create() {
-    const fondo = this.add.image(this.scale.width / 2, this.scale.height / 2, 'fondo_duelo');
+    const fondo = this.add.image(this.scale.width / 2, this.scale.height / 2 - 30, 'fondo_duelo');
 
     const ajustarFondo = (width, height) => {
-        fondo.setPosition(width / 2, height / 2);
+        fondo.setPosition(width / 2, height / 2 - 30);
         const escalaX = width / fondo.width;
         const escalaY = height / fondo.height;
         fondo.setScale(Math.max(escalaX, escalaY));
@@ -89,7 +89,13 @@ export class OnlineMenu extends Phaser.Scene {
                 margin-top: 0.25rem;
               }
             }
-
+            #online-menu-overlay .online-menu-title {
+              font-family: 'Teko', sans-serif;
+              text-shadow: 0px 4px 20px #F67D31, 0px 0px 10px #F67D31;
+              letter-spacing: 2px;
+              font-size: clamp(2.1rem, 9vw, 4.75rem);
+              line-height: 1.05;
+            }
             #online-menu-overlay .online-menu-card {
               flex: 0 1 auto;
               min-height: 0;

@@ -31,9 +31,9 @@ export class LocalGameSetup extends Phaser.Scene {
 
     create() {
         // Fondo igual al MainMenu (asset: frontend/assets/fondo_duelo.png → key: 'fondo_duelo')
-        const fondo = this.add.image(this.scale.width / 2, this.scale.height / 2, 'fondo_duelo');
+        const fondo = this.add.image(this.scale.width / 2, this.scale.height / 2 - 30, 'fondo_duelo');
         const ajustarFondo = (width, height) => {
-            fondo.setPosition(width / 2, height / 2);
+            fondo.setPosition(width / 2, height / 2 - 30);
             const escalaX = width / fondo.width;
             const escalaY = height / fondo.height;
             fondo.setScale(Math.max(escalaX, escalaY));
