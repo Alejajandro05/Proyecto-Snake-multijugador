@@ -520,6 +520,22 @@ de cierto tiempo para que el mapa cambie durante la partida. \\
 \textbf{Estimación:} 20h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (D)
 \end{tcolorbox}
 
+\begin{tcolorbox}[title=HU-XXX: Modo multijugador por equipos]
+\textbf{Descripción:} Como jugador, quiero poder jugar ciertos modos de juego, como Captura la Bandera (CTF), en formato de equipos con más de dos jugadores para disfrutar de partidas competitivas en equipo, tanto en local como en online. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item El jugador puede seleccionar un modo de juego por equipos (p. ej. CTF) desde el menú de selección de modo.
+    \item El sistema permite crear partidas con más de dos jugadores divididos en al menos dos equipos.
+    \item Cada equipo tiene un color o identificador visual diferenciado para distinguir a los jugadores aliados de los rivales.
+    \item Las reglas específicas del modo seleccionado (p. ej. capturar y llevar la bandera al territorio propio en CTF) se aplican correctamente durante la partida.
+    \item El sistema admite tanto partida local (completando los equipos con IA) como partida online (jugadores remotos sincronizados en tiempo real).
+    \item En modo online, todos los jugadores del equipo se sincronizan correctamente a través del servidor.
+    \item La pantalla de resultado final muestra el equipo ganador y las estadísticas individuales de cada jugador.
+    \item La partida finaliza automáticamente cuando se cumple la condición de victoria del modo de juego activo.
+\end{itemize}
+\textbf{Estimación:} 20h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\end{tcolorbox}
+
 
 % --- Epics originales
 \begin{tcolorbox}[title=EPIC-GAME-01: Lógica básica del juego]
