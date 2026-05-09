@@ -222,7 +222,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-012: Conexión al servidor ]
+\begin{tcolorbox}[title=HU-012: Conexión al servidor (Hecha)]
 \textbf{Descripción:} Como jugador, quiero conectarme automáticamente al servidor al seleccionar modo online para poder jugar contra otros usuarios. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -233,7 +233,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-013: Política de privacidad (Nueva)]
+\begin{tcolorbox}[title=HU-013: Política de privacidad (Hecha)]
 \textbf{Descripción:} Como delegado de protección de datos, quiero que se cumpla el Reglamento General de Protección de Datos (RGPD), vigente en Europa, para que el sitio web no incumpla ninguna ley. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -244,18 +244,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 15h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-014: Sistema de Matchmaking]
-\textbf{Descripción:} Como jugador, quiero que el sistema busque automáticamente un oponente para una partida 1vs1 online. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-    \item Botón “Buscar partida” inicia el matchmaking.
-    \item Se muestra tiempo de espera y cancelación.
-    \item Al encontrar oponente se inicia la partida inmediatamente.
-\end{itemize}
-\textbf{Estimación:} 12h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-015: Sincronización en tiempo real]
+\begin{tcolorbox}[title=HU-014: Sincronización en tiempo real (Hecha)]
 \textbf{Descripción:} Como jugador, quiero que los movimientos de ambas serpientes se sincronicen en tiempo real sin lag perceptible. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -266,7 +255,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-016: Lobby / Sala de espera]
+\begin{tcolorbox}[title=HU-015: Lobby / Sala de espera (Hecha)]
 \textbf{Descripción:} Como jugador, quiero ver una sala de espera mientras se empareja o se espera a un amigo. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -277,19 +266,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-017: Manejo de desconexiones]
-\textbf{Descripción:} Como jugador, quiero que el juego gestione correctamente las desconexiones para no arruinar la experiencia. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-    \item Si un jugador se desconecta, la partida se pausa.
-    \item Se intenta reconexión automática durante 10 segundos.
-    \item Si no hay reconexion la partida se da por perdida.
-    \item Mensaje claro informa al otro jugador.
-\end{itemize}
-\textbf{Estimación:} 9h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-018: Salir del juego desde el menú (Hecha)]
+\begin{tcolorbox}[title=HU-016: Salir del juego desde el menú (Hecha)]
 \textbf{Descripción:} Como jugador, quiero poder cerrar el juego de forma segura desde el menú principal. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -299,7 +276,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 3h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-019: Sistema de usuarios (Nueva)]
+\begin{tcolorbox}[title=HU-017: Sistema de usuarios (Hecha)]
 \textbf{Descripción:} Como jugador, quiero tener cuenta propia para que se guarde mi progreso y configuraciones en el juego. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -309,7 +286,39 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-020: Visualización de Leaderboard en el menú]
+\begin{tcolorbox}[title=HU-018: Sonidos de eventos (Hecha)]
+\textbf{Descripción:} Como jugador, quiero que el juego tenga sonidos, como música de fondo o sonidos tras pasar cierta acción. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Música de fondo durante el menú y la partida.
+    \item Efecto de sonido al morir y comer manzana.
+\end{itemize}
+\textbf{Estimación:} 5h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-019: Selección de skins para objetos (Hecha)]
+\textbf{Descripción:} Como jugador, quiero elegir diferentes apariencias (colores y diseños) para mi serpiente, obstáculos y manzanas. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Galería de skins con vista previa.
+    \item Cambio instantáneo en el juego.
+    \item Las skins se guardan y persisten.
+\end{itemize}
+\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should(S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-020: Temas de fondo y tablero (Hecha)]
+\textbf{Descripción:} Como jugador, quiero seleccionar diferentes fondos y estilos de tablero. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Selección de temas visuales.
+    \item Aplicación inmediata al mapa.
+    \item Persistencia de la elección.
+\end{itemize}
+\textbf{Estimación:} 7h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-021: Visualización de Leaderboard en el menú (Hecha)]
 \textbf{Descripción:} Como jugador, quiero ver el ranking global o de amigos directamente desde el menú principal para motivarme y comparar puntuaciones. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -320,29 +329,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 6h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-021: Sonidos de eventos (Modificada)]
-\textbf{Descripción:} Como jugador, quiero que el juego tenga sonidos, como música de fondo o sonidos tras pasar cierta acción. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-    \item Música de fondo durante el menú y la partida.
-    \item Efecto de sonido al morir y comer manzana.
-\end{itemize}
-\textbf{Estimación:} 5h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-022: Obstáculos con duración limitada]
-\textbf{Descripción:} Como jugador, quiero que algunos obstáculos desaparezcan y reaparezcan después
-de cierto tiempo para que el mapa cambie durante la partida. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-    \item Cada obstáculo tiene un contador de duración.
-    \item El contador disminuye con cada movimiento del juego.
-    \item Cuando el contador llega a cero, el obstáculo desaparece y reaparece otro en una posición disponible.
-\end{itemize}
-\textbf{Estimación:} 4h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-23: Diferentes tipos de manzanas (Nueva)]
+\begin{tcolorbox}[title=HU-22: Diferentes tipos de manzanas (Hecha)]
 \textbf{Descripción:} Como jugador, quiero que existan distintos tipos de consumibles que den lugar a diferentes situaciones en el juego.
  \\
 \textbf{Criterios de Validación:}
@@ -355,26 +342,39 @@ de cierto tiempo para que el mapa cambie durante la partida. \\
 \textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-024: Selección de skins para objetos]
-\textbf{Descripción:} Como jugador, quiero elegir diferentes apariencias (colores y diseños) para mi serpiente, obstáculos y manzanas. \\
+\begin{tcolorbox}[title=HU-0XX: Sistema de Matchmaking]
+\textbf{Descripción:} Como jugador, quiero que el sistema busque automáticamente un oponente para una partida 1vs1 online. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
-    \item Galería de skins con vista previa.
-    \item Cambio instantáneo en el juego.
-    \item Las skins se guardan y persisten.
+    \item Botón “Buscar partida” inicia el matchmaking.
+    \item Se muestra tiempo de espera y cancelación.
+    \item Al encontrar oponente se inicia la partida inmediatamente.
 \end{itemize}
-\textbf{Estimación:} 10h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should(S)
+\textbf{Estimación:} 12h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-025: Temas de fondo y tablero]
-\textbf{Descripción:} Como jugador, quiero seleccionar diferentes fondos y estilos de tablero. \\
+\begin{tcolorbox}[title=HU-0XX: Manejo de desconexiones]
+\textbf{Descripción:} Como jugador, quiero que el juego gestione correctamente las desconexiones para no arruinar la experiencia. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
-    \item Selección de temas visuales.
-    \item Aplicación inmediata al mapa.
-    \item Persistencia de la elección.
+    \item Si un jugador se desconecta, la partida se pausa.
+    \item Se intenta reconexión automática durante 10 segundos.
+    \item Si no hay reconexion la partida se da por perdida.
+    \item Mensaje claro informa al otro jugador.
 \end{itemize}
-\textbf{Estimación:} 7h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\textbf{Estimación:} 9h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-022: Obstáculos con duración limitada]
+\textbf{Descripción:} Como jugador, quiero que algunos obstáculos desaparezcan y reaparezcan después
+de cierto tiempo para que el mapa cambie durante la partida. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Cada obstáculo tiene un contador de duración.
+    \item El contador disminuye con cada movimiento del juego.
+    \item Cuando el contador llega a cero, el obstáculo desaparece y reaparece otro en una posición disponible.
+\end{itemize}
+\textbf{Estimación:} 4h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
 \begin{tcolorbox}[title=HU-026: Definir opciones de la partida (Nueva)]
