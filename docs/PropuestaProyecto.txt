@@ -342,7 +342,9 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-0XX: Sistema de Matchmaking]
+% Barrera spint1 - sprin2
+
+\begin{tcolorbox}[title=HU-023: Sistema de Matchmaking]
 \textbf{Descripción:} Como jugador, quiero que el sistema busque automáticamente un oponente para una partida 1vs1 online. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -350,110 +352,36 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
     \item Se muestra tiempo de espera y cancelación.
     \item Al encontrar oponente se inicia la partida inmediatamente.
 \end{itemize}
-\textbf{Estimación:} 12h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-0XX: Manejo de desconexiones]
-\textbf{Descripción:} Como jugador, quiero que el juego gestione correctamente las desconexiones para no arruinar la experiencia. \\
+\begin{tcolorbox}[title=HU-024: Contador previo al inicio de la partida]
+\textbf{Descripción:} Como jugador, quiero que se previsualice momentáneamente el estado inicial de la partida antes de empezar para adaptarme a las condiciones iniciales. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
-    \item Si un jugador se desconecta, la partida se pausa.
-    \item Se intenta reconexión automática durante 10 segundos.
-    \item Si no hay reconexion la partida se da por perdida.
-    \item Mensaje claro informa al otro jugador.
+\item Antes de comenzar la partida se muestra una cuenta atrás.
+\item La cuenta atrás aparece en pantalla de forma visible.
+\item Durante la cuenta atrás los jugadores pueden visualizar el mapa y las posiciones iniciales.
+\item El juego comienza automáticamente al finalizar el contador.
+\item Durante la cuenta atrás los jugadores no pueden mover la serpiente.
 \end{itemize}
-\textbf{Estimación:} 9h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\textbf{Estimación:} 3h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-022: Obstáculos con duración limitada]
-\textbf{Descripción:} Como jugador, quiero que algunos obstáculos desaparezcan y reaparezcan después
-de cierto tiempo para que el mapa cambie durante la partida. \\
+\begin{tcolorbox}[title=HU-025: Migrar modos locales a online]
+\textbf{Descripción:} Como jugador, quiero poder jugar los modos disponibles también en formato online para competir con otros jugadores sin limitarme al juego local. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
-    \item Cada obstáculo tiene un contador de duración.
-    \item El contador disminuye con cada movimiento del juego.
-    \item Cuando el contador llega a cero, el obstáculo desaparece y reaparece otro en una posición disponible.
+\item Los modos locales seleccionados pueden ejecutarse en partidas online.
+\item Los jugadores online comparten el mismo estado de partida.
+\item Las acciones de cada jugador se sincronizan correctamente.
+\item El sistema mantiene las reglas específicas de cada modo de juego.
+\item La partida online finaliza correctamente según las condiciones del modo elegido.
 \end{itemize}
-\textbf{Estimación:} 4h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\textbf{Estimación:} 15h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-026: Definir opciones de la partida (Nueva)]
-\textbf{Descripción:} Como jugador, quiero poder fijar a mi gusto las opciones de la partida para adaptarla mejor a mis preferencias. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-    \item Menú prepartida para determinar la cantidad de objetos, tamaño del tablero, etc.
-    \item Las opciones elegidas se establecen para iniciar la partida.
-\end{itemize}
-\textbf{Estimación:} 6h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-027: Tutorial]
-\textbf{Descripción:} Como jugador principiante, quiero que se me introduzca al inicio para aprender el juego. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-    \item El juego me indica los controles básicos.
-    \item El juego me indica cuál es el objetivo ganador.
-    \item El juego me introduce las principales funcionalidades
-\end{itemize}
-\textbf{Estimación:} 12h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
-\end{tcolorbox}
-
-% Barrera spint1 - sprin2
-
-\begin{tcolorbox}[title=HU-028: Configuración de controles]
-\textbf{Descripción:} Como jugador, quiero reasignar las teclas de movimiento y acciones especiales. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-    \item Interfaz para cambiar WASD/flechas y teclas de salto/disparo.
-    \item Se detecta conflicto de teclas.
-    \item Preferencias se guardan.
-\end{itemize}
-\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-029: Iniciar partida contra ordenador]
-\textbf{Descripción:} Como jugador, quiero poder iniciar una partida contra una IA para jugar sin necesidad de otro jugador. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-\item El jugador puede seleccionar el modo 1 vs IA.
-\item El sistema genera una serpiente controlada por IA.
-\item La partida comienza normalmente.
-\end{itemize}
-\textbf{Estimación:} 2h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (C)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-030: Movimiento automático de la serpiente IA]
-\textbf{Descripción:} Como jugador, quiero que la serpiente controlada por IA se mueva automáticamente para que actúe como oponente. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-\item La serpiente IA se mueve sin intervención del jugador.
-\item La IA decide su dirección automáticamente.
-\end{itemize}
-\textbf{Estimación:} 4h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (C)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-031: IA cambia dirección hacia la manzana]
-\textbf{Descripción:} Como jugador, quiero que la IA cambie dirección cuando está alineada con la manzana para intentar comerla. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-\item Si la IA está alineada horizontal o verticalmente con la manzana, cambia dirección.
-\item La IA intenta moverse hacia la manzana.
-\end{itemize}
-\textbf{Estimación:} 4h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (C)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-032: IA evita fronteras y serpientes]
-\textbf{Descripción:} Como jugador, quiero que la IA evite colisiones básicas para que el juego sea más interesante. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-\item La IA detecta cercanía con bordes del mapa.
-\item La IA cambia dirección para evitar colisiones.
-\item La IA intenta evitar otras serpientes.
-\end{itemize}
-\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (C)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-XXX: Tutorial básico del juego]
+\begin{tcolorbox}[title=HU-026: Tutorial básico del juego]
 \textbf{Descripción:} Como jugador, quiero disponer de un tutorial básico para aprender las mecánicas principales del juego antes de comenzar una partida. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -465,49 +393,10 @@ de cierto tiempo para que el mapa cambie durante la partida. \\
 \item El jugador puede salir del tutorial en cualquier momento.
 \item El jugador puede completar el tutorial y regresar al menú principal.
 \end{itemize}
-\textbf{Estimación:} 12h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (B)
+\textbf{Estimación:} 12h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-027: Contador previo al inicio de la partida]
-\textbf{Descripción:} Como jugador, quiero que se previsualice momentáneamente el estado inicial de la partida antes de empezar para adaptarme a las condiciones iniciales. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-\item Antes de comenzar la partida se muestra una cuenta atrás.
-\item La cuenta atrás aparece en pantalla de forma visible.
-\item Durante la cuenta atrás los jugadores pueden visualizar el mapa y las posiciones iniciales.
-\item El juego comienza automáticamente al finalizar el contador.
-\item Durante la cuenta atrás los jugadores no pueden mover la serpiente.
-\end{itemize}
-\textbf{Estimación:} 3h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (A)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-028: Migrar modos locales a online]
-\textbf{Descripción:} Como jugador, quiero poder jugar los modos disponibles también en formato online para competir con otros jugadores sin limitarme al juego local. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-\item Los modos locales seleccionados pueden ejecutarse en partidas online.
-\item Los jugadores online comparten el mismo estado de partida.
-\item Las acciones de cada jugador se sincronizan correctamente.
-\item El sistema mantiene las reglas específicas de cada modo de juego.
-\item La partida online finaliza correctamente según las condiciones del modo elegido.
-\end{itemize}
-\textbf{Estimación:} 15h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (A)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-XXX: Configuración de controles]
-\textbf{Descripción:} Como jugador, quiero poder configurar los controles del juego para adaptarlos a mis preferencias y jugar con mayor comodidad. \\
-\textbf{Criterios de Validación:}
-\begin{itemize}
-\item El jugador puede acceder a la configuración de controles desde el menú.
-\item El jugador puede cambiar las teclas de movimiento.
-\item El sistema guarda la configuración seleccionada.
-\item Los nuevos controles funcionan correctamente durante la partida.
-\item Existe una opción para restaurar los controles por defecto.
-\end{itemize}
-\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (D)
-\end{tcolorbox}
-
-\begin{tcolorbox}[title=HU-XXX: Jugar contra la IA en modo local]
+\begin{tcolorbox}[title=HU-027: Jugar contra la IA en modo local]
 \textbf{Descripción:} Como jugador, quiero poder jugar contra una inteligencia artificial en modo local para practicar y disfrutar del juego cuando no haya otros jugadores disponibles. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -517,10 +406,10 @@ de cierto tiempo para que el mapa cambie durante la partida. \\
 \item La IA evita colisiones básicas con paredes y obstáculos.
 \item La partida finaliza correctamente cuando un jugador pierde o se cumple la condición de victoria.
 \end{itemize}
-\textbf{Estimación:} 20h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (D)
+\textbf{Estimación:} 20h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
-\begin{tcolorbox}[title=HU-XXX: Modo multijugador por equipos]
+\begin{tcolorbox}[title=HU-028: Modo multijugador por equipos]
 \textbf{Descripción:} Como jugador, quiero poder jugar ciertos modos de juego, como Captura la Bandera (CTF), en formato de equipos con más de dos jugadores para disfrutar de partidas competitivas en equipo, tanto en local como en online. \\
 \textbf{Criterios de Validación:}
 \begin{itemize}
@@ -533,7 +422,56 @@ de cierto tiempo para que el mapa cambie durante la partida. \\
     \item La pantalla de resultado final muestra el equipo ganador y las estadísticas individuales de cada jugador.
     \item La partida finaliza automáticamente cuando se cumple la condición de victoria del modo de juego activo.
 \end{itemize}
-\textbf{Estimación:} 20h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\textbf{Estimación:} 20h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
+\end{tcolorbox}
+% --- optionales no en sprint2
+
+\begin{tcolorbox}[title=HU-029: Configuración de controles]
+\textbf{Descripción:} Como jugador, quiero poder configurar los controles del juego para adaptarlos a mis preferencias y jugar con mayor comodidad. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+\item El jugador puede acceder a la configuración de controles desde el menú.
+\item El jugador puede cambiar las teclas de movimiento.
+\item El sistema guarda la configuración seleccionada.
+\item Los nuevos controles funcionan correctamente durante la partida.
+\item Existe una opción para restaurar los controles por defecto.
+\end{itemize}
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\end{tcolorbox}
+
+
+\begin{tcolorbox}[title=HU-030: Manejo de desconexiones]
+\textbf{Descripción:} Como jugador, quiero que el juego gestione correctamente las desconexiones para no arruinar la experiencia. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Si un jugador se desconecta, la partida se pausa.
+    \item Se intenta reconexión automática durante 10 segundos.
+    \item Si no hay reconexion la partida se da por perdida.
+    \item Mensaje claro informa al otro jugador.
+\end{itemize}
+\textbf{Estimación:} 9h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-031: Obstáculos con duración limitada]
+\textbf{Descripción:} Como jugador, quiero que algunos obstáculos desaparezcan y reaparezcan después
+de cierto tiempo para que el mapa cambie durante la partida. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Cada obstáculo tiene un contador de duración.
+    \item El contador disminuye con cada movimiento del juego.
+    \item Cuando el contador llega a cero, el obstáculo desaparece y reaparece otro en una posición disponible.
+\end{itemize}
+\textbf{Estimación:} 4h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\end{tcolorbox}
+
+\begin{tcolorbox}[title=HU-032: Definir opciones de la partida]
+\textbf{Descripción:} Como jugador, quiero poder fijar a mi gusto las opciones de la partida para adaptarla mejor a mis preferencias. \\
+\textbf{Criterios de Validación:}
+\begin{itemize}
+    \item Menú prepartida para determinar la cantidad de objetos, tamaño del tablero, etc.
+    \item Las opciones elegidas se establecen para iniciar la partida.
+\end{itemize}
+\textbf{Estimación:} 6h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
 \end{tcolorbox}
 
 
@@ -670,20 +608,12 @@ De acuerdo con el manual, seleccionamos historias de valor de usuario para valid
 \hline
 \rowcolor[HTML]{EFEFEF} 
 \textbf{ID} & \textbf{Historia de Usuario} & \textbf{Tiempo Ideal} \\ \hline
-HU-012 & Conexión al servidor & 10h \\ \hline
-HU-013 & Política de privacidad & 15h \\ \hline
-HU-014 & Sistema de matchmaking & 12h \\ \hline
-HU-015 & Sincronización en tiempo real & 8h \\ \hline
-HU-016 & Lobby / Sala de espera & 8h \\ \hline
-HU-017 & Manejo de desconexiones & 9h \\ \hline
-HU-019 & Sistema de usuarios & 10h \\ \hline
-HU-020 & Visualización de Leaderboard en el menú & 6h \\ \hline
-HU-021 & Sonido de eventos & 5h \\ \hline
-HU-022 & Obstáculos con duración limitada & 4h \\ \hline
-HU-023 & Diferentes tipos de manzanas & 8h \\ \hline
-HU-024 & Selección de skins para objetos & 10h \\ \hline
-HU-025 & Temas de fondo y tablero & 7h \\ \hline
-HU-026 & Definir opciones de la partida & 6h \\ \hline
+HU-023 & Sistema de matchmaking & 8h \\ \hline
+HU-024 & Contador previo al inicio de la partida & 4h \\ \hline
+HU-025 & Tutorial básico del juego & 12h \\ \hline
+HU-026 & Configuración de controles & 8h \\ \hline
+HU-027 & Jugar contra la IA en modo local & 20h \\ \hline
+HU-028 & Modo multijugador por equipos & 20h \\ \hline
 
 \rowcolor[HTML]{F2F2F2}
 \textbf{TOTAL} & & \textbf{118h} \\ \hline
