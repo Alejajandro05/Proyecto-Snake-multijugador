@@ -352,7 +352,7 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
     \item Se muestra tiempo de espera y cancelación.
     \item Al encontrar oponente se inicia la partida inmediatamente.
 \end{itemize}
-\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
+\textbf{Estimación:} 11h (Tiempo Ideal) \hfill \textbf{Prioridad:} Must (M)
 \end{tcolorbox}
 
 \begin{tcolorbox}[title=HU-024: Contador previo al inicio de la partida]
@@ -424,7 +424,6 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \end{itemize}
 \textbf{Estimación:} 20h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
-% --- optionales no en sprint2
 
 \begin{tcolorbox}[title=HU-029: Configuración de controles]
 \textbf{Descripción:} Como jugador, quiero poder configurar los controles del juego para adaptarlos a mis preferencias y jugar con mayor comodidad. \\
@@ -436,9 +435,10 @@ Siguiendo las buenas prácticas de \textbf{Scrum Manager}, las historias se han 
 \item Los nuevos controles funcionan correctamente durante la partida.
 \item Existe una opción para restaurar los controles por defecto.
 \end{itemize}
-\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Could (C)
+\textbf{Estimación:} 8h (Tiempo Ideal) \hfill \textbf{Prioridad:} Should (S)
 \end{tcolorbox}
 
+% --- optionales no en sprint2
 
 \begin{tcolorbox}[title=HU-030: Manejo de desconexiones]
 \textbf{Descripción:} Como jugador, quiero que el juego gestione correctamente las desconexiones para no arruinar la experiencia. \\
@@ -589,11 +589,11 @@ de cierto tiempo para que el mapa cambie durante la partida. \\
 \newpage
 
 \section{Retrospectiva del Sprint Zero}
-Durante el desarrollo del Sprint 0 se construyeron desde cero tanto la lógica principal del juego como las distintas escenas gráficas, logrando una versión funcional que permite jugar de manera adecuada.
+Durante el desarrollo del Sprint 1 se consolidó la base del modo de juego online, aunque todavía con ciertas limitaciones pendientes de optimización, y se implementaron múltiples modos de juego junto con distintas opciones de personalización y estilo, con el objetivo de mejorar la experiencia del usuario.
 
-Se completaron todas las historias de usuario planificadas dentro de los tiempos estimados. El trabajo se distribuyó de forma equilibrada entre los miembros del equipo, lo que permitió avanzar de manera eficiente y coordinada en las distintas áreas del proyecto.
+Se completaron todas las historias de usuario planificadas dentro de los tiempos estimados. El trabajo se distribuyó de forma equilibrada entre los miembros del equipo, permitiendo avanzar de manera eficiente y coordinada en las distintas áreas del proyecto.
 
-Como aspecto a mejorar, la presentación del producto (demo) no alcanzó el nivel esperado. Aunque el juego era funcional, se trataba de una versión muy básica, con pocos elementos diferenciales que resultaran atractivos o destacables para su exhibición.
+Como resultado, el sprint finalizó de forma satisfactoria, dejando una base sólida sobre la que continuar desarrollando nuevas funcionalidades y mejoras para la siguiente fase.
 
 
 \section{Organización del Sprint Uno}
@@ -608,30 +608,28 @@ De acuerdo con el manual, seleccionamos historias de valor de usuario para valid
 \hline
 \rowcolor[HTML]{EFEFEF} 
 \textbf{ID} & \textbf{Historia de Usuario} & \textbf{Tiempo Ideal} \\ \hline
-HU-023 & Sistema de matchmaking & 8h \\ \hline
+HU-023 & Sistema de matchmaking & 11h \\ \hline
 HU-024 & Contador previo al inicio de la partida & 4h \\ \hline
-HU-025 & Tutorial básico del juego & 12h \\ \hline
-HU-026 & Configuración de controles & 8h \\ \hline
+HU-025 & Migrar modos locales a online & 15h \\ \hline
+HU-026 & Tutorial básico del juego & 12h \\ \hline
 HU-027 & Jugar contra la IA en modo local & 20h \\ \hline
 HU-028 & Modo multijugador por equipos & 20h \\ \hline
+HU-029 & Configuración de controles & 8h \\ \hline
 
 \rowcolor[HTML]{F2F2F2}
-\textbf{TOTAL} & & \textbf{118h} \\ \hline
+\textbf{TOTAL} & & \textbf{90h} \\ \hline
 \end{tabularx}
 \end{table}
 
 \newpage
 
 \subsection{Razonamiento de Selección}
-Siguiendo la \textbf{Ingeniería Concurrente} de Scrum Manager, se priorizó un conjunto de historias de usuario orientadas tanto a garantizar el correcto funcionamiento del modo online como a ampliar las funcionalidades del juego, con el objetivo de enriquecer la experiencia del usuario.
+Siguiendo la \textbf{Ingeniería Concurrente} de Scrum Manager, se priorizó un conjunto de historias de usuario enfocadas tanto en mejorar la accesibilidad y usabilidad del juego como en ampliar las posibilidades de interacción entre jugadores.
 
-Tras un primer sprint enfocado en la construcción de la base del juego, en este nuevo sprint se busca mejorar la usabilidad y aumentar la interacción del jugador.
+En primer lugar, se seleccionaron historias de usuario relacionadas con la experiencia previa y posterior al inicio de las partidas, incorporando un contador antes del comienzo del juego y un tutorial básico que facilite el aprendizaje de las mecánicas principales.
 
-En primer lugar, se seleccionaron las historias de usuario relacionadas con el modo online, haciendo especial énfasis en la correcta sincronización con el servidor y la implementación de un sistema de gestión de usuarios.
+A continuación, se priorizaron mejoras orientadas a la personalización y comodidad del jugador, como la configuración de controles y la migración de los modos locales existentes al entorno online, consolidando así la experiencia multijugador desarrollada en sprints anteriores.
 
-A continuación, se priorizaron funcionalidades clave que aportan dinamismo al juego, como la incorporación de distintos tipos de manzanas y la configuración de partidas.
-
-Finalmente, se incluyeron historias de usuario orientadas a la personalización, con el objetivo de aumentar el realismo y la inmersión. Entre estas mejoras se encuentran la implementación de skins para la serpiente, obstáculos, manzanas y tablero, así como la incorporación de efectos de sonido asociados a los eventos del juego.
-
+Finalmente, se incluyeron funcionalidades destinadas a aumentar la jugabilidad y el dinamismo de las partidas, mediante la incorporación de un modo local contra inteligencia artificial y la ampliación de modos multijugador por equipos, aportando una experiencia más completa y variada de cara a la versión final del juego.
 
 \end{document}
