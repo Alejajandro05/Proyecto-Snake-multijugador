@@ -10,6 +10,8 @@ import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.j
 import { loadOnlinePrefs } from '../../utils/onlineStorage.js';
 import { syncOnlineHudIdentity } from './onlineHudIdentity.js';
 
+const HILL_WIN_SCORE = 100;
+
 function normalizeHttpUrlToWebSocket(url) {
     const s = String(url ?? '').trim();
     if (!s) return '';
@@ -59,11 +61,13 @@ export class OnlineGame extends Phaser.Scene {
         this.playerSkinId = data?.skinId ?? '';
         this.mapId = data?.mapId ?? '';
         this.playerName = data?.playerName ?? '';
+        this.selectedGameMode = data?.gameMode ?? 'classic';
         this.selectedDifficulty = data?.difficulty ?? 'normal';
     }
 
     async create() {
         this.boardRenderer = new SnakeBoardRenderer(this, { mapId: this.mapId });
+        this.hillGraphics = this.add.graphics().setDepth(4);
 
         this.cacheHudElements();
         this.toggleHud(true);
@@ -97,6 +101,7 @@ export class OnlineGame extends Phaser.Scene {
             this.toggleHud(false);
             this.removeInputListeners();
             this.cleanupRoom();
+            this.hillGraphics?.destroy();
         });
 
         this.updateLayout(this.scale.width, this.scale.height);
@@ -139,7 +144,7 @@ export class OnlineGame extends Phaser.Scene {
         this.hudRightPlayer = document.getElementById('hud-right-player');
 
         if (this.hudHelp) {
-            this.hudHelp.textContent = 'WASD | Flechas - ESC: Menu';
+            this.hudHelp.textContent = 'Online | WASD | Flechas - ESC: Menu';
         }
 
         this.updateLivesHud(this.hudJ1Lives, MAX_LIVES);
@@ -177,6 +182,7 @@ export class OnlineGame extends Phaser.Scene {
         this.boardWidth = metrics.boardWidth;
         this.boardHeight = metrics.boardHeight;
         this.cellSize = metrics.cellSize;
+        this.redrawHillOverlay(this.latestState);
     }
 
     positionHudElements(viewportWidth, viewportHeight, sidePanelWidthLeft, sidePanelWidthRight, sideGap, safePadding, helpHeight) {
@@ -225,6 +231,33 @@ export class OnlineGame extends Phaser.Scene {
         return Array.from(state?.players?.values?.() ?? []);
     }
 
+    isKingOfTheHillMode(state = this.latestState) {
+        return (state?.gameMode ?? this.selectedGameMode) === 'kingOfTheHill';
+    }
+
+    redrawHillOverlay(state = this.latestState) {
+        if (!this.hillGraphics) return;
+
+        this.hillGraphics.clear();
+        if (!this.isKingOfTheHillMode(state)) return;
+
+        const col0 = Number(state?.hillZoneCol0);
+        const col1 = Number(state?.hillZoneCol1);
+        const row0 = Number(state?.hillZoneRow0);
+        const row1 = Number(state?.hillZoneRow1);
+        if (![col0, col1, row0, row1].every(Number.isFinite)) return;
+
+        const x = this.boardOffsetX + col0 * this.cellSize;
+        const y = this.boardOffsetY + row0 * this.cellSize;
+        const w = (col1 - col0 + 1) * this.cellSize;
+        const h = (row1 - row0 + 1) * this.cellSize;
+
+        this.hillGraphics.fillStyle(0xf67d31, 0.2);
+        this.hillGraphics.fillRect(x, y, w, h);
+        this.hillGraphics.lineStyle(Math.max(2, Math.floor(this.cellSize * 0.08)), 0xf67d31, 0.65);
+        this.hillGraphics.strokeRect(x + 1, y + 1, Math.max(0, w - 2), Math.max(0, h - 2));
+    }
+
     getOrderedPlayerEntries(state) {
         const entries = [];
         state?.players?.forEach?.((player, sessionId) => {
@@ -257,7 +290,12 @@ export class OnlineGame extends Phaser.Scene {
             const firstName = summary.firstPlayer?.playerName || 'J1';
             const secondName = summary.secondPlayer?.playerName || 'J2';
             const mapId = state?.mapId ?? this.mapId ?? 'arena01';
-            this.hudHelp.textContent = `${summary.difficultyLabel} | ${mapId} | ${firstName} (WASD) vs ${secondName} (Flechas) - ESC: Menu`;
+            if (this.isKingOfTheHillMode(state)) {
+                const targetScore = Number(state?.hillWinScore) || HILL_WIN_SCORE;
+                this.hudHelp.textContent = `Rey de la colina | Meta ${targetScore} pts o ganar por vidas | ${firstName} (WASD) vs ${secondName} (Flechas) | ${mapId} | ESC`;
+            } else {
+                this.hudHelp.textContent = `${summary.difficultyLabel} | ${mapId} | ${firstName} (WASD) vs ${secondName} (Flechas) - ESC: Menu`;
+            }
         }
 
         return summary;
@@ -376,10 +414,17 @@ export class OnlineGame extends Phaser.Scene {
 
         this.latestState = state;
         this.boardRenderer.renderState(state);
+        this.redrawHillOverlay(state);
 
         const { firstPlayer, secondPlayer } = this.syncHudFromPlayers(state);
 
         if (firstPlayer && secondPlayer) {
+            const hillWinScore = Number(state?.hillWinScore) || HILL_WIN_SCORE;
+            if (this.isKingOfTheHillMode(state) && ((Number(firstPlayer.score) || 0) >= hillWinScore || (Number(secondPlayer.score) || 0) >= hillWinScore)) {
+                this.gameOver(true);
+                return;
+            }
+
             if (shouldEndStandardMatchByScore(firstPlayer, secondPlayer)) {
                 this.gameOver(true);
                 return;
@@ -402,6 +447,7 @@ export class OnlineGame extends Phaser.Scene {
         const [p2SessionId, p2] = playerEntries[1] ?? [];
         const p1Name = p1?.playerName || 'Jugador 1';
         const p2Name = p2?.playerName || 'Jugador 2';
+        const isHillMode = this.isKingOfTheHillMode(this.latestState);
 
         if (!p1 || !p2) {
             this.scene.start('MainMenu');
@@ -426,8 +472,8 @@ export class OnlineGame extends Phaser.Scene {
                 p1Lives: p1.lives,
                 p2Score: p2.score,
                 p2Lives: p2.lives,
-                reason: 'score',
-                mode: 'online',
+                reason: isHillMode ? 'hill' : 'score',
+                mode: isHillMode ? 'kingOfTheHill' : 'online',
                 rematchScene: 'OnlineMenu'
             });
         } else {
@@ -440,7 +486,7 @@ export class OnlineGame extends Phaser.Scene {
                 p2Score: p2.score,
                 p2Lives: p2.lives,
                 reason: 'lives',
-                mode: 'online',
+                mode: isHillMode ? 'kingOfTheHill' : 'online',
                 rematchScene: 'OnlineMenu'
             });
         }

@@ -506,6 +506,7 @@ export class OnlineMenu extends Phaser.Scene {
           matchRoomId: state.matchRoomId,
           skinId,
           playerName,
+          gameMode: state.gameMode,
           difficulty: state.difficulty,
           mapId: state.mapId,
         });
