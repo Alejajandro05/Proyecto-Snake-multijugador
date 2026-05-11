@@ -34,4 +34,25 @@ describe("SnakeRoom schema sync", () => {
     assert.equal(room.state.hillZoneRow0, 3);
     assert.equal(room.state.hillZoneRow1, 7);
   });
+
+  it("syncs territory cells, territory counts and timer for online clients", () => {
+    const room = new SnakeRoom();
+    room.state = new SnakeRoomState();
+    room["gameMode"] = "territory";
+    room["remainingTimeMs"] = 42_000;
+
+    room["syncToSchema"]({
+      players: new Map(),
+      food: [],
+      obstacles: [],
+      territory: [{ x: 32, y: 64, ownerId: "p1", ownerColor: 0xe74c3c }],
+      territoryCounts: new Map([["p1", 1]]),
+    });
+
+    assert.equal(room.state.gameMode, "territory");
+    assert.equal(room.state.remainingTimeMs, 42_000);
+    assert.equal(room.state.territory.length, 1);
+    assert.equal(room.state.territory[0].ownerId, "p1");
+    assert.equal(room.state.territoryCounts.get("p1"), 1);
+  });
 });

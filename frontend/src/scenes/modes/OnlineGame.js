@@ -11,6 +11,7 @@ import { loadOnlinePrefs } from '../../utils/onlineStorage.js';
 import { syncOnlineHudIdentity } from './onlineHudIdentity.js';
 
 const HILL_WIN_SCORE = 100;
+const TERRITORY_MATCH_MS = 60_000;
 
 function normalizeHttpUrlToWebSocket(url) {
     const s = String(url ?? '').trim();
@@ -68,9 +69,11 @@ export class OnlineGame extends Phaser.Scene {
     async create() {
         this.boardRenderer = new SnakeBoardRenderer(this, { mapId: this.mapId });
         this.hillGraphics = this.add.graphics().setDepth(4);
+        this.territoryTimerDiv = null;
 
         this.cacheHudElements();
         this.toggleHud(true);
+        this.syncModeChrome();
 
         this.cursors = this.input.keyboard.createCursorKeys();
         this.wasd = this.input.keyboard.addKeys({ up: 'W', left: 'A', down: 'S', right: 'D' });
@@ -102,6 +105,7 @@ export class OnlineGame extends Phaser.Scene {
             this.removeInputListeners();
             this.cleanupRoom();
             this.hillGraphics?.destroy();
+            this.destroyTerritoryTimerDom();
         });
 
         this.updateLayout(this.scale.width, this.scale.height);
@@ -235,6 +239,63 @@ export class OnlineGame extends Phaser.Scene {
         return (state?.gameMode ?? this.selectedGameMode) === 'kingOfTheHill';
     }
 
+    isTerritoryMode(state = this.latestState) {
+        return (state?.gameMode ?? this.selectedGameMode) === 'territory';
+    }
+
+    syncModeChrome(state = this.latestState) {
+        if (this.isTerritoryMode(state)) {
+            this.createTerritoryTimerDom();
+        } else {
+            this.destroyTerritoryTimerDom();
+        }
+    }
+
+    createTerritoryTimerDom() {
+        if (this.territoryTimerDiv) return;
+
+        this.territoryTimerDiv = document.createElement('div');
+        this.territoryTimerDiv.id = 'territory-clock-online';
+        this.territoryTimerDiv.className = 'position-absolute start-50 translate-middle-x text-white fw-bold px-5 py-2 rounded-pill shadow-lg text-center';
+        this.territoryTimerDiv.style = 'background: linear-gradient(180deg, #0f4c5c, #0B081A); border: 4px solid #F67D31; font-size: 3.3rem; z-index: 1000; top: 15px; box-shadow: 0 0 30px rgba(246, 125, 49, 0.45); line-height: 1;';
+        this.territoryTimerDiv.innerText = '01:00';
+        document.getElementById('game-container')?.appendChild(this.territoryTimerDiv);
+    }
+
+    destroyTerritoryTimerDom() {
+        if (!this.territoryTimerDiv) return;
+        this.territoryTimerDiv.remove();
+        this.territoryTimerDiv = null;
+    }
+
+    updateTerritoryClock(state = this.latestState) {
+        if (!this.territoryTimerDiv) return;
+        const remainingTimeMs = Math.max(0, Number(state?.remainingTimeMs) || TERRITORY_MATCH_MS);
+        const totalSeconds = Math.ceil(remainingTimeMs / 1000);
+        const min = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+        const sec = String(totalSeconds % 60).padStart(2, '0');
+        this.territoryTimerDiv.innerText = `${min}:${sec}`;
+    }
+
+    getHudPlayerEntries(state) {
+        const entries = this.getOrderedPlayerEntries(state);
+        if (!entries.length) {
+            return { firstEntry: undefined, secondEntry: undefined };
+        }
+
+        const currentSessionId = this.room?.sessionId;
+        if (!currentSessionId) {
+            return { firstEntry: entries[0], secondEntry: entries[1] };
+        }
+
+        const currentEntry = entries.find(([sessionId]) => sessionId === currentSessionId);
+        const rivalEntry = entries.find(([sessionId]) => sessionId !== currentSessionId);
+        return {
+            firstEntry: currentEntry ?? entries[0],
+            secondEntry: rivalEntry ?? entries.find((entry) => entry !== currentEntry),
+        };
+    }
+
     redrawHillOverlay(state = this.latestState) {
         if (!this.hillGraphics) return;
 
@@ -290,7 +351,9 @@ export class OnlineGame extends Phaser.Scene {
             const firstName = summary.firstPlayer?.playerName || 'J1';
             const secondName = summary.secondPlayer?.playerName || 'J2';
             const mapId = state?.mapId ?? this.mapId ?? 'arena01';
-            if (this.isKingOfTheHillMode(state)) {
+            if (this.isTerritoryMode(state)) {
+                this.hudHelp.textContent = `Territory Game | Pinta y roba casillas | ${firstName} (WASD) vs ${secondName} (Flechas) | ${mapId} | ESC`;
+            } else if (this.isKingOfTheHillMode(state)) {
                 const targetScore = Number(state?.hillWinScore) || HILL_WIN_SCORE;
                 this.hudHelp.textContent = `Rey de la colina | Meta ${targetScore} pts o ganar por vidas | ${firstName} (WASD) vs ${secondName} (Flechas) | ${mapId} | ESC`;
             } else {
@@ -413,30 +476,45 @@ export class OnlineGame extends Phaser.Scene {
         if (!state) return;
 
         this.latestState = state;
+        this.syncModeChrome(state);
         this.boardRenderer.renderState(state);
         this.redrawHillOverlay(state);
+        this.updateTerritoryClock(state);
 
         const { firstPlayer, secondPlayer } = this.syncHudFromPlayers(state);
+        if (this.isTerritoryMode(state)) {
+            const { firstEntry, secondEntry } = this.getHudPlayerEntries(state);
+            const firstTerritory = Number(firstEntry ? state?.territoryCounts?.get?.(firstEntry[0]) : 0) || 0;
+            const secondTerritory = Number(secondEntry ? state?.territoryCounts?.get?.(secondEntry[0]) : 0) || 0;
+
+            if (this.hudJ1ScoreBig) this.hudJ1ScoreBig.textContent = `${firstTerritory}`;
+            if (this.hudJ2ScoreBig) this.hudJ2ScoreBig.textContent = `${secondTerritory}`;
+        }
+
+        if (state?.matchEnded) {
+            this.finishMatch(String(state.matchEndReason || 'lives'));
+            return;
+        }
 
         if (firstPlayer && secondPlayer) {
             const hillWinScore = Number(state?.hillWinScore) || HILL_WIN_SCORE;
             if (this.isKingOfTheHillMode(state) && ((Number(firstPlayer.score) || 0) >= hillWinScore || (Number(secondPlayer.score) || 0) >= hillWinScore)) {
-                this.gameOver(true);
+                this.finishMatch('hill');
                 return;
             }
 
             if (shouldEndStandardMatchByScore(firstPlayer, secondPlayer)) {
-                this.gameOver(true);
+                this.finishMatch('score');
                 return;
             }
 
             if (shouldEndStandardMatchByLives(firstPlayer, secondPlayer)) {
-                this.gameOver(false);
+                this.finishMatch('lives');
             }
         }
     }
 
-    gameOver(reason) {
+    finishMatch(reason) {
         if (this.isLeavingRoom) return;
         this.isLeavingRoom = true;
         const currentSessionId = this.room?.sessionId;
@@ -448,13 +526,18 @@ export class OnlineGame extends Phaser.Scene {
         const p1Name = p1?.playerName || 'Jugador 1';
         const p2Name = p2?.playerName || 'Jugador 2';
         const isHillMode = this.isKingOfTheHillMode(this.latestState);
+        const isTerritoryMode = this.isTerritoryMode(this.latestState);
+        const p1Territory = Number(p1SessionId ? this.latestState?.territoryCounts?.get?.(p1SessionId) : 0) || 0;
+        const p2Territory = Number(p2SessionId ? this.latestState?.territoryCounts?.get?.(p2SessionId) : 0) || 0;
 
         if (!p1 || !p2) {
             this.scene.start('MainMenu');
             return;
         }
 
-        const winner = reason
+        const winner = (reason === 'territory')
+            ? (p1Territory > p2Territory ? 'J1' : 'J2')
+            : (reason === 'hill' || reason === 'score')
             ? (p1.score > p2.score ? 'J1' : 'J2')
             : (p1.lives > 0 ? 'J1' : 'J2');
         const winnerSessionId = winner === 'J1' ? p1SessionId : p2SessionId;
@@ -463,7 +546,7 @@ export class OnlineGame extends Phaser.Scene {
             console.error('Leaderboard win update failed:', error);
         });
 
-        if (reason) {
+        if (reason === 'hill' || reason === 'score') {
             this.scene.start('GameOver', {
                 winner: getScoreWinner(p1.score, p2.score),
                 p1Name,
@@ -476,17 +559,30 @@ export class OnlineGame extends Phaser.Scene {
                 mode: isHillMode ? 'kingOfTheHill' : 'online',
                 rematchScene: 'OnlineMenu'
             });
+        } else if (reason === 'territory') {
+            this.scene.start('GameOver', {
+                winner: getScoreWinner(p1Territory, p2Territory),
+                p1Name,
+                p2Name,
+                p1Score: p1Territory,
+                p1Lives: p1.lives,
+                p2Score: p2Territory,
+                p2Lives: p2.lives,
+                reason: 'territory',
+                mode: isTerritoryMode ? 'territory' : 'online',
+                rematchScene: 'OnlineMenu'
+            });
         } else {
             this.scene.start('GameOver', {
                 winner: getLivesWinner(p1.lives, p2.lives),
                 p1Name,
                 p2Name,
-                p1Score: p1.score,
+                p1Score: isTerritoryMode ? p1Territory : p1.score,
                 p1Lives: p1.lives,
-                p2Score: p2.score,
+                p2Score: isTerritoryMode ? p2Territory : p2.score,
                 p2Lives: p2.lives,
                 reason: 'lives',
-                mode: isHillMode ? 'kingOfTheHill' : 'online',
+                mode: isTerritoryMode ? 'territory' : (isHillMode ? 'kingOfTheHill' : 'online'),
                 rematchScene: 'OnlineMenu'
             });
         }

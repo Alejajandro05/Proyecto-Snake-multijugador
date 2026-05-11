@@ -4,6 +4,7 @@ import { Player } from "./schema/Player.js";
 import { SnakeSegment } from "./schema/SnakeSegment.js";
 import { Food } from "./schema/Food.js";
 import { Obstacle } from "./schema/Obstacle.js";
+import { TerritoryCell } from "./schema/TerritoryCell.js";
 import { SnakeEngine } from "../../../shared/src/domain/SnakeEngine.js";
 import type { GameState } from "../../../shared/src/domain/types.js";
 import { PLAYER_COLORS, TICK_MS, type GameDifficulty, resolveGameRuntimeConfig } from "../../../shared/src/domain/GameConfig.js";
@@ -35,6 +36,7 @@ interface HillBounds {
 const HILL_WIN_SCORE = 100;
 const HILL_POINTS_PER_TICK = 1;
 const HILL_ZONE_SHIFT_MS = 6000;
+const TERRITORY_MATCH_MS = 60_000;
 
 function toFiniteNumber(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -81,7 +83,7 @@ function toOptionId(value: unknown): string | undefined {
 
 function toGameMode(value: unknown): string {
   const optionId = toOptionId(value);
-  if (optionId === "duel" || optionId === "kingOfTheHill") {
+  if (optionId === "duel" || optionId === "kingOfTheHill" || optionId === "territory") {
     return optionId;
   }
   return "classic";
@@ -159,32 +161,42 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
   private hillZoneW = 0;
   private hillZoneH = 0;
   private hillElapsedMs = 0;
+  private remainingTimeMs = 0;
+  private matchEnded = false;
+  private matchEndReason = "";
 
   onCreate(options?: SnakeRoomCreateOptions) {
     this.state = new SnakeRoomState();
     const runtimeConfig = getRoomRuntimeConfig(options);
-    this.engine = new SnakeEngine(runtimeConfig);
-    this.tickMs = runtimeConfig.tickMs;
     this.gameMode = toGameMode(options?.gameMode);
+    const engineConfig = this.gameMode === "territory"
+      ? { ...runtimeConfig, territoryMode: true, maxLives: 1 }
+      : runtimeConfig;
+    this.engine = new SnakeEngine(engineConfig);
+    this.tickMs = engineConfig.tickMs;
     this.metadata = {
       lobbyId: toOptionId(options?.lobbyId) ?? "",
       gameMode: this.gameMode,
       mapId: toMapId(options?.mapId),
     };
 
-    this.state.boardCols = runtimeConfig.gridCols;
-    this.state.boardRows = runtimeConfig.gridRows;
-    this.state.boardCellSize = runtimeConfig.gridSize;
-    this.state.tickMs = runtimeConfig.tickMs;
-    this.state.foodCount = runtimeConfig.foodCount;
-    this.state.obstaclesPerQuadrant = runtimeConfig.obstaclesPerQuadrant;
-    this.state.difficulty = runtimeConfig.difficulty;
+    this.state.boardCols = engineConfig.gridCols;
+    this.state.boardRows = engineConfig.gridRows;
+    this.state.boardCellSize = engineConfig.gridSize;
+    this.state.tickMs = engineConfig.tickMs;
+    this.state.foodCount = engineConfig.foodCount;
+    this.state.obstaclesPerQuadrant = engineConfig.obstaclesPerQuadrant;
+    this.state.difficulty = engineConfig.difficulty;
     this.state.gameMode = this.gameMode;
     this.state.mapId = toMapId(options?.mapId);
     this.state.hillWinScore = this.gameMode === "kingOfTheHill" ? HILL_WIN_SCORE : 0;
+    this.remainingTimeMs = this.gameMode === "territory" ? TERRITORY_MATCH_MS : 0;
+    this.state.remainingTimeMs = this.remainingTimeMs;
+    this.state.matchEnded = false;
+    this.state.matchEndReason = "";
 
     if (this.gameMode === "kingOfTheHill") {
-      this.initializeHillState(runtimeConfig.gridCols, runtimeConfig.gridRows);
+      this.initializeHillState(engineConfig.gridCols, engineConfig.gridRows);
     }
 
     this.onMessage("changeDirection", (client, direction: string) => {
@@ -192,8 +204,14 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
     });
 
     this.setSimulationInterval(() => {
+      if (this.matchEnded) {
+        return;
+      }
+
       const state = this.engine.tick();
       this.applyModeRules(state);
+      this.matchEndReason = this.resolveMatchEndReason(state);
+      this.matchEnded = this.matchEndReason.length > 0;
       this.syncToSchema(state);
     }, this.tickMs);
   }
@@ -259,22 +277,54 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
   }
 
   private applyModeRules(gameState: GameState) {
-    if (this.gameMode !== "kingOfTheHill") {
-      return;
-    }
+    if (this.gameMode === "kingOfTheHill") {
+      const gridSize = this.engine.getConfig().gridSize;
+      gameState.players.forEach((playerState) => {
+        if (isHeadInHill(playerState, gridSize, this.hillBounds)) {
+          playerState.score += HILL_POINTS_PER_TICK;
+        }
+      });
 
-    const gridSize = this.engine.getConfig().gridSize;
-    gameState.players.forEach((playerState) => {
-      if (isHeadInHill(playerState, gridSize, this.hillBounds)) {
-        playerState.score += HILL_POINTS_PER_TICK;
+      this.hillElapsedMs += this.tickMs;
+      if (this.hillElapsedMs >= HILL_ZONE_SHIFT_MS) {
+        this.rollNewHillZone();
+        this.hillElapsedMs %= HILL_ZONE_SHIFT_MS;
       }
-    });
-
-    this.hillElapsedMs += this.tickMs;
-    if (this.hillElapsedMs >= HILL_ZONE_SHIFT_MS) {
-      this.rollNewHillZone();
-      this.hillElapsedMs %= HILL_ZONE_SHIFT_MS;
     }
+
+    if (this.gameMode === "territory") {
+      this.remainingTimeMs = Math.max(0, this.remainingTimeMs - this.tickMs);
+    }
+  }
+
+  private resolveMatchEndReason(gameState: GameState): string {
+    const players = Array.from(gameState.players.values());
+    const firstPlayer = players[0];
+    const secondPlayer = players[1];
+
+    if (!firstPlayer || !secondPlayer) {
+      return "";
+    }
+
+    if ((firstPlayer.lives ?? 0) <= 0 || (secondPlayer.lives ?? 0) <= 0) {
+      return "lives";
+    }
+
+    if (this.gameMode === "kingOfTheHill") {
+      if ((firstPlayer.score ?? 0) >= HILL_WIN_SCORE || (secondPlayer.score ?? 0) >= HILL_WIN_SCORE) {
+        return "hill";
+      }
+      return "";
+    }
+
+    if (this.gameMode === "territory") {
+      if (this.remainingTimeMs <= 0) {
+        return "territory";
+      }
+      return "";
+    }
+
+    return "";
   }
 
   private syncHillStateToSchema() {
@@ -290,6 +340,9 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
   private syncToSchema(gameState: GameState): void {
     this.state.gameMode = this.gameMode;
     this.syncHillStateToSchema();
+    this.state.remainingTimeMs = this.gameMode === "territory" ? this.remainingTimeMs : 0;
+    this.state.matchEnded = this.matchEnded;
+    this.state.matchEndReason = this.matchEndReason;
 
     gameState.players.forEach((playerState, id) => {
       const player = this.state.players.get(id);
@@ -308,6 +361,8 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
 
     this.syncFood(gameState.food);
     this.syncObstacles(gameState.obstacles);
+    this.syncTerritory(gameState.territory);
+    this.syncTerritoryCounts(gameState.territoryCounts);
   }
 
   private syncSegments(player: Player, segments: { x: number; y: number }[]): void {
@@ -349,5 +404,32 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
       this.state.obstacles[i].x = obstacles[i].x;
       this.state.obstacles[i].y = obstacles[i].y;
     }
+  }
+
+  private syncTerritory(territory: { x: number; y: number; ownerId: string; ownerColor: number }[]): void {
+    while (this.state.territory.length < territory.length) {
+      this.state.territory.push(new TerritoryCell());
+    }
+    while (this.state.territory.length > territory.length) {
+      this.state.territory.pop();
+    }
+    for (let i = 0; i < territory.length; i += 1) {
+      this.state.territory[i].x = territory[i].x;
+      this.state.territory[i].y = territory[i].y;
+      this.state.territory[i].ownerId = territory[i].ownerId;
+      this.state.territory[i].ownerColor = territory[i].ownerColor;
+    }
+  }
+
+  private syncTerritoryCounts(territoryCounts: Map<string, number>): void {
+    for (const key of Array.from(this.state.territoryCounts.keys())) {
+      if (!territoryCounts.has(key)) {
+        this.state.territoryCounts.delete(key);
+      }
+    }
+
+    territoryCounts.forEach((count, playerId) => {
+      this.state.territoryCounts.set(playerId, count);
+    });
   }
 }
