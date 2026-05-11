@@ -5,6 +5,7 @@ function freezeOptions(options) {
 export const onlineModes = freezeOptions([
   { id: "classic", label: "Classic" },
   { id: "duel", label: "Duel" },
+  { id: "kingOfTheHill", label: "Rey de la colina" },
 ]);
 
 export const onlineDifficulties = freezeOptions([

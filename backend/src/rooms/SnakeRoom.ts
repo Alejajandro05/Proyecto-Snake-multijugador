@@ -25,6 +25,17 @@ interface SnakeRoomJoinOptions {
   playerName?: string;
 }
 
+interface HillBounds {
+  col0: number;
+  col1: number;
+  row0: number;
+  row1: number;
+}
+
+const HILL_WIN_SCORE = 100;
+const HILL_POINTS_PER_TICK = 1;
+const HILL_ZONE_SHIFT_MS = 6000;
+
 function toFiniteNumber(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string") {
@@ -68,6 +79,66 @@ function toOptionId(value: unknown): string | undefined {
   return normalized.length > 0 ? normalized.slice(0, 32) : undefined;
 }
 
+function toGameMode(value: unknown): string {
+  const optionId = toOptionId(value);
+  if (optionId === "duel" || optionId === "kingOfTheHill") {
+    return optionId;
+  }
+  return "classic";
+}
+
+function getHillZoneDimensions(gridCols: number, gridRows: number) {
+  let zoneW = Math.max(5, Math.floor(gridCols * 0.32));
+  let zoneH = Math.max(4, Math.floor(gridRows * 0.28));
+  zoneW = Math.min(zoneW, gridCols);
+  zoneH = Math.min(zoneH, gridRows);
+  return { zoneW, zoneH };
+}
+
+function randomHillCellBounds(gridCols: number, gridRows: number, zoneW: number, zoneH: number, previous?: HillBounds | null): HillBounds {
+  const maxCol0 = gridCols - zoneW;
+  const maxRow0 = gridRows - zoneH;
+
+  if (maxCol0 < 0 || maxRow0 < 0) {
+    const cx = Math.floor(gridCols / 2);
+    const cy = Math.floor(gridRows / 2);
+    let col0 = Math.max(0, cx - Math.floor(zoneW / 2));
+    let row0 = Math.max(0, cy - Math.floor(zoneH / 2));
+    col0 = Math.min(col0, Math.max(0, gridCols - zoneW));
+    row0 = Math.min(row0, Math.max(0, gridRows - zoneH));
+    return { col0, col1: col0 + zoneW - 1, row0, row1: row0 + zoneH - 1 };
+  }
+
+  let col0 = 0;
+  let row0 = 0;
+  for (let attempt = 0; attempt < 16; attempt += 1) {
+    col0 = Math.floor(Math.random() * (maxCol0 + 1));
+    row0 = Math.floor(Math.random() * (maxRow0 + 1));
+    if (!previous || col0 !== previous.col0 || row0 !== previous.row0) {
+      break;
+    }
+  }
+
+  return { col0, col1: col0 + zoneW - 1, row0, row1: row0 + zoneH - 1 };
+}
+
+function headCell(head: { x: number; y: number }, gridSize: number) {
+  return {
+    col: Math.round(head.x / gridSize),
+    row: Math.round(head.y / gridSize),
+  };
+}
+
+function isHeadInHill(
+  player: GameState["players"] extends Map<string, infer T> ? T : never,
+  gridSize: number,
+  bounds?: HillBounds | null,
+) {
+  if (!player?.alive || !player.segments?.length || !bounds) return false;
+  const { col, row } = headCell(player.segments[0], gridSize);
+  return col >= bounds.col0 && col <= bounds.col1 && row >= bounds.row0 && row <= bounds.row1;
+}
+
 function getRoomRuntimeConfig(options?: SnakeRoomCreateOptions) {
   return resolveGameRuntimeConfig({
     gridCols: toFiniteNumber(options?.boardCols),
@@ -83,15 +154,21 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
   maxClients = 4;
   private engine!: SnakeEngine;
   private tickMs = TICK_MS;
+  private gameMode = "classic";
+  private hillBounds: HillBounds | null = null;
+  private hillZoneW = 0;
+  private hillZoneH = 0;
+  private hillElapsedMs = 0;
 
   onCreate(options?: SnakeRoomCreateOptions) {
     this.state = new SnakeRoomState();
     const runtimeConfig = getRoomRuntimeConfig(options);
     this.engine = new SnakeEngine(runtimeConfig);
     this.tickMs = runtimeConfig.tickMs;
+    this.gameMode = toGameMode(options?.gameMode);
     this.metadata = {
       lobbyId: toOptionId(options?.lobbyId) ?? "",
-      gameMode: toOptionId(options?.gameMode) ?? "classic",
+      gameMode: this.gameMode,
       mapId: toMapId(options?.mapId),
     };
 
@@ -102,7 +179,13 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
     this.state.foodCount = runtimeConfig.foodCount;
     this.state.obstaclesPerQuadrant = runtimeConfig.obstaclesPerQuadrant;
     this.state.difficulty = runtimeConfig.difficulty;
+    this.state.gameMode = this.gameMode;
     this.state.mapId = toMapId(options?.mapId);
+    this.state.hillWinScore = this.gameMode === "kingOfTheHill" ? HILL_WIN_SCORE : 0;
+
+    if (this.gameMode === "kingOfTheHill") {
+      this.initializeHillState(runtimeConfig.gridCols, runtimeConfig.gridRows);
+    }
 
     this.onMessage("changeDirection", (client, direction: string) => {
       this.engine.setNextDirection(client.sessionId, direction as any);
@@ -110,6 +193,7 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
 
     this.setSimulationInterval(() => {
       const state = this.engine.tick();
+      this.applyModeRules(state);
       this.syncToSchema(state);
     }, this.tickMs);
   }
@@ -154,9 +238,59 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
     console.log("SnakeRoom", this.roomId, "disposing...");
   }
 
+  private initializeHillState(gridCols: number, gridRows: number) {
+    const { zoneW, zoneH } = getHillZoneDimensions(gridCols, gridRows);
+    this.hillZoneW = zoneW;
+    this.hillZoneH = zoneH;
+    this.hillBounds = randomHillCellBounds(gridCols, gridRows, zoneW, zoneH);
+    this.hillElapsedMs = 0;
+    this.syncHillStateToSchema();
+  }
+
+  private rollNewHillZone() {
+    const runtimeConfig = this.engine.getConfig();
+    this.hillBounds = randomHillCellBounds(
+      runtimeConfig.gridCols,
+      runtimeConfig.gridRows,
+      this.hillZoneW,
+      this.hillZoneH,
+      this.hillBounds,
+    );
+  }
+
+  private applyModeRules(gameState: GameState) {
+    if (this.gameMode !== "kingOfTheHill") {
+      return;
+    }
+
+    const gridSize = this.engine.getConfig().gridSize;
+    gameState.players.forEach((playerState) => {
+      if (isHeadInHill(playerState, gridSize, this.hillBounds)) {
+        playerState.score += HILL_POINTS_PER_TICK;
+      }
+    });
+
+    this.hillElapsedMs += this.tickMs;
+    if (this.hillElapsedMs >= HILL_ZONE_SHIFT_MS) {
+      this.rollNewHillZone();
+      this.hillElapsedMs %= HILL_ZONE_SHIFT_MS;
+    }
+  }
+
+  private syncHillStateToSchema() {
+    this.state.hillWinScore = this.gameMode === "kingOfTheHill" ? HILL_WIN_SCORE : 0;
+    this.state.hillZoneCol0 = this.hillBounds?.col0 ?? 0;
+    this.state.hillZoneCol1 = this.hillBounds?.col1 ?? 0;
+    this.state.hillZoneRow0 = this.hillBounds?.row0 ?? 0;
+    this.state.hillZoneRow1 = this.hillBounds?.row1 ?? 0;
+  }
+
   // ─── Schema sync ──────────────────────────────────────────────────────────
 
   private syncToSchema(gameState: GameState): void {
+    this.state.gameMode = this.gameMode;
+    this.syncHillStateToSchema();
+
     gameState.players.forEach((playerState, id) => {
       const player = this.state.players.get(id);
       if (!player) return;

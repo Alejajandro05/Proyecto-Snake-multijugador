@@ -3,7 +3,6 @@ import {
   type GameRuntimeConfig,
   PLAYER_COLORS,
   resolveGameRuntimeConfig,
-  WIN_SCORE,
 } from './GameConfig.js';
 import { EventEmitter } from "./EventEmitter.js"
 
@@ -299,11 +298,7 @@ export class SnakeEngine {
         food: config
       });
 
-      let temp_score = player.score + config.score;
-
-      if(temp_score < 0) player.score = 0;
-      else if(temp_score > WIN_SCORE) player.score = WIN_SCORE;
-      else player.score = temp_score;
+      player.score = Math.max(0, player.score + config.score);
 
       config.effect?.(player);
 
