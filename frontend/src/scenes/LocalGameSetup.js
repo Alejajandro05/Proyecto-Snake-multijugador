@@ -351,7 +351,10 @@ export class LocalGameSetup extends Phaser.Scene {
             saveLocalGameSettings(payload);
 
             cleanup();
-            this.scene.start(resolveLocalSceneKey(gameMode), payload);
+            //this.scene.start(resolveLocalSceneKey(gameMode), payload); //TODO implement this
+            // Temporal test route: start the AI scene from this setup screen.
+            console.log(resolveLocalSceneKey(gameMode));
+            this.scene.start('AgainstAIGame', payload);//TODO delete this
         };
 
         document.getElementById('btn-setup-back')?.addEventListener('click', goBack);
@@ -559,4 +562,3 @@ export class LocalGameSetup extends Phaser.Scene {
             .replaceAll("'", '&#039;');
     }
 }
-

@@ -9,16 +9,10 @@ import { applyPlayerThemeToHud, buildPlayerIdentityMap } from '../../utils/playe
 import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
 import { shouldEndStandardMatchByLives, shouldEndStandardMatchByScore } from '../matchEndRules.js';
 import { shouldDieAtWall } from '../localModeHelpers.js';
+import { againstAIGameAiLogic } from './AgainstAIGameAiLogic.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
-
-const SNAKE_BOARD_TILE = {
-    empty: 0,
-    player: 1,
-    aiPlayer: 2,
-    obstacle: 3,
-};
 
 export class AgainstAIGame extends Phaser.Scene {
     constructor(sceneKey = 'AgainstAIGame') {
@@ -249,10 +243,11 @@ export class AgainstAIGame extends Phaser.Scene {
     }
 
     pushDirection(playerId, direction) {
+        if (playerId !== P1_ID) return;
         if (this.inputBuffers[playerId].length < 3) this.inputBuffers[playerId].push(direction);
     }
 
-    gameTick() {
+    async gameTick() {//TODO dev test async weg
         this.handleInput();
 
         // 1. Guardar el estado ANTES de mover (usando variables fijas como hizo tu compañero)
@@ -268,6 +263,7 @@ export class AgainstAIGame extends Phaser.Scene {
         this.applyWallDeaths(oldState);
 
         // 2. Actualizar el motor
+        againstAIGameAiLogic.calculateAINextDirection(oldState, this.engine);
         const state = this.engine.tick();
 
         const p1New = state.players.get(P1_ID);
@@ -283,12 +279,16 @@ export class AgainstAIGame extends Phaser.Scene {
         }
 
         this.renderState(state);
+
+        this.gameTimer.paused = true;//TODO Dev testen entfernen
+
+        this.time.delayedCall(1000, () => {//TODO Dev testen entfernen
+            this.gameTimer.paused = false;
+        });
     }
 
     handleInput() {
-        [P1_ID, P2_ID].forEach(id => {
-            if (this.inputBuffers[id].length > 0) this.engine.setNextDirection(id, this.inputBuffers[id].shift());
-        });
+        if (this.inputBuffers[P1_ID].length > 0) this.engine.setNextDirection(P1_ID, this.inputBuffers[P1_ID].shift());
     }
 
     applyWallDeaths(state) {
@@ -306,50 +306,6 @@ export class AgainstAIGame extends Phaser.Scene {
                 this.engine.killPlayer(player);
             }
         });
-    }
-
-    calculateAINextDirection(oldState) {
-        snakeboard2dPositions = this.fetchSnakeboard2dPositions(oldState);
-        console.log(snakeboard2dPositions);
-    }
-
-    fetchSnakeboard2dPositions(oldState) {
-        const config = this.engine.getConfig();
-        const state = oldState;
-        const snakeboard2dPositions = Array.from({ length: config.gridRows }, () =>
-            Array(config.gridCols).fill(SNAKE_BOARD_TILE.empty)
-        );
-
-        const setSnakeboardTile = (position, tileValue) => {
-            const col = position.x / config.gridSize;
-            const row = position.y / config.gridSize;
-
-            if (
-                Number.isInteger(col) &&
-                Number.isInteger(row) &&
-                row >= 0 &&
-                row < config.gridRows &&
-                col >= 0 &&
-                col < config.gridCols
-            ) {
-                snakeboard2dPositions[row][col] = tileValue;
-            }
-        };
-
-        const player = state.players.get(P1_ID);
-        const aiPlayer = state.players.get(P2_ID);
-
-        if (player?.alive && player.segments?.length) {
-            player.segments.forEach((segment) => setSnakeboardTile(segment, SNAKE_BOARD_TILE.player));
-        }
-
-        if (aiPlayer?.alive && aiPlayer.segments?.length) {
-            aiPlayer.segments.forEach((segment) => setSnakeboardTile(segment, SNAKE_BOARD_TILE.aiPlayer));
-        }
-
-        state.obstacles?.forEach?.((obstacle) => setSnakeboardTile(obstacle, SNAKE_BOARD_TILE.obstacle));
-
-        return snakeboard2dPositions;
     }
 
     renderState(state) {
