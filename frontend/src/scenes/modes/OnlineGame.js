@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { MAX_LIVES } from '@shared/GameConfig';
+import { MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
 import { createLobbyClient } from '../../net/lobbyClient.js';
 import { extractLeaderboardUserName, getCurrentUser } from '../../services/firebaseAuthService.js';
 import { LeaderboardService } from '../../services/LeaderboardService.js';
@@ -12,6 +12,8 @@ import { syncOnlineHudIdentity } from './onlineHudIdentity.js';
 
 const HILL_WIN_SCORE = 100;
 const TERRITORY_MATCH_MS = 60_000;
+const TIME_ATTACK_MATCH_MS = 60_000;
+const CHAOS_MAX_LIVES = 5;
 
 function normalizeHttpUrlToWebSocket(url) {
     const s = String(url ?? '').trim();
@@ -59,10 +61,11 @@ export class OnlineGame extends Phaser.Scene {
 
     init(data) {
         this.matchRoomId = data?.matchRoomId ?? '';
+        this.lobbyRoomId = data?.lobbyRoomId ?? '';
         this.playerSkinId = data?.skinId ?? '';
         this.mapId = data?.mapId ?? '';
         this.playerName = data?.playerName ?? '';
-        this.selectedGameMode = data?.gameMode ?? 'classic';
+        this.selectedGameMode = data?.gameMode ?? 'normal';
         this.selectedDifficulty = data?.difficulty ?? 'normal';
     }
 
@@ -70,6 +73,8 @@ export class OnlineGame extends Phaser.Scene {
         this.boardRenderer = new SnakeBoardRenderer(this, { mapId: this.mapId });
         this.hillGraphics = this.add.graphics().setDepth(4);
         this.territoryTimerDiv = null;
+        this.timeAttackTimerDiv = null;
+        this.chaosFxEl = null;
 
         this.cacheHudElements();
         this.toggleHud(true);
@@ -106,6 +111,8 @@ export class OnlineGame extends Phaser.Scene {
             this.cleanupRoom();
             this.hillGraphics?.destroy();
             this.destroyTerritoryTimerDom();
+            this.destroyTimeAttackTimerDom();
+            this.destroyChaosHud();
         });
 
         this.updateLayout(this.scale.width, this.scale.height);
@@ -151,8 +158,8 @@ export class OnlineGame extends Phaser.Scene {
             this.hudHelp.textContent = 'Online | WASD | Flechas - ESC: Menu';
         }
 
-        this.updateLivesHud(this.hudJ1Lives, MAX_LIVES);
-        this.updateLivesHud(this.hudJ2Lives, MAX_LIVES);
+        this.updateLivesHud(this.hudJ1Lives, this.getModeMaxLives());
+        this.updateLivesHud(this.hudJ2Lives, this.getModeMaxLives());
     }
 
     toggleHud(visible) {
@@ -224,11 +231,24 @@ export class OnlineGame extends Phaser.Scene {
 
     updateLivesHud(targetElement, lives) {
         if (!targetElement) return;
+        if (this.isTimeAttackMode()) {
+            targetElement.textContent = '∞';
+            return;
+        }
 
-        const safeLives = Math.max(0, Math.min(MAX_LIVES, Number(lives) || 0));
+        const maxLives = this.getModeMaxLives();
+        const safeLives = Math.max(0, Math.min(maxLives, Number(lives) || 0));
         const heartsOn = '<span class="text-danger">&#10084;</span>'.repeat(safeLives);
-        const heartsOff = '<span class="text-secondary opacity-50">&#10084;</span>'.repeat(MAX_LIVES - safeLives);
+        const heartsOff = '<span class="text-secondary opacity-50">&#10084;</span>'.repeat(maxLives - safeLives);
         targetElement.innerHTML = `${heartsOn}${heartsOff}`;
+    }
+
+    getModeMaxLives(state = this.latestState) {
+        const mode = state?.gameMode ?? this.selectedGameMode;
+        if (mode === 'chaos') return CHAOS_MAX_LIVES;
+        if (mode === 'timeAttack') return 99;
+        if (mode === 'territory') return 1;
+        return MAX_LIVES;
     }
 
     getOrderedPlayers(state) {
@@ -243,11 +263,32 @@ export class OnlineGame extends Phaser.Scene {
         return (state?.gameMode ?? this.selectedGameMode) === 'territory';
     }
 
+    isTimeAttackMode(state = this.latestState) {
+        return (state?.gameMode ?? this.selectedGameMode) === 'timeAttack';
+    }
+
+    isChaosMode(state = this.latestState) {
+        return (state?.gameMode ?? this.selectedGameMode) === 'chaos';
+    }
+
     syncModeChrome(state = this.latestState) {
         if (this.isTerritoryMode(state)) {
             this.createTerritoryTimerDom();
         } else {
             this.destroyTerritoryTimerDom();
+        }
+
+        if (this.isTimeAttackMode(state)) {
+            this.createTimeAttackTimerDom();
+        } else {
+            this.destroyTimeAttackTimerDom();
+        }
+
+        if (this.isChaosMode(state)) {
+            this.ensureChaosHud();
+            this.updateChaosBanner(state);
+        } else {
+            this.destroyChaosHud();
         }
     }
 
@@ -275,6 +316,73 @@ export class OnlineGame extends Phaser.Scene {
         const min = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
         const sec = String(totalSeconds % 60).padStart(2, '0');
         this.territoryTimerDiv.innerText = `${min}:${sec}`;
+    }
+
+    createTimeAttackTimerDom() {
+        if (this.timeAttackTimerDiv) return;
+
+        this.timeAttackTimerDiv = document.createElement('div');
+        this.timeAttackTimerDiv.id = 'time-attack-clock-online';
+        this.timeAttackTimerDiv.className = 'position-absolute start-50 translate-middle-x text-white fw-bold px-5 py-2 rounded-pill shadow-lg text-center';
+        this.timeAttackTimerDiv.style = 'background: linear-gradient(180deg, #1A05A2, #0B081A); border: 4px solid #F67D31; font-size: 4rem; z-index: 1000; top: 15px; box-shadow: 0 0 30px rgba(246, 125, 49, 0.8); line-height: 1;';
+        this.timeAttackTimerDiv.innerText = '01:00';
+        document.getElementById('game-container')?.appendChild(this.timeAttackTimerDiv);
+    }
+
+    destroyTimeAttackTimerDom() {
+        if (!this.timeAttackTimerDiv) return;
+        this.timeAttackTimerDiv.remove();
+        this.timeAttackTimerDiv = null;
+    }
+
+    updateTimeAttackClock(state = this.latestState) {
+        if (!this.timeAttackTimerDiv) return;
+        const remainingTimeMs = Math.max(0, Number(state?.remainingTimeMs) || TIME_ATTACK_MATCH_MS);
+        if (remainingTimeMs <= 0 && !state?.matchEnded) {
+            this.timeAttackTimerDiv.style.fontSize = '2.2rem';
+            this.timeAttackTimerDiv.style.background = 'linear-gradient(180deg, #990000, #330000)';
+            this.timeAttackTimerDiv.style.borderColor = '#FFC107';
+            this.timeAttackTimerDiv.innerText = 'PRIMERO EN 5';
+            return;
+        }
+        const totalSeconds = Math.ceil(remainingTimeMs / 1000);
+        const min = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+        const sec = String(totalSeconds % 60).padStart(2, '0');
+        this.timeAttackTimerDiv.innerText = `${min}:${sec}`;
+    }
+
+    ensureChaosHud() {
+        if (this.chaosFxEl || !this.hudHelpWrap) return;
+        const el = document.createElement('div');
+        el.id = 'chaos-fx-line-online';
+        el.className = 'text-warning fw-bold small mt-1';
+        el.style.textShadow = '0 0 12px rgba(250, 204, 21, 0.45)';
+        el.style.display = 'none';
+        this.hudHelpWrap.appendChild(el);
+        this.chaosFxEl = el;
+    }
+
+    destroyChaosHud() {
+        if (this.chaosFxEl?.parentNode) {
+            this.chaosFxEl.parentNode.removeChild(this.chaosFxEl);
+        }
+        this.chaosFxEl = null;
+    }
+
+    chaosLabel(id) {
+        if (id === 'speed') return 'Velocidad aumentada';
+        if (id === 'invert') return 'Controles al reves';
+        if (id === 'invertLR') return 'Izquierda y derecha invertidas';
+        if (id === 'obstacles') return 'Obstaculos reubicados';
+        return '';
+    }
+
+    updateChaosBanner(state = this.latestState) {
+        if (!this.chaosFxEl) return;
+        const effectId = String(state?.chaosEffectId ?? '');
+        const label = this.chaosLabel(effectId);
+        this.chaosFxEl.textContent = label ? `Caos: ${label}` : '';
+        this.chaosFxEl.style.display = label ? '' : 'none';
     }
 
     getHudPlayerEntries(state) {
@@ -356,6 +464,10 @@ export class OnlineGame extends Phaser.Scene {
             } else if (this.isKingOfTheHillMode(state)) {
                 const targetScore = Number(state?.hillWinScore) || HILL_WIN_SCORE;
                 this.hudHelp.textContent = `Rey de la colina | Meta ${targetScore} pts o ganar por vidas | ${firstName} (WASD) vs ${secondName} (Flechas) | ${mapId} | ESC`;
+            } else if (this.isTimeAttackMode(state)) {
+                this.hudHelp.textContent = `Contrarreloj | ${firstName} (WASD) vs ${secondName} (Flechas) | ${mapId} | ESC`;
+            } else if (this.isChaosMode(state)) {
+                this.hudHelp.textContent = `Modo Caos | ${summary.difficultyLabel} | ${firstName} (WASD) vs ${secondName} (Flechas) | ${mapId} | ESC`;
             } else {
                 this.hudHelp.textContent = `${summary.difficultyLabel} | ${mapId} | ${firstName} (WASD) vs ${secondName} (Flechas) - ESC: Menu`;
             }
@@ -480,6 +592,8 @@ export class OnlineGame extends Phaser.Scene {
         this.boardRenderer.renderState(state);
         this.redrawHillOverlay(state);
         this.updateTerritoryClock(state);
+        this.updateTimeAttackClock(state);
+        this.updateChaosBanner(state);
 
         const { firstPlayer, secondPlayer } = this.syncHudFromPlayers(state);
         if (this.isTerritoryMode(state)) {
@@ -503,7 +617,7 @@ export class OnlineGame extends Phaser.Scene {
                 return;
             }
 
-            if (shouldEndStandardMatchByScore(firstPlayer, secondPlayer)) {
+            if (!this.isTimeAttackMode(state) && !this.isKingOfTheHillMode(state) && !this.isTerritoryMode(state) && shouldEndStandardMatchByScore(firstPlayer, secondPlayer, WIN_SCORE)) {
                 this.finishMatch('score');
                 return;
             }
@@ -527,6 +641,7 @@ export class OnlineGame extends Phaser.Scene {
         const p2Name = p2?.playerName || 'Jugador 2';
         const isHillMode = this.isKingOfTheHillMode(this.latestState);
         const isTerritoryMode = this.isTerritoryMode(this.latestState);
+        const isTimeAttackMode = this.isTimeAttackMode(this.latestState);
         const p1Territory = Number(p1SessionId ? this.latestState?.territoryCounts?.get?.(p1SessionId) : 0) || 0;
         const p2Territory = Number(p2SessionId ? this.latestState?.territoryCounts?.get?.(p2SessionId) : 0) || 0;
 
@@ -546,7 +661,7 @@ export class OnlineGame extends Phaser.Scene {
             console.error('Leaderboard win update failed:', error);
         });
 
-        if (reason === 'hill' || reason === 'score') {
+        if (reason === 'hill' || reason === 'score' || reason === 'time' || reason === 'tiebreaker') {
             this.scene.start('GameOver', {
                 winner: getScoreWinner(p1.score, p2.score),
                 p1Name,
@@ -555,9 +670,11 @@ export class OnlineGame extends Phaser.Scene {
                 p1Lives: p1.lives,
                 p2Score: p2.score,
                 p2Lives: p2.lives,
-                reason: isHillMode ? 'hill' : 'score',
-                mode: isHillMode ? 'kingOfTheHill' : 'online',
-                rematchScene: 'OnlineMenu'
+                reason,
+                mode: isHillMode ? 'kingOfTheHill' : (isTimeAttackMode ? 'timeAttack' : 'online'),
+                rematchScene: 'OnlineMenu',
+                rematchData: { resumeLobby: true, lobbyRoomId: this.lobbyRoomId },
+                leaveActiveLobby: true,
             });
         } else if (reason === 'territory') {
             this.scene.start('GameOver', {
@@ -570,7 +687,9 @@ export class OnlineGame extends Phaser.Scene {
                 p2Lives: p2.lives,
                 reason: 'territory',
                 mode: isTerritoryMode ? 'territory' : 'online',
-                rematchScene: 'OnlineMenu'
+                rematchScene: 'OnlineMenu',
+                rematchData: { resumeLobby: true, lobbyRoomId: this.lobbyRoomId },
+                leaveActiveLobby: true,
             });
         } else {
             this.scene.start('GameOver', {
@@ -583,7 +702,9 @@ export class OnlineGame extends Phaser.Scene {
                 p2Lives: p2.lives,
                 reason: 'lives',
                 mode: isTerritoryMode ? 'territory' : (isHillMode ? 'kingOfTheHill' : 'online'),
-                rematchScene: 'OnlineMenu'
+                rematchScene: 'OnlineMenu',
+                rematchData: { resumeLobby: true, lobbyRoomId: this.lobbyRoomId },
+                leaveActiveLobby: true,
             });
         }
     }

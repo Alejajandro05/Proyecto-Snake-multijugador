@@ -17,7 +17,7 @@ export class SnakeRoomState extends Schema {
   @type("number")       foodCount: number = 0;
   @type("number")       obstaclesPerQuadrant: number = 0;
   @type("string")       difficulty: string = "normal";
-  @type("string")       gameMode: string = "classic";
+  @type("string")       gameMode: string = "normal";
   @type("string")       mapId: string = "arena01";
   @type("number")       hillZoneCol0: number = 0;
   @type("number")       hillZoneCol1: number = 0;
@@ -25,6 +25,7 @@ export class SnakeRoomState extends Schema {
   @type("number")       hillZoneRow1: number = 0;
   @type("number")       hillWinScore: number = 0;
   @type("number")       remainingTimeMs: number = 0;
+  @type("string")       chaosEffectId: string = "";
   @type("boolean")      matchEnded: boolean = false;
   @type("string")       matchEndReason: string = "";
   @type("boolean")       started: boolean = false;
