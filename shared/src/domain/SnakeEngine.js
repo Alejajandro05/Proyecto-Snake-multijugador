@@ -324,4 +324,47 @@ export class SnakeEngine {
             return Math.abs(obCol - col) > this.config.safeMargin || Math.abs(obRow - row) > this.config.safeMargin;
         });
     }
+    isCellOccupied(x, y) {
+        if (this.getSnakesPosition().some((segment) => segment.x === x && segment.y === y))
+            return true;
+        if (this.food.some((food) => food.x === x && food.y === y))
+            return true;
+        if (this.obstacles.some((obstacle) => obstacle.x === x && obstacle.y === y))
+            return true;
+        return false;
+    }
+    clearTutorialFood() {
+        this.food.length = 0;
+    }
+    spawnTutorialFood(type, col, row) {
+        const x = col * this.config.gridSize;
+        const y = row * this.config.gridSize;
+        if (this.isCellOccupied(x, y))
+            return false;
+        const scoreByType = { apple: 1, grape: 3, speed: 0, poison: -2 };
+        this.food.push({ x, y, type, score: scoreByType[type] ?? 1 });
+        return true;
+    }
+    spawnTutorialObstacles(totalCount) {
+        const safeCount = Math.max(0, Math.min(totalCount, this.config.gridCols * this.config.gridRows));
+        this.obstacles.length = 0;
+        if (safeCount === 0)
+            return;
+        const quadrants = ['TL', 'TR', 'BL', 'BR'];
+        let placed = 0;
+        let guard = 0;
+        while (placed < safeCount && guard < safeCount * 40) {
+            guard += 1;
+            const quadrant = quadrants[placed % quadrants.length];
+            const candidate = this.randomObstacleInQuadrant(quadrant);
+            if (this.obstacles.some((obstacle) => obstacle.x === candidate.x && obstacle.y === candidate.y)) {
+                continue;
+            }
+            if (this.isCellOccupied(candidate.x, candidate.y)) {
+                continue;
+            }
+            this.obstacles.push(candidate);
+            placed += 1;
+        }
+    }
 }

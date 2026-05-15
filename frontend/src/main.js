@@ -3,6 +3,8 @@ import { Boot } from './scenes/Boot.js';
 import { GameOver } from './scenes/GameOver.js';
 import { Preloader } from './scenes/Preloader.js';
 import { MainMenu } from './scenes/MainMenu.js';
+import { Tutorial } from './scenes/Tutorial.js';
+import { TutorialGame } from './scenes/modes/TutorialGame.js';
 import { LocalGame } from './scenes/modes/LocalGame.js';
 import { NormalLocalGame } from './scenes/modes/NormalLocalGame.js';
 import { OnlineMenu } from './scenes/OnlineMenu.js';
@@ -52,6 +54,8 @@ const config = {
         Boot,
         Preloader,
         MainMenu,
+        Tutorial,
+        TutorialGame,
         OnlineMenu,
         Registration,
         Login,
