@@ -9,6 +9,7 @@ import { shouldEndStandardMatchByLives, shouldEndStandardMatchByScore } from '..
 import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.js';
 import { loadOnlinePrefs } from '../../utils/onlineStorage.js';
 import { syncOnlineHudIdentity } from './onlineHudIdentity.js';
+import { getControlsConfig } from '../../utils/controlsConfig.js';
 
 const HILL_WIN_SCORE = 100;
 const TERRITORY_MATCH_MS = 60_000;
@@ -83,6 +84,9 @@ export class OnlineGame extends Phaser.Scene {
         this.cursors = this.input.keyboard.createCursorKeys();
         this.wasd = this.input.keyboard.addKeys({ up: 'W', left: 'A', down: 'S', right: 'D' });
 
+        const controls = getControlsConfig(localStorage);
+        this.controls = controls;
+
         this.isLeavingRoom = false;
         this.input.keyboard.on('keydown-ESC', () => this.leaveRoom());
 
@@ -93,14 +97,14 @@ export class OnlineGame extends Phaser.Scene {
             right: () => this.sendDirection('right'),
         };
 
-        this.input.keyboard.on('keydown-UP', this.directionHandlers.up);
-        this.input.keyboard.on('keydown-DOWN', this.directionHandlers.down);
-        this.input.keyboard.on('keydown-LEFT', this.directionHandlers.left);
-        this.input.keyboard.on('keydown-RIGHT', this.directionHandlers.right);
-        this.input.keyboard.on('keydown-W', this.directionHandlers.up);
-        this.input.keyboard.on('keydown-A', this.directionHandlers.left);
-        this.input.keyboard.on('keydown-S', this.directionHandlers.down);
-        this.input.keyboard.on('keydown-D', this.directionHandlers.right);
+        this.input.keyboard.on(`keydown-${controls.player1.up}`, this.directionHandlers.up);
+        this.input.keyboard.on(`keydown-${controls.player1.down}`, this.directionHandlers.down);
+        this.input.keyboard.on(`keydown-${controls.player1.left}`, this.directionHandlers.left);
+        this.input.keyboard.on(`keydown-${controls.player1.right}`, this.directionHandlers.right);
+        this.input.keyboard.on(`keydown-${controls.player2.up}`, this.directionHandlers.up);
+        this.input.keyboard.on(`keydown-${controls.player2.down}`, this.directionHandlers.down);
+        this.input.keyboard.on(`keydown-${controls.player2.left}`, this.directionHandlers.left);
+        this.input.keyboard.on(`keydown-${controls.player2.right}`, this.directionHandlers.right);
 
         this.resizeHandler = (gameSize) => this.updateLayout(gameSize.width, gameSize.height);
         this.scale.on('resize', this.resizeHandler);
@@ -558,16 +562,16 @@ export class OnlineGame extends Phaser.Scene {
     }
 
     removeInputListeners() {
-        if (!this.input?.keyboard || !this.directionHandlers) return;
+        if (!this.input?.keyboard || !this.directionHandlers || !this.controls) return;
 
-        this.input.keyboard.off('keydown-UP', this.directionHandlers.up);
-        this.input.keyboard.off('keydown-DOWN', this.directionHandlers.down);
-        this.input.keyboard.off('keydown-LEFT', this.directionHandlers.left);
-        this.input.keyboard.off('keydown-RIGHT', this.directionHandlers.right);
-        this.input.keyboard.off('keydown-W', this.directionHandlers.up);
-        this.input.keyboard.off('keydown-S', this.directionHandlers.down);
-        this.input.keyboard.off('keydown-A', this.directionHandlers.left);
-        this.input.keyboard.off('keydown-D', this.directionHandlers.right);
+        this.input.keyboard.off(`keydown-${this.controls.player1.up}`, this.directionHandlers.up);
+        this.input.keyboard.off(`keydown-${this.controls.player1.down}`, this.directionHandlers.down);
+        this.input.keyboard.off(`keydown-${this.controls.player1.left}`, this.directionHandlers.left);
+        this.input.keyboard.off(`keydown-${this.controls.player1.right}`, this.directionHandlers.right);
+        this.input.keyboard.off(`keydown-${this.controls.player2.up}`, this.directionHandlers.up);
+        this.input.keyboard.off(`keydown-${this.controls.player2.down}`, this.directionHandlers.down);
+        this.input.keyboard.off(`keydown-${this.controls.player2.left}`, this.directionHandlers.left);
+        this.input.keyboard.off(`keydown-${this.controls.player2.right}`, this.directionHandlers.right);
     }
 
     cleanupRoom() {
