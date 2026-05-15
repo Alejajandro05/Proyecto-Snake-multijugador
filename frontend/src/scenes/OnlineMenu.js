@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { onlineOptionCatalogs } from '../../../shared/src/catalogs/onlineOptions.js';
-import { createLobbyClient } from '../net/lobbyClient.js';
+import { createLobbyClient, getActiveLobbyRoom, leaveActiveLobbyRoom, setActiveLobbyRoom } from '../net/lobbyClient.js';
 import { getMapAsset, getSnakeAsset } from '../config/gameAssetRegistry.js';
 import { loadOnlinePrefs, saveOnlinePrefs } from '../utils/onlineStorage.js';
 
@@ -11,6 +11,8 @@ export class OnlineMenu extends Phaser.Scene {
 
   init(data) {
     this.initialErrorMessage = data?.errorMessage ?? '';
+    this.resumeLobby = data?.resumeLobby === true;
+    this.resumeLobbyId = data?.lobbyRoomId ?? '';
   }
 
   create() {
@@ -31,6 +33,10 @@ export class OnlineMenu extends Phaser.Scene {
     this.publicLobbies = [];
     this.lobbyRoom = null;
     this.renderOverlay();
+
+    if (this.resumeLobby) {
+      this.tryResumeLobbySession();
+    }
 
     if (this.initialErrorMessage) {
       this.showError(this.initialErrorMessage);
@@ -494,16 +500,27 @@ export class OnlineMenu extends Phaser.Scene {
 
   attachLobbyRoom(room) {
     this.cleanupLobbyRoom(false);
-        this.lobbyRoom = room;
+    this.lobbyRoom = room;
+    setActiveLobbyRoom(room);
+    this.resumeLobbyPending = this.resumeLobby === true;
 
-    room.onStateChange((state) => {
+    this.boundLobbyStateChange = (state) => {
       this.updateWaitingState(state);
+      if (this.resumeLobbyPending) {
+        if (!state.matchRoomId) {
+          this.resumeLobbyPending = false;
+        } else {
+          return;
+        }
+      }
+
       if (state.matchRoomId) {
         const isHost = room.sessionId === state.host.sessionId;
         const skinId = isHost ? state.host.skinId : state.guest.skinId;
         const playerName = isHost ? state.host.playerName : state.guest.playerName;
         this.scene.start('OnlineGame', {
           matchRoomId: state.matchRoomId,
+          lobbyRoomId: room.roomId,
           skinId,
           playerName,
           gameMode: state.gameMode,
@@ -511,18 +528,45 @@ export class OnlineMenu extends Phaser.Scene {
           mapId: state.mapId,
         });
       }
-    });
+    };
 
-    room.onLeave(() => {
+    this.boundLobbyLeave = () => {
       if (this.scene.isActive('OnlineMenu')) {
         this.lobbyRoom = null;
+        setActiveLobbyRoom(null);
         this.showError('La sala se ha cerrado.');
         this.showView('home');
       }
-    });
+    };
+
+    room.onStateChange(this.boundLobbyStateChange);
+    room.onLeave(this.boundLobbyLeave);
 
     this.showView('waiting');
     this.updateWaitingState(room.state);
+  }
+
+  async tryResumeLobbySession() {
+    const activeRoom = getActiveLobbyRoom();
+    if (!activeRoom) {
+      if (!this.resumeLobbyId) {
+        this.showError('No se pudo recuperar la sala anterior.');
+        return;
+      }
+
+      try {
+        const room = await this.lobbyClient.joinLobbyById(this.resumeLobbyId, {
+          playerName: this.prefs.playerName || 'Jugador',
+          skinId: this.prefs.guestSkinId || this.prefs.hostSkinId,
+        });
+        this.attachLobbyRoom(room);
+      } catch (error) {
+        this.showError(error.message || 'No se pudo recuperar la sala anterior.');
+      }
+      return;
+    }
+
+    this.attachLobbyRoom(activeRoom);
   }
 
   updateWaitingState(state) {
@@ -570,13 +614,19 @@ export class OnlineMenu extends Phaser.Scene {
   async cleanupLobbyRoom(leaveRoom) {
     if (!this.lobbyRoom) return;
     const room = this.lobbyRoom;
+
+    if (this.boundLobbyStateChange) {
+      room.onStateChange.remove(this.boundLobbyStateChange);
+      this.boundLobbyStateChange = null;
+    }
+    if (this.boundLobbyLeave) {
+      room.onLeave.remove(this.boundLobbyLeave);
+      this.boundLobbyLeave = null;
+    }
+
     this.lobbyRoom = null;
     if (leaveRoom) {
-      try {
-        await room.leave();
-      } catch {
-        // ignore
-      }
+      await leaveActiveLobbyRoom();
     }
   }
 
