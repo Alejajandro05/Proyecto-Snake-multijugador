@@ -1,8 +1,39 @@
 import Phaser from 'phaser';
+import { Client } from '@colyseus/sdk';
 import { onlineOptionCatalogs } from '../../../shared/src/catalogs/onlineOptions.js';
-import { createLobbyClient, getActiveLobbyRoom, leaveActiveLobbyRoom, setActiveLobbyRoom } from '../net/lobbyClient.js';
+import { createLobbyClient } from '../net/lobbyClient.js';
 import { getMapAsset, getSnakeAsset } from '../config/gameAssetRegistry.js';
 import { loadOnlinePrefs, saveOnlinePrefs } from '../utils/onlineStorage.js';
+import { isUserLoggedIn, getCurrentUser } from '../services/firebaseAuthService.js';
+
+// --- FUNCIONES GLOBALES PARA LA URL DEL SERVIDOR ---
+function normalizeHttpUrlToWebSocket(url) {
+  const s = String(url ?? '').trim();
+  if (!s) return '';
+  if (s.startsWith('https://')) return `wss://${s.slice('https://'.length)}`;
+  if (s.startsWith('http://')) return `ws://${s.slice('http://'.length)}`;
+  return s;
+}
+
+function getPublicWsPathSuffix() {
+  const raw = import.meta.env.VITE_WS_PATH;
+  if (raw === '') return '';
+  if (raw === undefined || raw === null) return '/ws';
+  const p = String(raw).trim();
+  return p.startsWith('/') ? p : `/${p}`;
+}
+
+function getColyseusServerUrl() {
+  const explicitWs = String(import.meta.env.VITE_COLYSEUS_URL ?? '').trim();
+  if (explicitWs) return explicitWs;
+  const fromHttpEnv = normalizeHttpUrlToWebSocket(import.meta.env.VITE_SERVER_URL ?? '');
+  if (fromHttpEnv) return fromHttpEnv;
+  if (import.meta.env.DEV) return 'ws://localhost:2567';
+  const { protocol, host } = window.location;
+  const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${wsProtocol}//${host}${getPublicWsPathSuffix()}`;
+}
+// --------------------------------------------------
 
 export class OnlineMenu extends Phaser.Scene {
   constructor() {
@@ -11,32 +42,26 @@ export class OnlineMenu extends Phaser.Scene {
 
   init(data) {
     this.initialErrorMessage = data?.errorMessage ?? '';
-    this.resumeLobby = data?.resumeLobby === true;
-    this.resumeLobbyId = data?.lobbyRoomId ?? '';
   }
 
   create() {
     const fondo = this.add.image(this.scale.width / 2, this.scale.height / 2, 'fondo_duelo');
 
     const ajustarFondo = (width, height) => {
-        fondo.setPosition(width / 2, height / 2);
-        const escalaX = width / fondo.width;
-        const escalaY = height / fondo.height;
-        fondo.setScale(Math.max(escalaX, escalaY));
+      fondo.setPosition(width / 2, height / 2);
+      const escalaX = width / fondo.width;
+      const escalaY = height / fondo.height;
+      fondo.setScale(Math.max(escalaX, escalaY));
     };
 
     ajustarFondo(this.scale.width, this.scale.height);
     this.scale.on('resize', (gameSize) => ajustarFondo(gameSize.width, gameSize.height));
 
     this.lobbyClient = createLobbyClient();
-        this.prefs = loadOnlinePrefs();
+    this.prefs = loadOnlinePrefs();
     this.publicLobbies = [];
     this.lobbyRoom = null;
     this.renderOverlay();
-
-    if (this.resumeLobby) {
-      this.tryResumeLobbySession();
-    }
 
     if (this.initialErrorMessage) {
       this.showError(this.initialErrorMessage);
@@ -60,17 +85,18 @@ export class OnlineMenu extends Phaser.Scene {
     overlay.style.paddingLeft = 'max(12px, env(safe-area-inset-left, 0px))';
     overlay.style.paddingRight = 'max(12px, env(safe-area-inset-right, 0px))';
 
-    const btnStyleCrear = `width: 280px; padding: 12px; background-color: #DE1A58; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: transform 0.2s ease;`;
-    const btnStyleUnirse = `width: 280px; padding: 12px; background-color: #8F0177; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: transform 0.2s ease;`;
-    const btnStyleLogin = `width: 280px; padding: 12px; background-color: #1ad1de; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: transform 0.2s ease;`;
-    const btnStyleVolverMainMenu = `width: 280px; padding: 12px; background-color: #1A05A2; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: transform 0.2s ease;`;
+    const btnStyleCrear = `width: 100%; padding: 14px; background-color: #DE1A58; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.15rem; transition: transform 0.2s ease;`;
+    const btnStyleUnirse = `width: 100%; padding: 14px; background-color: #8F0177; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.15rem; transition: transform 0.2s ease;`;
+    const btnStyleRanked = `width: 100%; padding: 14px; background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); border: 2px solid #FEF3C7; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.15rem; text-shadow: 1px 1px 4px rgba(0,0,0,0.5); transition: transform 0.2s ease; box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);`;
+    const btnStyleLogin = `width: 100%; padding: 14px; background-color: #1ad1de; border: 2px solid #0d8b94; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.15rem; color: #111; transition: transform 0.2s ease;`;
+    const btnStyleVolverMainMenu = `width: 320px; padding: 14px; background-color: #1A05A2; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.15rem; transition: transform 0.2s ease;`;
     const btnStyleAction = `padding: 10px; background-color: #DE1A58; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.1rem; transition: transform 0.2s ease;`;
     const btnStyleVolver = `padding: 10px; background-color: #334155; border: 2px solid #94A3B8; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.1rem; transition: transform 0.2s ease;`;
 
     overlay.innerHTML = `
       <div class="w-100 px-2 px-sm-3 d-flex flex-column align-items-center" style="max-width: 960px; min-height: 0;">
-        <div class="online-menu-card w-100 rounded-4 text-center p-3 p-md-4 d-flex flex-column align-items-stretch">
-        <h1 class="fw-bold text-white mb-3 mb-md-4 online-menu-title">
+        <div class="online-menu-card w-100 rounded-4 text-center p-4 d-flex flex-column align-items-stretch">
+        <h1 class="fw-bold text-white mb-4 online-menu-title">
             SNAKE CLASH
         </h1>
           <style>
@@ -85,17 +111,12 @@ export class OnlineMenu extends Phaser.Scene {
               border-radius: 12px;
             }
             @media (min-width: 768px) {
-              #online-menu-overlay .online-create-split-map {
-                border-left: 1px solid rgba(255,255,255,0.18);
-                padding-left: 1.25rem;
-              }
+              #online-menu-overlay .online-create-split-map { border-left: 1px solid rgba(255,255,255,0.18); padding-left: 1.25rem; }
+              #online-menu-overlay .online-split-line { border-right: 1px solid rgba(255,255,255,0.18); padding-right: 1.5rem; }
             }
             @media (max-width: 767.98px) {
-              #online-menu-overlay .online-create-split-map {
-                border-top: 1px solid rgba(255,255,255,0.18);
-                padding-top: 1rem;
-                margin-top: 0.25rem;
-              }
+              #online-menu-overlay .online-create-split-map { border-top: 1px solid rgba(255,255,255,0.18); padding-top: 1rem; margin-top: 0.25rem; }
+              #online-menu-overlay .online-split-line { border-bottom: 1px solid rgba(255,255,255,0.18); padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
             }
             #online-menu-overlay .online-menu-title {
               font-family: 'Teko', sans-serif;
@@ -121,14 +142,37 @@ export class OnlineMenu extends Phaser.Scene {
             #online-menu-overlay .online-menu-card::-webkit-scrollbar-thumb { background: rgba(246, 125, 49, 0.45); border-radius: 999px; }
             #online-menu-overlay .online-menu-card::-webkit-scrollbar-track { background: rgba(255,255,255,0.06); border-radius: 999px; }
           </style>
+          
           <div id="online-error-box" class="alert alert-danger d-none mb-3" role="alert" style="font-family: 'Montserrat', sans-serif;"></div>
 
-          <div id="online-home-view" class="d-flex flex-column gap-3 align-items-center">
-            <h2 class="text-white text-center fw-bold mb-3" style="font-family: 'Montserrat', sans-serif;">ONLINE</h2>
-            <button id="btn-online-create" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleCrear}">CREAR PARTIDA</button>
-            <button id="btn-online-join" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleUnirse}">UNIRSE A PARTIDA</button>
-            <button id="btn-join-login" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleLogin}">LOGIN</button>
-            <button id="btn-online-back" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleVolverMainMenu}">VOLVER</button>
+          <div id="online-home-view" class="w-100">
+            <div class="row g-4 align-items-stretch">
+                <div class="col-12 col-md-6 d-flex flex-column online-split-line">
+                    <div class="text-center mb-4 flex-grow-1 d-flex flex-column justify-content-start">
+                        <h3 class="text-white fw-bold mb-2" style="font-family: 'Montserrat', sans-serif;">🎮 MODO CASUAL</h3>
+                        <p class="text-white-50 small mb-0" style="font-family: 'Montserrat', sans-serif; line-height: 1.4;">Juega relajado. Crea salas para amigos o únete a públicas. No afecta a tu rango ELO.</p>
+                    </div>
+                    <div class="d-flex flex-column gap-3 w-100 mt-auto px-xl-2">
+                        <button id="btn-online-create" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleCrear}">CREAR SALA</button>
+                        <button id="btn-online-join" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleUnirse}">UNIRSE A SALA</button>
+                    </div>
+                </div>
+                
+                <div class="col-12 col-md-6 d-flex flex-column">
+                    <div class="text-center mb-4 flex-grow-1 d-flex flex-column justify-content-start">
+                        <h3 class="text-warning fw-bold mb-2" style="font-family: 'Montserrat', sans-serif;">🏆 COMPETITIVO</h3>
+                        <p class="text-white-50 small mb-0" style="font-family: 'Montserrat', sans-serif; line-height: 1.4;">Emparejamiento automático por nivel (Matchmaking). Gana para subir en el Leaderboard.</p>
+                    </div>
+                    <div class="d-flex flex-column gap-3 w-100 mt-auto px-xl-2">
+                        <button id="btn-online-ranked" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleRanked}">BUSCAR PARTIDA</button>
+                        <button id="btn-join-login" class="btn fw-bold shadow menu-btn" style="${btnStyleLogin}">🔑 MI CUENTA / LOGIN</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex justify-content-center mt-5">
+                <button id="btn-online-back" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleVolverMainMenu}">VOLVER AL MENÚ PRINCIPAL</button>
+            </div>
           </div>
 
           <div id="online-create-view" class="d-none text-start">
@@ -169,9 +213,9 @@ export class OnlineMenu extends Phaser.Scene {
               </div>
               <div class="col-12">
                 ${this.renderSelectBlock('Visibilidad', 'online-create-visibility', [
-                  { id: 'public', label: 'Pública' },
-                  { id: 'private', label: 'Privada' },
-                ], this.prefs.visibility)}
+      { id: 'public', label: 'Pública' },
+      { id: 'private', label: 'Privada' },
+    ], this.prefs.visibility)}
               </div>
               <div class="col-12 d-flex gap-3 justify-content-between mt-4">
                 <button id="btn-create-back" class="btn text-white fw-bold shadow menu-btn flex-fill" style="${btnStyleVolver}">VOLVER</button>
@@ -249,6 +293,7 @@ export class OnlineMenu extends Phaser.Scene {
     this.publicLobbiesRoot = overlay.querySelector('#online-public-lobbies');
     this.waitingStartButton = overlay.querySelector('#btn-waiting-start');
 
+    // BOTONES ORIGINALES
     overlay.querySelector('#btn-online-create').addEventListener('click', () => this.showView('create'));
     overlay.querySelector('#btn-online-join').addEventListener('click', () => this.openJoinView());
     overlay.querySelector('#btn-online-back').addEventListener('click', () => this.scene.start('MainMenu'));
@@ -261,10 +306,66 @@ export class OnlineMenu extends Phaser.Scene {
     overlay.querySelector('#btn-private-join').addEventListener('click', () => this.handlePrivateJoin());
     overlay.querySelector('#btn-waiting-start').addEventListener('click', () => this.startMatch());
 
+    // BOTÓN RANKED REESCRITO (CON CLIENTE COLYSEUS PURO)
+    overlay.querySelector('#btn-online-ranked').addEventListener('click', async () => {
+      const btnRanked = overlay.querySelector('#btn-online-ranked');
+
+      const originalText = btnRanked.textContent;
+      btnRanked.disabled = true;
+      btnRanked.textContent = "COMPROBANDO...";
+
+      try {
+        const user = await getCurrentUser();
+
+        if (!user) {
+          this.showError('¡Alto ahí! Debes iniciar sesión o crear una cuenta para jugar en el modo Competitivo.');
+          btnRanked.textContent = "REDIRIGIENDO...";
+          setTimeout(() => { this.scene.start('Login'); }, 2500);
+          return;
+        }
+
+        btnRanked.textContent = "CONECTANDO AL SERVIDOR...";
+
+        // Pedimos la llave a Firebase
+        const token = await user.getIdToken();
+
+        // ¡AQUÍ ESTÁ LA MAGIA! Cliente directo hacia la URL calculada
+        const colyseusClient = new Client(getColyseusServerUrl());
+
+        // Nos unimos a la sala de cola
+        this.queueRoom = await colyseusClient.joinOrCreate("ranked_queue", {
+          token: token,
+          playerName: user.displayName || "Jugador"
+        });
+
+        this.showError('¡Conectado a la cola! Buscando rival...');
+        btnRanked.textContent = "BUSCANDO...";
+
+        // Escuchamos al servidor para cuando encuentre partida
+        this.queueRoom.onMessage("matchFound", (data) => {
+          this.showError('¡Partida encontrada! Conectando...');
+
+          this.queueRoom.leave();
+
+          this.scene.start('OnlineGame', {
+            matchRoomId: data.roomId,
+            playerName: user.displayName || "Jugador",
+            skinId: this.prefs.guestSkinId
+          });
+        });
+
+      } catch (error) {
+        console.error(error);
+        this.showError('Error al conectar con el servidor de Matchmaking.');
+        btnRanked.textContent = originalText;
+        btnRanked.disabled = false;
+      }
+    });
+
     const buttons = overlay.querySelectorAll('.menu-btn');
     buttons.forEach(btn => {
-        btn.addEventListener('mouseenter', () => btn.style.transform = 'scale(1.05)');
-        btn.addEventListener('mouseleave', () => btn.style.transform = 'scale(1)');
+      btn.addEventListener('mouseenter', () => btn.style.transform = 'scale(1.05)');
+      btn.addEventListener('mouseleave', () => btn.style.transform = 'scale(1)');
     });
 
     this.wireOnlineCreateVisualPickers(overlay);
@@ -302,15 +403,15 @@ export class OnlineMenu extends Phaser.Scene {
     const renderMaps = () => {
       mapHidden.value = maps[mapIndex].id;
       mapRoot.innerHTML = maps
-        .map(
-          (map, index) => `
+          .map(
+              (map, index) => `
         <button type="button" class="online-map-option rounded-3 p-2 text-center ${index === mapIndex ? 'active' : ''}" data-online-map-index="${index}" style="width: 112px;">
           <span class="d-block rounded-2 mb-2" style="height: 42px; background: url('/${map.floor.path}') center/32px 32px repeat; image-rendering: pixelated;"></span>
           <span class="small fw-semibold">${this.escapeHtml(map.label)}</span>
         </button>
       `,
-        )
-        .join('');
+          )
+          .join('');
 
       mapRoot.querySelectorAll('[data-online-map-index]').forEach((btn) => {
         btn.addEventListener('click', () => {
@@ -371,8 +472,8 @@ export class OnlineMenu extends Phaser.Scene {
 
   renderSelectBlock(label, id, options, selectedId) {
     const optionHtml = options
-      .map((option) => `<option value="${this.escapeHtml(option.id)}" ${option.id === selectedId ? 'selected' : ''}>${this.escapeHtml(option.label)}</option>`)
-      .join('');
+        .map((option) => `<option value="${this.escapeHtml(option.id)}" ${option.id === selectedId ? 'selected' : ''}>${this.escapeHtml(option.label)}</option>`)
+        .join('');
 
     return `
       <label class="form-label text-white fw-semibold mb-1 small" style="font-family: 'Montserrat', sans-serif;">${this.escapeHtml(label)}</label>
@@ -501,72 +602,33 @@ export class OnlineMenu extends Phaser.Scene {
   attachLobbyRoom(room) {
     this.cleanupLobbyRoom(false);
     this.lobbyRoom = room;
-    setActiveLobbyRoom(room);
-    this.resumeLobbyPending = this.resumeLobby === true;
 
-    this.boundLobbyStateChange = (state) => {
+    room.onStateChange((state) => {
       this.updateWaitingState(state);
-      if (this.resumeLobbyPending) {
-        if (!state.matchRoomId) {
-          this.resumeLobbyPending = false;
-        } else {
-          return;
-        }
-      }
-
       if (state.matchRoomId) {
         const isHost = room.sessionId === state.host.sessionId;
         const skinId = isHost ? state.host.skinId : state.guest.skinId;
         const playerName = isHost ? state.host.playerName : state.guest.playerName;
         this.scene.start('OnlineGame', {
           matchRoomId: state.matchRoomId,
-          lobbyRoomId: room.roomId,
           skinId,
           playerName,
-          gameMode: state.gameMode,
           difficulty: state.difficulty,
           mapId: state.mapId,
         });
       }
-    };
+    });
 
-    this.boundLobbyLeave = () => {
+    room.onLeave(() => {
       if (this.scene.isActive('OnlineMenu')) {
         this.lobbyRoom = null;
-        setActiveLobbyRoom(null);
         this.showError('La sala se ha cerrado.');
         this.showView('home');
       }
-    };
-
-    room.onStateChange(this.boundLobbyStateChange);
-    room.onLeave(this.boundLobbyLeave);
+    });
 
     this.showView('waiting');
     this.updateWaitingState(room.state);
-  }
-
-  async tryResumeLobbySession() {
-    const activeRoom = getActiveLobbyRoom();
-    if (!activeRoom) {
-      if (!this.resumeLobbyId) {
-        this.showError('No se pudo recuperar la sala anterior.');
-        return;
-      }
-
-      try {
-        const room = await this.lobbyClient.joinLobbyById(this.resumeLobbyId, {
-          playerName: this.prefs.playerName || 'Jugador',
-          skinId: this.prefs.guestSkinId || this.prefs.hostSkinId,
-        });
-        this.attachLobbyRoom(room);
-      } catch (error) {
-        this.showError(error.message || 'No se pudo recuperar la sala anterior.');
-      }
-      return;
-    }
-
-    this.attachLobbyRoom(activeRoom);
   }
 
   updateWaitingState(state) {
@@ -587,8 +649,8 @@ export class OnlineMenu extends Phaser.Scene {
     this.overlayRoot.querySelector('#waiting-map').textContent = mapId;
     this.overlayRoot.querySelector('#waiting-visibility').textContent = visibility === 'private' ? 'Privada' : 'Publica';
     this.overlayRoot.querySelector('#waiting-status').textContent = status === 'ready'
-      ? 'Sala lista. El host puede iniciar.'
-      : 'Esperando jugador...';
+        ? 'Sala lista. El host puede iniciar.'
+        : 'Esperando jugador...';
 
     const codeWrap = this.overlayRoot.querySelector('#waiting-code-wrap');
     const codeValue = this.overlayRoot.querySelector('#waiting-code');
@@ -614,19 +676,13 @@ export class OnlineMenu extends Phaser.Scene {
   async cleanupLobbyRoom(leaveRoom) {
     if (!this.lobbyRoom) return;
     const room = this.lobbyRoom;
-
-    if (this.boundLobbyStateChange) {
-      room.onStateChange.remove(this.boundLobbyStateChange);
-      this.boundLobbyStateChange = null;
-    }
-    if (this.boundLobbyLeave) {
-      room.onLeave.remove(this.boundLobbyLeave);
-      this.boundLobbyLeave = null;
-    }
-
     this.lobbyRoom = null;
     if (leaveRoom) {
-      await leaveActiveLobbyRoom();
+      try {
+        await room.leave();
+      } catch {
+        // ignore
+      }
     }
   }
 
@@ -659,10 +715,10 @@ export class OnlineMenu extends Phaser.Scene {
 
   escapeHtml(value) {
     return String(value ?? '')
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
   }
 }

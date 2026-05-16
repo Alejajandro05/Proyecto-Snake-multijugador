@@ -37,6 +37,8 @@ services:
       - caddy_config:/config
     depends_on:
       - backend
+    env_file:
+      - ./backend/.env
 
 volumes:
   caddy_data:

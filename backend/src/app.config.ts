@@ -7,12 +7,14 @@ import type { Express, Request, Response } from "express";
 import { SnakeRoom } from "./rooms/SnakeRoom.js";
 import { MyRoom } from "./rooms/MyRoom.js";
 import { LobbyRoom } from "./rooms/LobbyRoom.js";
+import { RankedQueueRoom } from "./rooms/RankedQueueRoom.js";
 
 const serverConfig: any = {
     rooms: {
         snake_room: defineRoom(SnakeRoom),
         my_room: defineRoom(MyRoom),
         lobby_room: defineRoom(LobbyRoom),
+        ranked_queue: defineRoom(RankedQueueRoom),
     },
 };
 
