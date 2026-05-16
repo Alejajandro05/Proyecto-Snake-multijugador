@@ -22,15 +22,13 @@ export const againstAIGameAiLogic = {
     targetApple: {y: null, x: null},
 
     calculateAINextDirection(oldState, engine) {
-        const snakeboard = this.fetchsnakeboard(oldState, engine);
 
-        //TODO if (P2_ID is alive) do else  don't do
-        const direction = this.calculateAINextDirectionWithSnakeboard(snakeboard, oldState.players.get(P2_ID).direction);
-
-        engine.setNextDirection(P2_ID, "up"/*direction*/);//TODO use direction
-
-        // TODO delete this
-        this.logSnakeboard(snakeboard);
+        if (oldState.players.get(P2_ID).alive) {
+            const snakeboard = this.fetchsnakeboard(oldState, engine);
+            const direction = this.calculateAINextDirectionWithSnakeboard(snakeboard, oldState.players.get(P2_ID).direction);
+            engine.setNextDirection(P2_ID, direction);
+            this.logSnakeboard(snakeboard); // TODO delete this
+        }
     },
 
     fetchsnakeboard(oldState, engine) {
@@ -110,12 +108,12 @@ export const againstAIGameAiLogic = {
     calculateAINextDirectionWithSnakeboardAndTargetApple(snakeboard, targetApple, currentAiDirection) {
         const aiPlayerHead = this.findAiPlayerHead(snakeboard);
         const targetAppleDirection = this.calculateDirectionToTargetApple(snakeboard, aiPlayerHead, targetApple, currentAiDirection);
-        return this.avoidObstaculeOrEnemy(snakeboard, aiPlayerHead, targetAppleDirection, currentAiDirection);
+        return this.avoidObstaculeOrEnemy(snakeboard, aiPlayerHead, targetAppleDirection, targetApple, currentAiDirection);
     },
 
     findAiPlayerHead(snakeboard) {
         for (let y = 0; y < snakeboard.length; y++) {
-            for (let x = 0; x < snakeboard.length; x++) {
+            for (let x = 0; x < snakeboard[0].length; x++) {
                 if (snakeboard[y][x] == SNAKE_BOARD_TILE.aiPlayerHead) {
                     return {y:y, x:x};
                 }
@@ -126,37 +124,45 @@ export const againstAIGameAiLogic = {
 
     calculateDirectionToTargetApple(snakeboard, aiPlayerHead, targetApple, currentAiDirection) {
         if (aiPlayerHead.x === targetApple.x) {//TODO avoiding an obstacle could cause problems when requiring x to be the same
-            if (this.verticalBorderDirectionFaster(snakeboard, aiPlayerHead, targetApple)) {
-                return (aiPlayerHead.y-targetApple.y < 0) ? SNAKE_DIRECTIONS.up : SNAKE_DIRECTIONS.down;
-            }
-            else {
-                return (aiPlayerHead.y-targetApple.y < 0) ? SNAKE_DIRECTIONS.down : SNAKE_DIRECTIONS.up;
-            }
+            return this.fastestVerticalDirectionToApple(snakeboard, aiPlayerHead, targetApple);
         }
         else {
-            if (this.horizontalBorderDirectionFaster(snakeboard, aiPlayerHead, targetApple)) {
-                return (aiPlayerHead.x-targetApple.x < 0) ? SNAKE_DIRECTIONS.left : SNAKE_DIRECTIONS.right;
-            }
-            else {
-                return (aiPlayerHead.x-targetApple.x < 0) ? SNAKE_DIRECTIONS.right : SNAKE_DIRECTIONS.left;
-            }
+            return this.fastestHorizontalDirectionToApple(snakeboard, aiPlayerHead, targetApple);
         }
     },
 
-    horizontalBorderDirectionFaster(snakeboard, aiPlayerHead, targetApple) {
-        return !(snakeboard[0].length/2 < aiPlayerHead.x-targetApple.x && aiPlayerHead.x-targetApple.x < snakeboard[0].length/2);
+    fastestVerticalDirectionToApple(snakeboard, aiPlayerHead, targetApple) {
+        if (this.verticalBorderDirectionFaster(snakeboard, aiPlayerHead, targetApple)) {
+            return (aiPlayerHead.y-targetApple.y < 0) ? SNAKE_DIRECTIONS.up : SNAKE_DIRECTIONS.down;
+        }
+        else {
+            return (aiPlayerHead.y-targetApple.y < 0) ? SNAKE_DIRECTIONS.down : SNAKE_DIRECTIONS.up;
+        }
+    },
+
+    fastestHorizontalDirectionToApple(snakeboard, aiPlayerHead, targetApple) {
+        if (this.horizontalBorderDirectionFaster(snakeboard, aiPlayerHead, targetApple)) {
+            return (aiPlayerHead.x-targetApple.x < 0) ? SNAKE_DIRECTIONS.left : SNAKE_DIRECTIONS.right;
+        }
+        else {
+            return (aiPlayerHead.x-targetApple.x < 0) ? SNAKE_DIRECTIONS.right : SNAKE_DIRECTIONS.left;
+        }
     },
 
     verticalBorderDirectionFaster(snakeboard, aiPlayerHead, targetApple) {
         return !(snakeboard.length/2 < aiPlayerHead.y-targetApple.y && aiPlayerHead.y-targetApple.y < snakeboard.length/2);
     },
 
-    avoidObstaculeOrEnemy(snakeboard, aiPlayerHead, targetAppleDirection, currentAiDirection) {
-        if (!this.obstaculInAISnakeDirection(snakeboard, aiPlayerHead, targetAppleDirection)) {
-            return targetAppleDirection;
+    horizontalBorderDirectionFaster(snakeboard, aiPlayerHead, targetApple) {
+        return !(snakeboard[0].length/2 < aiPlayerHead.x-targetApple.x && aiPlayerHead.x-targetApple.x < snakeboard[0].length/2);
+    },
+
+    avoidObstaculeOrEnemy(snakeboard, aiPlayerHead, targetAppleDirection, targetApple, currentAiDirection) {
+        if (this.obstaculInAISnakeDirection(snakeboard, aiPlayerHead, targetAppleDirection)) {
+            return this.avoidObstacule_Helper(snakeboard, aiPlayerHead, targetAppleDirection, targetApple, currentAiDirection);
         }
         else {
-
+            return targetAppleDirection;
         }
     },
 
@@ -189,6 +195,27 @@ export const againstAIGameAiLogic = {
             nextX = snakeboard[0].length;
 
         return (snakeboard[nextY][nextX] != SNAKE_BOARD_TILE.empty);
+    },
+
+    avoidObstacule_Helper(snakeboard, aiPlayerHead, targetAppleDirection, targetApple, currentAiDirection) { //TODO better logic for avoiding obstacules, a queue could be nesecarry to move arount abstacules
+        var direction = currentAiDirection;
+        // try vertical (other side if horizontal)
+        if (targetAppleDirection === SNAKE_DIRECTIONS.left || targetAppleDirection === SNAKE_DIRECTIONS.right) {
+            direction = this.fastestVerticalDirectionToApple(snakeboard, aiPlayerHead, targetApple);
+        }
+        if (!this.obstaculInAISnakeDirection(snakeboard, aiPlayerHead, direction))
+            return direction;
+
+
+        // try horizontal (other side if vertical)
+        if (targetAppleDirection === SNAKE_DIRECTIONS.up || targetAppleDirection === SNAKE_DIRECTIONS.down) {
+            direction = this.fastestHorizontalDirectionToApple(snakeboard, aiPlayerHead, targetApple);
+        }
+        if (!this.obstaculInAISnakeDirection(snakeboard, aiPlayerHead, direction))
+            return direction;
+
+        return currentAiDirection;
+        
     },
 
     logSnakeboard(snakeboard) {
