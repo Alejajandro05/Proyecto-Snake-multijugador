@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
-# Despliegue en VPS con Docker Compose (produccion): pull, build del frontend en el host y recrea contenedores.
+# Despliegue en VPS con Docker Compose (produccion): build del frontend en el host y recrea contenedores.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-
-git pull --ff-only
 
 echo ">>> frontend: npm ci && npm run build (genera frontend/dist para Caddy)"
 (cd "$ROOT/frontend" && npm ci && npm run build)
