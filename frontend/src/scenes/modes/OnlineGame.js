@@ -515,6 +515,8 @@ export class OnlineGame extends Phaser.Scene {
                     this.scene.start('MainMenu');
                 }
             });
+
+            this.renderState(this.room.state);
         } catch (err) {
             console.error('OnlineGame connection error:', err);
             this.cleanupRoom();
