@@ -350,7 +350,8 @@ export class OnlineMenu extends Phaser.Scene {
           this.scene.start('OnlineGame', {
             matchRoomId: data.roomId,
             playerName: user.displayName || "Jugador",
-            skinId: this.prefs.guestSkinId
+            skinId: this.prefs.guestSkinId,
+            gameMode: 'normal',
           });
         });
 
@@ -611,8 +612,10 @@ export class OnlineMenu extends Phaser.Scene {
         const playerName = isHost ? state.host.playerName : state.guest.playerName;
         this.scene.start('OnlineGame', {
           matchRoomId: state.matchRoomId,
+          lobbyRoomId: state.lobbyId,
           skinId,
           playerName,
+          gameMode: state.gameMode,
           difficulty: state.difficulty,
           mapId: state.mapId,
         });

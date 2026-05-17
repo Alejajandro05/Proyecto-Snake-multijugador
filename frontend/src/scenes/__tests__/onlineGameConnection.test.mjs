@@ -12,3 +12,19 @@ test('online game joins the match room created by the lobby instead of creating 
     assert.equal(source.includes("joinOrCreate('snake_room')"), false);
     assert.equal(source.includes("joinSnakeRoomById(this.matchRoomId, options)"), true);
 });
+
+test('online lobby passes the selected mode into the online match scene', () => {
+    const testDir = path.dirname(fileURLToPath(import.meta.url));
+    const onlineMenuPath = path.resolve(testDir, '../OnlineMenu.js');
+    const source = fs.readFileSync(onlineMenuPath, 'utf8');
+
+    assert.match(source, /gameMode:\s*state\.gameMode/);
+});
+
+test('online game renders the joined room initial state before waiting for patches', () => {
+    const testDir = path.dirname(fileURLToPath(import.meta.url));
+    const onlineGamePath = path.resolve(testDir, '../modes/OnlineGame.js');
+    const source = fs.readFileSync(onlineGamePath, 'utf8');
+
+    assert.match(source, /this\.renderState\(this\.room\.state\)/);
+});

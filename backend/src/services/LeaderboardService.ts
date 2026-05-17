@@ -1,6 +1,10 @@
-import admin from "firebase-admin";import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
+import { existsSync, readFileSync } from "node:fs";
+import admin from "firebase-admin";
+import type { ServiceAccount } from "firebase-admin";
+import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 
 const COLLECTION_NAME = "leaderboard-wins";
+const DEFAULT_SERVICE_ACCOUNT_PATH = "/app/secrets/firebase-service-account.json";
 
 interface LeaderboardEntry {
   id?: string;
@@ -14,6 +18,14 @@ interface LeaderboardCreateData {
 }
 
 const firebaseConfig = () => {
+  const parseServiceAccount = (rawJson: string): ServiceAccount => {
+    try {
+      return JSON.parse(rawJson) as ServiceAccount;
+    } catch {
+      throw new Error("Invalid Firebase service account JSON.");
+    }
+  };
+
   if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON_B64) {
     const serviceAccountJson = Buffer.from(
       process.env.FIREBASE_SERVICE_ACCOUNT_JSON_B64,
@@ -21,20 +33,25 @@ const firebaseConfig = () => {
     ).toString("utf8");
 
     return {
-      credential: admin.credential.cert(
-        JSON.parse(serviceAccountJson),
-      ),
+      credential: admin.credential.cert(parseServiceAccount(serviceAccountJson)),
     };
   }
 
-  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+  const configuredCredentialPath =
+    process.env.FIREBASE_SERVICE_ACCOUNT_PATH ??
+    process.env.GOOGLE_APPLICATION_CREDENTIALS ??
+    DEFAULT_SERVICE_ACCOUNT_PATH;
+
+  if (configuredCredentialPath && existsSync(configuredCredentialPath)) {
+    const serviceAccountJson = readFileSync(configuredCredentialPath, "utf8");
+
     return {
-      credential: admin.credential.applicationDefault(),
+      credential: admin.credential.cert(parseServiceAccount(serviceAccountJson)),
     };
   }
 
   throw new Error(
-    "Firebase service account credentials are required. Set FIREBASE_SERVICE_ACCOUNT_JSON_B64 or GOOGLE_APPLICATION_CREDENTIALS.",
+    "Firebase service account credentials are required. Set FIREBASE_SERVICE_ACCOUNT_JSON_B64, FIREBASE_SERVICE_ACCOUNT_PATH, or GOOGLE_APPLICATION_CREDENTIALS.",
   );
 };
 
