@@ -41,10 +41,11 @@ Flujo típico en el VPS:
 
 ```bash
 chmod +x scripts/pull-git-and-restart-docker.sh   # una vez
+git pull --ff-only
 ./scripts/pull-git-and-restart-docker.sh
 ```
 
-Ese script hace `git pull --ff-only`, construye el frontend en el host (`frontend/dist`) y ejecuta `docker compose -f docker-compose.prod.yml up -d --build --force-recreate` para que Caddy recargue cambios del `Caddyfile`.
+Primero actualiza el repo con `git pull --ff-only`; despues el script construye el frontend en el host (`frontend/dist`) y ejecuta `docker compose -f docker-compose.prod.yml up -d --build --force-recreate` para que Caddy recargue cambios del `Caddyfile`.
 
 ### Credenciales Firebase
 

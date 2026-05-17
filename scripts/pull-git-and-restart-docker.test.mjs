@@ -44,13 +44,23 @@ test('deploy continues without a Firebase service account file', () => {
     assert.equal(result.status, 0, result.stderr || result.stdout);
 
     const commandLog = readFileSync(logPath, 'utf8');
-    assert.match(commandLog, /^git pull --ff-only$/m);
+    assert.doesNotMatch(commandLog, /^git pull --ff-only$/m);
     assert.match(commandLog, /^npm ci$/m);
     assert.match(commandLog, /^npm run build$/m);
     assert.match(commandLog, /^docker compose -f docker-compose\.prod\.yml up -d --build --force-recreate$/m);
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
+});
+
+test('GitHub deploy workflow pulls updates before running the deploy script', () => {
+  const workflow = readFileSync(path.join(repoRoot, '.github', 'workflows', 'deploy.yml'), 'utf8');
+  const pullIndex = workflow.indexOf('git pull --ff-only');
+  const scriptIndex = workflow.indexOf('bash scripts/pull-git-and-restart-docker.sh');
+
+  assert.notEqual(pullIndex, -1);
+  assert.notEqual(scriptIndex, -1);
+  assert.ok(pullIndex < scriptIndex);
 });
 
 function writeMockCommand(mockBin, name) {
