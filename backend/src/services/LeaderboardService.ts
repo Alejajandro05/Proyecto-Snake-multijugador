@@ -1,10 +1,14 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
 import admin from "firebase-admin";
 import type { ServiceAccount } from "firebase-admin";
-import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
+import type { Auth } from "firebase-admin/auth";
+import type { CollectionReference, Firestore, QueryDocumentSnapshot } from "firebase-admin/firestore";
 
 const COLLECTION_NAME = "leaderboard-wins";
 const DEFAULT_SERVICE_ACCOUNT_PATH = "/app/secrets/firebase-service-account.json";
+let db: Firestore | null = null;
+let collection: CollectionReference | null = null;
+let cachedAuth: Auth | null = null;
 
 interface LeaderboardEntry {
   id?: string;
@@ -61,16 +65,41 @@ const firebaseConfig = () => {
   );
 };
 
-if (!admin.apps.length) {
-  admin.initializeApp(firebaseConfig());
+function ensureFirebaseApp() {
+  if (!admin.apps.length) {
+    admin.initializeApp(firebaseConfig());
+  }
 }
 
-const db = admin.firestore();
-const collection = db.collection(COLLECTION_NAME);
+function getDb() {
+  ensureFirebaseApp();
+  if (!db) {
+    db = admin.firestore();
+  }
+
+  return db;
+}
+
+function getCollection() {
+  if (!collection) {
+    collection = getDb().collection(COLLECTION_NAME);
+  }
+
+  return collection;
+}
+
+export function getFirebaseAuth() {
+  ensureFirebaseApp();
+  if (!cachedAuth) {
+    cachedAuth = admin.auth();
+  }
+
+  return cachedAuth;
+}
 
 export class LeaderboardService {
   static async create(entry: LeaderboardCreateData): Promise<LeaderboardEntry> {
-    const docRef = await collection.add({
+    const docRef = await getCollection().add({
       userUUID: entry.userUUID,
       winCount: entry.winCount,
     });
@@ -82,7 +111,7 @@ export class LeaderboardService {
   }
 
   static async getById(id: string): Promise<LeaderboardEntry | null> {
-    const snapshot = await collection.doc(id).get();
+    const snapshot = await getCollection().doc(id).get();
 
     if (!snapshot.exists) {
       return null;
@@ -98,7 +127,7 @@ export class LeaderboardService {
   }
 
   static async getAll(): Promise<LeaderboardEntry[]> {
-    const snapshot = await collection.get();
+    const snapshot = await getCollection().get();
 
     return snapshot.docs.map((doc: QueryDocumentSnapshot) => {
       const data = doc.data();
@@ -114,7 +143,7 @@ export class LeaderboardService {
     id: string,
     payload: Partial<LeaderboardCreateData>,
   ): Promise<LeaderboardEntry> {
-    await collection.doc(id).set(payload, { merge: true });
+    await getCollection().doc(id).set(payload, { merge: true });
 
     const updated = await LeaderboardService.getById(id);
     if (!updated) {
@@ -125,7 +154,7 @@ export class LeaderboardService {
   }
 
   static async delete(id: string): Promise<void> {
-    await collection.doc(id).delete();
+    await getCollection().doc(id).delete();
   }
 }
 
@@ -136,4 +165,3 @@ export class LeaderboardService {
 // If existing, update with winCount + 1, else create new with winCount: 1
 
 export type { LeaderboardEntry };
-export const auth = admin.auth();

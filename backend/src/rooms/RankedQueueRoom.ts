@@ -1,5 +1,5 @@
 import { Room, Client, matchMaker } from "colyseus";
-import { LeaderboardService, auth } from "../services/LeaderboardService.js";
+import { LeaderboardService, getFirebaseAuth } from "../services/LeaderboardService.js";
 
 interface QueueTicket {
     client: Client;
@@ -24,7 +24,7 @@ export class RankedQueueRoom extends Room {
     async onAuth(client: Client, options: any) {
         try {
             // 1. Verificamos la firma criptográfica del Token JWT
-            const decodedToken = await auth.verifyIdToken(options.token);
+            const decodedToken = await getFirebaseAuth().verifyIdToken(options.token);
             const uid = decodedToken.uid;
             const playerName = options.playerName || "Jugador";
 
