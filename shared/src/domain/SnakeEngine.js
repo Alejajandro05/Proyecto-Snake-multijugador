@@ -411,16 +411,47 @@ export class SnakeEngine {
         });
     }
     isCellOccupied(x, y) {
-        // snakes
-        if (this.getSnakesPosition().some(s => s.x == x && s.y == y))
+        if (this.getSnakesPosition().some((segment) => segment.x === x && segment.y === y))
             return true;
-        // food
-        if (this.food.some(f => f.x === x && f.y === y))
+        if (this.food.some((food) => food.x === x && food.y === y))
             return true;
-        // obstacles
-        if (this.obstacles.some(o => o.x === x && o.y === y))
+        if (this.obstacles.some((obstacle) => obstacle.x === x && obstacle.y === y))
             return true;
         return false;
+    }
+    clearTutorialFood() {
+        this.food.length = 0;
+    }
+    spawnTutorialFood(type, col, row) {
+        const x = col * this.config.gridSize;
+        const y = row * this.config.gridSize;
+        if (this.isCellOccupied(x, y))
+            return false;
+        const scoreByType = { apple: 1, grape: 3, speed: 0, poison: -2 };
+        this.food.push({ x, y, type, score: scoreByType[type] ?? 1 });
+        return true;
+    }
+    spawnTutorialObstacles(totalCount) {
+        const safeCount = Math.max(0, Math.min(totalCount, this.config.gridCols * this.config.gridRows));
+        this.obstacles.length = 0;
+        if (safeCount === 0)
+            return;
+        const quadrants = ['TL', 'TR', 'BL', 'BR'];
+        let placed = 0;
+        let guard = 0;
+        while (placed < safeCount && guard < safeCount * 40) {
+            guard += 1;
+            const quadrant = quadrants[placed % quadrants.length];
+            const candidate = this.randomObstacleInQuadrant(quadrant);
+            if (this.obstacles.some((obstacle) => obstacle.x === candidate.x && obstacle.y === candidate.y)) {
+                continue;
+            }
+            if (this.isCellOccupied(candidate.x, candidate.y)) {
+                continue;
+            }
+            this.obstacles.push(candidate);
+            placed += 1;
+        }
     }
     isAreaSafeForSnake(col, row, margin) {
         const startCol = col - margin;
