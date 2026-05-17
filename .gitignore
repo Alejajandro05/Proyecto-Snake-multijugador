@@ -35,6 +35,7 @@ pnpm-debug.log*
 
 # --- Docker ---
 docker-compose.override.yml
+.docker-compose.firebase-secret.yml
 
 # --- OS / Editor ---
 .DS_Store

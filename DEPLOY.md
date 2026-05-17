@@ -46,6 +46,13 @@ chmod +x scripts/pull-git-and-restart-docker.sh   # una vez
 
 Ese script hace `git pull --ff-only`, construye el frontend en el host (`frontend/dist`) y ejecuta `docker compose -f docker-compose.prod.yml up -d --build --force-recreate` para que Caddy recargue cambios del `Caddyfile`.
 
+### Credenciales Firebase
+
+Firebase es opcional para arrancar el backend y crear partidas online normales. Si no hay credenciales, el deploy continua; ranked/leaderboard fallaran hasta configurar una de estas opciones:
+
+- **`FIREBASE_SERVICE_ACCOUNT_JSON_B64`**: recomendado para GitHub Actions. El workflow lo pasa al VPS y Docker Compose lo inyecta al contenedor.
+- **`FIREBASE_SERVICE_ACCOUNT_FILE`**: ruta a un JSON local en el VPS. Si existe, `scripts/pull-git-and-restart-docker.sh` crea un override temporal para montarlo en `/app/secrets/firebase-service-account.json`.
+
 ### Desarrollo local
 
 [`docker-compose.yml`](docker-compose.yml) levanta **backend** + **frontend** (Vite) con el puerto **2567** publicado para pruebas desde el host. El **contexto de build del backend** es la raíz del repo (`context: .`, `dockerfile: backend/Dockerfile`, `target: development`).
@@ -89,3 +96,4 @@ Si despliegas **solo con Docker**, cambia el paso remoto para usar `bash scripts
 | `DEPLOY_USER` | Usuario SSH |
 | `DEPLOY_SSH_KEY` | Clave privada |
 | `DEPLOY_PATH` | Ruta absoluta al clon del repo en el servidor |
+| `FIREBASE_SERVICE_ACCOUNT_JSON_B64` | Opcional; credenciales Firebase en base64 para ranked/leaderboard |
