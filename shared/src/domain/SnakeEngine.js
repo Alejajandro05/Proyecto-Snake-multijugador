@@ -66,6 +66,7 @@ export class SnakeEngine {
     speedDurationMs = 5000;
     ticksTicksDurationMs;
     events = new EventEmitter();
+    tutorialAllowedFoodTypes = null;
     constructor(initialFoodOrConfig, configOverrides) {
         const configInput = typeof initialFoodOrConfig === 'number'
             ? { ...configOverrides, foodCount: initialFoodOrConfig }
@@ -346,16 +347,25 @@ export class SnakeEngine {
         } while (this.isCellOccupied(food.x, food.y));
         return food;
     }
+    setTutorialAllowedFoodTypes(types) {
+        this.tutorialAllowedFoodTypes = types?.length ? [...types] : null;
+    }
     getRandomFoodType() {
         const entries = Object.entries(FOOD_CONFIG);
-        const totalWeight = entries.reduce((sum, [, cfg]) => sum + cfg.weight, 0);
+        const pool = this.tutorialAllowedFoodTypes?.length
+            ? entries.filter(([type]) => this.tutorialAllowedFoodTypes.includes(type))
+            : entries;
+        if (pool.length === 0) {
+            return entries[0][0];
+        }
+        const totalWeight = pool.reduce((sum, [, cfg]) => sum + cfg.weight, 0);
         let r = Math.random() * totalWeight;
-        for (const [type, cfg] of entries) {
+        for (const [type, cfg] of pool) {
             r -= cfg.weight;
             if (r < 0)
                 return type;
         }
-        return entries[0][0];
+        return pool[0][0];
     }
     randomObstacleInQuadrant(quadrant) {
         const midCol = Math.floor(this.config.gridCols / 2);
@@ -411,13 +421,31 @@ export class SnakeEngine {
         });
     }
     isCellOccupied(x, y) {
-        if (this.getSnakesPosition().some((segment) => segment.x === x && segment.y === y))
+        // snakes
+        if (this.getSnakesPosition().some(s => s.x == x && s.y == y))
             return true;
-        if (this.food.some((food) => food.x === x && food.y === y))
+        // food
+        if (this.food.some(f => f.x === x && f.y === y))
             return true;
-        if (this.obstacles.some((obstacle) => obstacle.x === x && obstacle.y === y))
+        // obstacles
+        if (this.obstacles.some(o => o.x === x && o.y === y))
             return true;
         return false;
+    }
+    isAreaSafeForSnake(col, row, margin) {
+        const startCol = col - margin;
+        const endCol = col + margin;
+        const startRow = row - margin;
+        const endRow = row + margin;
+        for (let c = startCol; c <= endCol; c++) {
+            for (let r = startRow; r <= endRow; r++) {
+                const x = c * this.config.gridSize;
+                const y = r * this.config.gridSize;
+                if (this.isCellOccupied(x, y))
+                    return false;
+            }
+        }
+        return true;
     }
     clearTutorialFood() {
         this.food.length = 0;
@@ -427,8 +455,8 @@ export class SnakeEngine {
         const y = row * this.config.gridSize;
         if (this.isCellOccupied(x, y))
             return false;
-        const scoreByType = { apple: 1, grape: 3, speed: 0, poison: -2 };
-        this.food.push({ x, y, type, score: scoreByType[type] ?? 1 });
+        const config = FOOD_CONFIG[type] ?? FOOD_CONFIG.apple;
+        this.food.push({ x, y, type, score: config.score });
         return true;
     }
     spawnTutorialObstacles(totalCount) {
@@ -452,20 +480,5 @@ export class SnakeEngine {
             this.obstacles.push(candidate);
             placed += 1;
         }
-    }
-    isAreaSafeForSnake(col, row, margin) {
-        const startCol = col - margin;
-        const endCol = col + margin;
-        const startRow = row - margin;
-        const endRow = row + margin;
-        for (let c = startCol; c <= endCol; c++) {
-            for (let r = startRow; r <= endRow; r++) {
-                const x = c * this.config.gridSize;
-                const y = r * this.config.gridSize;
-                if (this.isCellOccupied(x, y))
-                    return false;
-            }
-        }
-        return true;
     }
 }

@@ -14,11 +14,14 @@ services:
     volumes:
       - ./backend:/app/backend
       - ./shared:/app/shared
+      - ${FIREBASE_SERVICE_ACCOUNT_FILE:-./snake-multijugador-firebase-adminsdk-fbsvc-77269dde1b.json}:/app/secrets/firebase-service-account.json:ro
       - backend_node_modules:/app/backend/node_modules
     ports:
       - "2567:2567"
     environment:
       - NODE_ENV=development
+      - FIREBASE_SERVICE_ACCOUNT_PATH=/app/secrets/firebase-service-account.json
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/secrets/firebase-service-account.json
       - CHOKIDAR_USEPOLLING=true
       - CHOKIDAR_INTERVAL=250
 
@@ -38,8 +41,6 @@ services:
       - VITE_API_PROXY_TARGET=http://backend:2567
     depends_on:
       - backend
-    env_file:
-      - ./backend/.env
 
 volumes:
   backend_node_modules:

@@ -19,6 +19,8 @@ superpowers/
 !.env.example
 !**/.env.example
 !.env.*.example
+*-firebase-adminsdk-*.json
+firebase-service-account.json
 
 # --- Logs ---
 *.log
