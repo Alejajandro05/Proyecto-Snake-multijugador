@@ -201,6 +201,10 @@ export class MainMenu extends Phaser.Scene {
                             1 VS 1 ONLINE
                         </button>
 
+                        <button id="btn-tutorial" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #0F766E; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">
+                            TUTORIAL
+                        </button>
+
                         <button id="btn-opciones" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #1A05A2; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">
                             OPCIONES
                         </button>
@@ -243,6 +247,10 @@ export class MainMenu extends Phaser.Scene {
                         <option value="musica3" ${savedMusicKey === 'musica3' ? 'selected' : ''}>Música 3</option>
                     </select>
                 </div>
+
+                <button id="btn-controles" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 12px; background-color: #006B7C; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.1rem; transition: all 0.2s ease; margin-bottom: 10px;">
+                    ⚙️ CONFIGURAR CONTROLES
+                </button>
 
                 <button id="btn-volver" class="btn text-white fw-bold shadow mt-3 menu-btn" style="width: 100%; padding: 12px; background-color: #334155; border: 2px solid #94A3B8; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.1rem;">
                     VOLVER
@@ -289,9 +297,21 @@ export class MainMenu extends Phaser.Scene {
             this.scene.start('OnlineMenu');
         });
 
+        document.getElementById('btn-tutorial').addEventListener('click', () => {
+            detenerAudioPrueba();
+            clearMenu();
+            this.scene.start('Tutorial');
+        });
+
         document.getElementById('btn-opciones').addEventListener('click', () => {
             pantallaPrincipal.classList.add('d-none');
             pantallaOpciones.classList.remove('d-none');
+        });
+
+        document.getElementById('btn-controles').addEventListener('click', () => {
+            detenerAudioPrueba();
+            clearMenu();
+            this.scene.start('ControlsMenu');
         });
 
         document.getElementById('btn-volver').addEventListener('click', () => {

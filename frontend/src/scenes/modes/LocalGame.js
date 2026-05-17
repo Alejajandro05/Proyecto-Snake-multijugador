@@ -1,9 +1,10 @@
 import Phaser from 'phaser';
 import { SnakeEngine, FOOD_CONFIG } from '@shared/SnakeEngine.ts';
-import { MAX_LIVES, TICK_MS } from '@shared/GameConfig.js';
+import { MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig.js';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
 import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.js';
+import { getControlsConfig } from '../../utils/controlsConfig.js';
 import { recordLocalMatchResult } from '../../utils/localProfiles.js';
 import { applyPlayerThemeToHud, buildPlayerIdentityMap } from '../../utils/playerIdentity.js';
 import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
@@ -63,6 +64,8 @@ export class LocalGame extends Phaser.Scene {
         this.engine.addPlayer(P2_ID, { color: p2Cfg.color, skinId: p2Cfg.skinId, startCol: 24, startRow: 12 });
 
         // 2. CONTROLES Y PAUSA (Corregido con 'Pause' y 'caller')
+        const controls = getControlsConfig(localStorage);
+        
         this.cursors = this.input.keyboard.createCursorKeys();
         this.wasd = this.input.keyboard.addKeys({ up: 'W', left: 'A', down: 'S', right: 'D' });
 
@@ -89,15 +92,17 @@ export class LocalGame extends Phaser.Scene {
 
         // 3. ENTRADA ASÍNCRONA (Inputs que no se pierden)
         this.inputBuffers = { [P1_ID]: [], [P2_ID]: [] };
-        this.input.keyboard.on('keydown-W', () => this.pushDirection(P1_ID, 'up'));
-        this.input.keyboard.on('keydown-A', () => this.pushDirection(P1_ID, 'left'));
-        this.input.keyboard.on('keydown-S', () => this.pushDirection(P1_ID, 'down'));
-        this.input.keyboard.on('keydown-D', () => this.pushDirection(P1_ID, 'right'));
+        
+        // Register input handlers dynamically based on player configuration
+        this.input.keyboard.on(`keydown-${controls.player1.up}`, () => this.pushDirection(P1_ID, 'up'));
+        this.input.keyboard.on(`keydown-${controls.player1.left}`, () => this.pushDirection(P1_ID, 'left'));
+        this.input.keyboard.on(`keydown-${controls.player1.down}`, () => this.pushDirection(P1_ID, 'down'));
+        this.input.keyboard.on(`keydown-${controls.player1.right}`, () => this.pushDirection(P1_ID, 'right'));
 
-        this.input.keyboard.on('keydown-UP', () => this.pushDirection(P2_ID, 'up'));
-        this.input.keyboard.on('keydown-LEFT', () => this.pushDirection(P2_ID, 'left'));
-        this.input.keyboard.on('keydown-DOWN', () => this.pushDirection(P2_ID, 'down'));
-        this.input.keyboard.on('keydown-RIGHT', () => this.pushDirection(P2_ID, 'right'));
+        this.input.keyboard.on(`keydown-${controls.player2.up}`, () => this.pushDirection(P2_ID, 'up'));
+        this.input.keyboard.on(`keydown-${controls.player2.left}`, () => this.pushDirection(P2_ID, 'left'));
+        this.input.keyboard.on(`keydown-${controls.player2.down}`, () => this.pushDirection(P2_ID, 'down'));
+        this.input.keyboard.on(`keydown-${controls.player2.right}`, () => this.pushDirection(P2_ID, 'right'));
 
         // 4. BUCLE Y LAYOUT
         const runtimeConfig = this.engine.getConfig?.() ?? {};
@@ -310,7 +315,7 @@ export class LocalGame extends Phaser.Scene {
         if (p1) this.updateLivesHud(this.hudJ1Lives, p1.lives);
         if (p2) this.updateLivesHud(this.hudJ2Lives, p2.lives);
 
-        if (shouldEndStandardMatchByScore(p1, p2)) this.gameOver(true);
+        if (shouldEndStandardMatchByScore(p1, p2, WIN_SCORE)) this.gameOver(true);
         if (shouldEndStandardMatchByLives(p1, p2)) this.gameOver(false);
     }
 

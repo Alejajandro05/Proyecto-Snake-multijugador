@@ -3,8 +3,12 @@ function freezeOptions(options) {
 }
 
 export const onlineModes = freezeOptions([
-  { id: "classic", label: "Classic" },
-  { id: "duel", label: "Duel" },
+  { id: "normal", label: "Normal" },
+  { id: "infinite", label: "Infinito" },
+  { id: "timeAttack", label: "Contrarreloj" },
+  { id: "chaos", label: "Caos" },
+  { id: "kingOfTheHill", label: "Rey de la colina" },
+  { id: "territory", label: "Territory Game" },
 ]);
 
 export const onlineDifficulties = freezeOptions([

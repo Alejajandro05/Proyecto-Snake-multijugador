@@ -3,7 +3,6 @@ import {
   type GameRuntimeConfig,
   PLAYER_COLORS,
   resolveGameRuntimeConfig,
-  WIN_SCORE,
 } from './GameConfig.js';
 import { EventEmitter } from "./EventEmitter.js"
 
@@ -58,7 +57,7 @@ export const FOOD_CONFIG: Record<string, FoodConfigItem> = {
     score: -2,
     weight: 10,
     effect: (player) => {
-      player.speed = 3;
+      player.speed = 4;
       player.speedEffectRemaining = Math.max(player.speedEffectRemaining, 50);
     },
     hudEffect: "-2, speed reduce",
@@ -87,6 +86,7 @@ export class SnakeEngine {
   private ticksTicksDurationMs;
 
   private events = new EventEmitter();
+  private tutorialAllowedFoodTypes: FoodType[] | null = null;
 
   constructor(config?: Partial<GameRuntimeConfig>);
   constructor(initialFood?: number, config?: Partial<GameRuntimeConfig>);
@@ -134,7 +134,7 @@ export class SnakeEngine {
       score: 0,
       segments,
       lastEatenFood: null,
-      speed: 1,
+      speed: 2,
       moveCounter: 0,
       speedEffectRemaining: 0
     };
@@ -189,7 +189,7 @@ export class SnakeEngine {
         player.speedEffectRemaining--;
 
         if (player.speedEffectRemaining <= 0) {
-        player.speed = 1;
+        player.speed = 2;
         }
       }
 
@@ -299,11 +299,7 @@ export class SnakeEngine {
         food: config
       });
 
-      let temp_score = player.score + config.score;
-
-      if(temp_score < 0) player.score = 0;
-      else if(temp_score > WIN_SCORE) player.score = WIN_SCORE;
-      else player.score = temp_score;
+      player.score = Math.max(0, player.score + config.score);
 
       config.effect?.(player);
 
@@ -350,7 +346,7 @@ export class SnakeEngine {
     player.direction = 'right';
     player.nextDirection = 'right';
     this.inputQueues.set(id, []);
-    player.speed = 1;
+    player.speed = 2;
     player.moveCounter = 0;
     player.speedEffectRemaining = 0;
     player.alive = true;
@@ -412,18 +408,29 @@ export class SnakeEngine {
     return food;
   }
 
+  setTutorialAllowedFoodTypes(types: FoodType[] | null): void {
+    this.tutorialAllowedFoodTypes = types?.length ? [...types] : null;
+  }
+
   private getRandomFoodType(): FoodType {
     const entries = Object.entries(FOOD_CONFIG) as [FoodType, typeof FOOD_CONFIG[FoodType]][];
+    const pool = this.tutorialAllowedFoodTypes?.length
+      ? entries.filter(([type]) => this.tutorialAllowedFoodTypes!.includes(type))
+      : entries;
 
-    const totalWeight = entries.reduce((sum, [, cfg]) => sum + cfg.weight, 0);
+    if (pool.length === 0) {
+      return entries[0][0];
+    }
+
+    const totalWeight = pool.reduce((sum, [, cfg]) => sum + cfg.weight, 0);
     let r = Math.random() * totalWeight;
 
-    for (const [type, cfg] of entries) {
+    for (const [type, cfg] of pool) {
       r -= cfg.weight;
       if (r < 0) return type;
     }
 
-    return entries[0][0];
+    return pool[0][0];
   }
 
 
@@ -513,6 +520,44 @@ export class SnakeEngine {
     }
 
     return true;
+  }
+
+  clearTutorialFood(): void {
+    this.food.length = 0;
+  }
+
+  spawnTutorialFood(type: FoodType, col: number, row: number): boolean {
+    const x = col * this.config.gridSize;
+    const y = row * this.config.gridSize;
+    if (this.isCellOccupied(x, y)) return false;
+
+    const config = FOOD_CONFIG[type] ?? FOOD_CONFIG.apple;
+    this.food.push({ x, y, type, score: config.score });
+    return true;
+  }
+
+  spawnTutorialObstacles(totalCount: number): void {
+    const safeCount = Math.max(0, Math.min(totalCount, this.config.gridCols * this.config.gridRows));
+    this.obstacles.length = 0;
+    if (safeCount === 0) return;
+
+    const quadrants: ('TL' | 'TR' | 'BL' | 'BR')[] = ['TL', 'TR', 'BL', 'BR'];
+    let placed = 0;
+    let guard = 0;
+
+    while (placed < safeCount && guard < safeCount * 40) {
+      guard += 1;
+      const quadrant = quadrants[placed % quadrants.length];
+      const candidate = this.randomObstacleInQuadrant(quadrant);
+      if (this.obstacles.some((obstacle) => obstacle.x === candidate.x && obstacle.y === candidate.y)) {
+        continue;
+      }
+      if (this.isCellOccupied(candidate.x, candidate.y)) {
+        continue;
+      }
+      this.obstacles.push(candidate);
+      placed += 1;
+    }
   }
 
 }

@@ -10,6 +10,15 @@ function createTerritoryEngine(): SnakeEngine {
   return new SnakeEngine({ foodCount: 0, obstaclesPerQuadrant: 0, territoryMode: true });
 }
 
+function advanceMovement(engine: SnakeEngine, playerId = "p1"): void {
+  const player = engine.getState().players.get(playerId);
+  assert.ok(player, `expected player ${playerId} to exist`);
+
+  for (let i = 0; i < player.speed; i++) {
+    engine.tick();
+  }
+}
+
 describe("SnakeEngine – domain logic", () => {
   it("adds a player with 3 segments pointing right", () => {
     const engine = createEngine();
@@ -29,7 +38,7 @@ describe("SnakeEngine – domain logic", () => {
     engine.addPlayer("p1");
 
     const before = engine.getState().players.get("p1")!.segments[0].x;
-    engine.tick();
+    advanceMovement(engine);
     const after  = engine.getState().players.get("p1")!.segments[0].x;
 
     assert.strictEqual(after - before, GRID_SIZE);
@@ -41,12 +50,12 @@ describe("SnakeEngine – domain logic", () => {
 
     // Valid: up (perpendicular to current 'right')
     engine.setNextDirection("p1", "up");
-    engine.tick();
+    advanceMovement(engine);
     assert.strictEqual(engine.getState().players.get("p1")!.direction, "up");
 
     // Invalid: down is opposite of current 'up'
     engine.setNextDirection("p1", "down");
-    engine.tick();
+    advanceMovement(engine);
     assert.strictEqual(engine.getState().players.get("p1")!.direction, "up");
   });
 
@@ -57,10 +66,10 @@ describe("SnakeEngine – domain logic", () => {
     engine.setNextDirection("p1", "up");
     engine.setNextDirection("p1", "left");
 
-    engine.tick();
+    advanceMovement(engine);
     assert.strictEqual(engine.getState().players.get("p1")!.direction, "up");
 
-    engine.tick();
+    advanceMovement(engine);
     assert.strictEqual(engine.getState().players.get("p1")!.direction, "left");
   });
 
@@ -75,11 +84,28 @@ describe("SnakeEngine – domain logic", () => {
     engine["food"] = [{ x: head.x + GRID_SIZE, y: head.y }];
 
     const lenBefore = engine.getState().players.get("p1")!.segments.length;
-    engine.tick();
+    advanceMovement(engine);
     const playerAfter = engine.getState().players.get("p1")!;
 
     assert.strictEqual(playerAfter.score, 1);
     assert.strictEqual(playerAfter.segments.length, lenBefore + 1);
+  });
+
+  it("does not reset a high score back to the classic win cap when eating food", () => {
+    const engine = createEngine();
+    engine.addPlayer("p1");
+
+    // @ts-ignore - deterministic domain setup
+    const player = engine["players"].get("p1")!;
+    player.score = 70;
+
+    const head = player.segments[0];
+    // @ts-ignore - deterministic domain setup
+    engine["food"] = [{ x: head.x + GRID_SIZE, y: head.y, type: "apple", score: 1 }];
+
+    advanceMovement(engine);
+
+    assert.strictEqual(engine.getState().players.get("p1")!.score, 71);
   });
 
   it("does not spawn replacement food on obstacles", () => {
@@ -119,7 +145,7 @@ describe("SnakeEngine – domain logic", () => {
     player.direction     = "right";
     player.nextDirection = "right";
 
-    engine.tick();
+    advanceMovement(engine);
     assert.strictEqual(engine.getState().players.get("p1")!.alive, false);
   });
 
@@ -135,7 +161,7 @@ describe("SnakeEngine – domain logic", () => {
     player.direction     = "right";
     player.nextDirection = "right";
 
-    engine.tick();
+    advanceMovement(engine);
     assert.strictEqual(engine.getState().players.get("p1")!.segments[0].x, 0);
   });
 
@@ -167,7 +193,7 @@ describe("SnakeEngine – domain logic", () => {
     const engine = createTerritoryEngine();
     engine.addPlayer("p1");
 
-    engine.tick();
+    advanceMovement(engine);
 
     const state = engine.getState();
     const head = state.players.get("p1")!.segments[0];
@@ -189,7 +215,7 @@ describe("SnakeEngine – domain logic", () => {
     p1.direction = "right";
     p1.nextDirection = "right";
 
-    engine.tick();
+    advanceMovement(engine);
     engine.setNextDirection("p1", "up");
 
     const p2 = engine.addPlayer("p2");
@@ -200,7 +226,7 @@ describe("SnakeEngine – domain logic", () => {
     ];
     p2.direction = "up";
     p2.nextDirection = "up";
-    engine.tick();
+    advanceMovement(engine, "p2");
 
     const state = engine.getState();
     const targetX = 6 * GRID_SIZE;

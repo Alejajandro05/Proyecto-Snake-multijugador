@@ -5,6 +5,7 @@ import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
 import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.js';
 import { recordLocalMatchResult } from '../../utils/localProfiles.js';
+import { getControlsConfig } from '../../utils/controlsConfig.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
@@ -62,15 +63,17 @@ export class ChaosGame extends Phaser.Scene {
 
         this.inputBuffers = { [P1_ID]: [], [P2_ID]: [] };
 
-        this.input.keyboard.on('keydown-W', () => this.onP1Input('up'));
-        this.input.keyboard.on('keydown-A', () => this.onP1Input('left'));
-        this.input.keyboard.on('keydown-S', () => this.onP1Input('down'));
-        this.input.keyboard.on('keydown-D', () => this.onP1Input('right'));
+        const controls = getControlsConfig(localStorage);
 
-        this.input.keyboard.on('keydown-UP', () => this.onP2Input('up'));
-        this.input.keyboard.on('keydown-LEFT', () => this.onP2Input('left'));
-        this.input.keyboard.on('keydown-DOWN', () => this.onP2Input('down'));
-        this.input.keyboard.on('keydown-RIGHT', () => this.onP2Input('right'));
+        this.input.keyboard.on(`keydown-${controls.player1.up}`, () => this.onP1Input('up'));
+        this.input.keyboard.on(`keydown-${controls.player1.left}`, () => this.onP1Input('left'));
+        this.input.keyboard.on(`keydown-${controls.player1.down}`, () => this.onP1Input('down'));
+        this.input.keyboard.on(`keydown-${controls.player1.right}`, () => this.onP1Input('right'));
+
+        this.input.keyboard.on(`keydown-${controls.player2.up}`, () => this.onP2Input('up'));
+        this.input.keyboard.on(`keydown-${controls.player2.left}`, () => this.onP2Input('left'));
+        this.input.keyboard.on(`keydown-${controls.player2.down}`, () => this.onP2Input('down'));
+        this.input.keyboard.on(`keydown-${controls.player2.right}`, () => this.onP2Input('right'));
 
         this.isPaused = false;
         this.input.keyboard.on('keydown-ESC', () => {

@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { getGameOverWinnerName, getGameOverPlayerNames } from './gameOverNames.js';
 import { getGameOverRematchScene } from './gameOverRouting.js';
 import { getPlayerCardTheme } from '../utils/playerIdentity.js';
+import { leaveActiveLobbyRoom } from '../net/lobbyClient.js';
 
 export class GameOver extends Phaser.Scene {
     constructor() {
@@ -136,10 +137,13 @@ export class GameOver extends Phaser.Scene {
         document.getElementById('new-match-btn').addEventListener('click', () => {
             document.body.removeChild(gameOverDiv);
             this.game.canvas.style.display = 'block';
-            this.scene.start(escenaRevancha);
+            this.scene.start(escenaRevancha, data?.rematchData ?? undefined);
         });
 
-        document.getElementById('menu-btn').addEventListener('click', () => {
+        document.getElementById('menu-btn').addEventListener('click', async () => {
+            if (data?.leaveActiveLobby) {
+                await leaveActiveLobbyRoom();
+            }
             document.body.removeChild(gameOverDiv);
             this.game.canvas.style.display = 'block';
             this.scene.start('MainMenu');
