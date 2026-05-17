@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { MAX_LIVES } from '@shared/GameConfig';
+import { MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
 import { createLobbyClient } from '../../net/lobbyClient.js';
 import { extractLeaderboardUserName, getCurrentUser } from '../../services/firebaseAuthService.js';
 import { LeaderboardService } from '../../services/LeaderboardService.js';
@@ -9,8 +9,12 @@ import { shouldEndStandardMatchByLives, shouldEndStandardMatchByScore } from '..
 import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.js';
 import { loadOnlinePrefs } from '../../utils/onlineStorage.js';
 import { syncOnlineHudIdentity } from './onlineHudIdentity.js';
+import { getControlsConfig } from '../../utils/controlsConfig.js';
 
 const HILL_WIN_SCORE = 100;
+const TERRITORY_MATCH_MS = 60_000;
+const TIME_ATTACK_MATCH_MS = 60_000;
+const CHAOS_MAX_LIVES = 5;
 
 function normalizeHttpUrlToWebSocket(url) {
     const s = String(url ?? '').trim();
@@ -58,22 +62,30 @@ export class OnlineGame extends Phaser.Scene {
 
     init(data) {
         this.matchRoomId = data?.matchRoomId ?? '';
+        this.lobbyRoomId = data?.lobbyRoomId ?? '';
         this.playerSkinId = data?.skinId ?? '';
         this.mapId = data?.mapId ?? '';
         this.playerName = data?.playerName ?? '';
-        this.selectedGameMode = data?.gameMode ?? 'classic';
+        this.selectedGameMode = data?.gameMode ?? 'normal';
         this.selectedDifficulty = data?.difficulty ?? 'normal';
     }
 
     async create() {
         this.boardRenderer = new SnakeBoardRenderer(this, { mapId: this.mapId });
         this.hillGraphics = this.add.graphics().setDepth(4);
+        this.territoryTimerDiv = null;
+        this.timeAttackTimerDiv = null;
+        this.chaosFxEl = null;
 
         this.cacheHudElements();
         this.toggleHud(true);
+        this.syncModeChrome();
 
         this.cursors = this.input.keyboard.createCursorKeys();
         this.wasd = this.input.keyboard.addKeys({ up: 'W', left: 'A', down: 'S', right: 'D' });
+
+        const controls = getControlsConfig(localStorage);
+        this.controls = controls;
 
         this.isLeavingRoom = false;
         this.input.keyboard.on('keydown-ESC', () => this.leaveRoom());
@@ -85,14 +97,14 @@ export class OnlineGame extends Phaser.Scene {
             right: () => this.sendDirection('right'),
         };
 
-        this.input.keyboard.on('keydown-UP', this.directionHandlers.up);
-        this.input.keyboard.on('keydown-DOWN', this.directionHandlers.down);
-        this.input.keyboard.on('keydown-LEFT', this.directionHandlers.left);
-        this.input.keyboard.on('keydown-RIGHT', this.directionHandlers.right);
-        this.input.keyboard.on('keydown-W', this.directionHandlers.up);
-        this.input.keyboard.on('keydown-A', this.directionHandlers.left);
-        this.input.keyboard.on('keydown-S', this.directionHandlers.down);
-        this.input.keyboard.on('keydown-D', this.directionHandlers.right);
+        this.input.keyboard.on(`keydown-${controls.player1.up}`, this.directionHandlers.up);
+        this.input.keyboard.on(`keydown-${controls.player1.down}`, this.directionHandlers.down);
+        this.input.keyboard.on(`keydown-${controls.player1.left}`, this.directionHandlers.left);
+        this.input.keyboard.on(`keydown-${controls.player1.right}`, this.directionHandlers.right);
+        this.input.keyboard.on(`keydown-${controls.player2.up}`, this.directionHandlers.up);
+        this.input.keyboard.on(`keydown-${controls.player2.down}`, this.directionHandlers.down);
+        this.input.keyboard.on(`keydown-${controls.player2.left}`, this.directionHandlers.left);
+        this.input.keyboard.on(`keydown-${controls.player2.right}`, this.directionHandlers.right);
 
         this.resizeHandler = (gameSize) => this.updateLayout(gameSize.width, gameSize.height);
         this.scale.on('resize', this.resizeHandler);
@@ -102,6 +114,9 @@ export class OnlineGame extends Phaser.Scene {
             this.removeInputListeners();
             this.cleanupRoom();
             this.hillGraphics?.destroy();
+            this.destroyTerritoryTimerDom();
+            this.destroyTimeAttackTimerDom();
+            this.destroyChaosHud();
         });
 
         this.updateLayout(this.scale.width, this.scale.height);
@@ -147,8 +162,8 @@ export class OnlineGame extends Phaser.Scene {
             this.hudHelp.textContent = 'Online | WASD | Flechas - ESC: Menu';
         }
 
-        this.updateLivesHud(this.hudJ1Lives, MAX_LIVES);
-        this.updateLivesHud(this.hudJ2Lives, MAX_LIVES);
+        this.updateLivesHud(this.hudJ1Lives, this.getModeMaxLives());
+        this.updateLivesHud(this.hudJ2Lives, this.getModeMaxLives());
     }
 
     toggleHud(visible) {
@@ -220,11 +235,24 @@ export class OnlineGame extends Phaser.Scene {
 
     updateLivesHud(targetElement, lives) {
         if (!targetElement) return;
+        if (this.isTimeAttackMode()) {
+            targetElement.textContent = '∞';
+            return;
+        }
 
-        const safeLives = Math.max(0, Math.min(MAX_LIVES, Number(lives) || 0));
+        const maxLives = this.getModeMaxLives();
+        const safeLives = Math.max(0, Math.min(maxLives, Number(lives) || 0));
         const heartsOn = '<span class="text-danger">&#10084;</span>'.repeat(safeLives);
-        const heartsOff = '<span class="text-secondary opacity-50">&#10084;</span>'.repeat(MAX_LIVES - safeLives);
+        const heartsOff = '<span class="text-secondary opacity-50">&#10084;</span>'.repeat(maxLives - safeLives);
         targetElement.innerHTML = `${heartsOn}${heartsOff}`;
+    }
+
+    getModeMaxLives(state = this.latestState) {
+        const mode = state?.gameMode ?? this.selectedGameMode;
+        if (mode === 'chaos') return CHAOS_MAX_LIVES;
+        if (mode === 'timeAttack') return 99;
+        if (mode === 'territory') return 1;
+        return MAX_LIVES;
     }
 
     getOrderedPlayers(state) {
@@ -233,6 +261,151 @@ export class OnlineGame extends Phaser.Scene {
 
     isKingOfTheHillMode(state = this.latestState) {
         return (state?.gameMode ?? this.selectedGameMode) === 'kingOfTheHill';
+    }
+
+    isTerritoryMode(state = this.latestState) {
+        return (state?.gameMode ?? this.selectedGameMode) === 'territory';
+    }
+
+    isTimeAttackMode(state = this.latestState) {
+        return (state?.gameMode ?? this.selectedGameMode) === 'timeAttack';
+    }
+
+    isChaosMode(state = this.latestState) {
+        return (state?.gameMode ?? this.selectedGameMode) === 'chaos';
+    }
+
+    syncModeChrome(state = this.latestState) {
+        if (this.isTerritoryMode(state)) {
+            this.createTerritoryTimerDom();
+        } else {
+            this.destroyTerritoryTimerDom();
+        }
+
+        if (this.isTimeAttackMode(state)) {
+            this.createTimeAttackTimerDom();
+        } else {
+            this.destroyTimeAttackTimerDom();
+        }
+
+        if (this.isChaosMode(state)) {
+            this.ensureChaosHud();
+            this.updateChaosBanner(state);
+        } else {
+            this.destroyChaosHud();
+        }
+    }
+
+    createTerritoryTimerDom() {
+        if (this.territoryTimerDiv) return;
+
+        this.territoryTimerDiv = document.createElement('div');
+        this.territoryTimerDiv.id = 'territory-clock-online';
+        this.territoryTimerDiv.className = 'position-absolute start-50 translate-middle-x text-white fw-bold px-5 py-2 rounded-pill shadow-lg text-center';
+        this.territoryTimerDiv.style = 'background: linear-gradient(180deg, #0f4c5c, #0B081A); border: 4px solid #F67D31; font-size: 3.3rem; z-index: 1000; top: 15px; box-shadow: 0 0 30px rgba(246, 125, 49, 0.45); line-height: 1;';
+        this.territoryTimerDiv.innerText = '01:00';
+        document.getElementById('game-container')?.appendChild(this.territoryTimerDiv);
+    }
+
+    destroyTerritoryTimerDom() {
+        if (!this.territoryTimerDiv) return;
+        this.territoryTimerDiv.remove();
+        this.territoryTimerDiv = null;
+    }
+
+    updateTerritoryClock(state = this.latestState) {
+        if (!this.territoryTimerDiv) return;
+        const remainingTimeMs = Math.max(0, Number(state?.remainingTimeMs) || TERRITORY_MATCH_MS);
+        const totalSeconds = Math.ceil(remainingTimeMs / 1000);
+        const min = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+        const sec = String(totalSeconds % 60).padStart(2, '0');
+        this.territoryTimerDiv.innerText = `${min}:${sec}`;
+    }
+
+    createTimeAttackTimerDom() {
+        if (this.timeAttackTimerDiv) return;
+
+        this.timeAttackTimerDiv = document.createElement('div');
+        this.timeAttackTimerDiv.id = 'time-attack-clock-online';
+        this.timeAttackTimerDiv.className = 'position-absolute start-50 translate-middle-x text-white fw-bold px-5 py-2 rounded-pill shadow-lg text-center';
+        this.timeAttackTimerDiv.style = 'background: linear-gradient(180deg, #1A05A2, #0B081A); border: 4px solid #F67D31; font-size: 4rem; z-index: 1000; top: 15px; box-shadow: 0 0 30px rgba(246, 125, 49, 0.8); line-height: 1;';
+        this.timeAttackTimerDiv.innerText = '01:00';
+        document.getElementById('game-container')?.appendChild(this.timeAttackTimerDiv);
+    }
+
+    destroyTimeAttackTimerDom() {
+        if (!this.timeAttackTimerDiv) return;
+        this.timeAttackTimerDiv.remove();
+        this.timeAttackTimerDiv = null;
+    }
+
+    updateTimeAttackClock(state = this.latestState) {
+        if (!this.timeAttackTimerDiv) return;
+        const remainingTimeMs = Math.max(0, Number(state?.remainingTimeMs) || TIME_ATTACK_MATCH_MS);
+        if (remainingTimeMs <= 0 && !state?.matchEnded) {
+            this.timeAttackTimerDiv.style.fontSize = '2.2rem';
+            this.timeAttackTimerDiv.style.background = 'linear-gradient(180deg, #990000, #330000)';
+            this.timeAttackTimerDiv.style.borderColor = '#FFC107';
+            this.timeAttackTimerDiv.innerText = 'PRIMERO EN 5';
+            return;
+        }
+        const totalSeconds = Math.ceil(remainingTimeMs / 1000);
+        const min = String(Math.floor(totalSeconds / 60)).padStart(2, '0');
+        const sec = String(totalSeconds % 60).padStart(2, '0');
+        this.timeAttackTimerDiv.innerText = `${min}:${sec}`;
+    }
+
+    ensureChaosHud() {
+        if (this.chaosFxEl || !this.hudHelpWrap) return;
+        const el = document.createElement('div');
+        el.id = 'chaos-fx-line-online';
+        el.className = 'text-warning fw-bold small mt-1';
+        el.style.textShadow = '0 0 12px rgba(250, 204, 21, 0.45)';
+        el.style.display = 'none';
+        this.hudHelpWrap.appendChild(el);
+        this.chaosFxEl = el;
+    }
+
+    destroyChaosHud() {
+        if (this.chaosFxEl?.parentNode) {
+            this.chaosFxEl.parentNode.removeChild(this.chaosFxEl);
+        }
+        this.chaosFxEl = null;
+    }
+
+    chaosLabel(id) {
+        if (id === 'speed') return 'Velocidad aumentada';
+        if (id === 'invert') return 'Controles al reves';
+        if (id === 'invertLR') return 'Izquierda y derecha invertidas';
+        if (id === 'obstacles') return 'Obstaculos reubicados';
+        return '';
+    }
+
+    updateChaosBanner(state = this.latestState) {
+        if (!this.chaosFxEl) return;
+        const effectId = String(state?.chaosEffectId ?? '');
+        const label = this.chaosLabel(effectId);
+        this.chaosFxEl.textContent = label ? `Caos: ${label}` : '';
+        this.chaosFxEl.style.display = label ? '' : 'none';
+    }
+
+    getHudPlayerEntries(state) {
+        const entries = this.getOrderedPlayerEntries(state);
+        if (!entries.length) {
+            return { firstEntry: undefined, secondEntry: undefined };
+        }
+
+        const currentSessionId = this.room?.sessionId;
+        if (!currentSessionId) {
+            return { firstEntry: entries[0], secondEntry: entries[1] };
+        }
+
+        const currentEntry = entries.find(([sessionId]) => sessionId === currentSessionId);
+        const rivalEntry = entries.find(([sessionId]) => sessionId !== currentSessionId);
+        return {
+            firstEntry: currentEntry ?? entries[0],
+            secondEntry: rivalEntry ?? entries.find((entry) => entry !== currentEntry),
+        };
     }
 
     redrawHillOverlay(state = this.latestState) {
@@ -290,9 +463,15 @@ export class OnlineGame extends Phaser.Scene {
             const firstName = summary.firstPlayer?.playerName || 'J1';
             const secondName = summary.secondPlayer?.playerName || 'J2';
             const mapId = state?.mapId ?? this.mapId ?? 'arena01';
-            if (this.isKingOfTheHillMode(state)) {
+            if (this.isTerritoryMode(state)) {
+                this.hudHelp.textContent = `Territory Game | Pinta y roba casillas | ${firstName} (WASD) vs ${secondName} (Flechas) | ${mapId} | ESC`;
+            } else if (this.isKingOfTheHillMode(state)) {
                 const targetScore = Number(state?.hillWinScore) || HILL_WIN_SCORE;
                 this.hudHelp.textContent = `Rey de la colina | Meta ${targetScore} pts o ganar por vidas | ${firstName} (WASD) vs ${secondName} (Flechas) | ${mapId} | ESC`;
+            } else if (this.isTimeAttackMode(state)) {
+                this.hudHelp.textContent = `Contrarreloj | ${firstName} (WASD) vs ${secondName} (Flechas) | ${mapId} | ESC`;
+            } else if (this.isChaosMode(state)) {
+                this.hudHelp.textContent = `Modo Caos | ${summary.difficultyLabel} | ${firstName} (WASD) vs ${secondName} (Flechas) | ${mapId} | ESC`;
             } else {
                 this.hudHelp.textContent = `${summary.difficultyLabel} | ${mapId} | ${firstName} (WASD) vs ${secondName} (Flechas) - ESC: Menu`;
             }
@@ -383,16 +562,16 @@ export class OnlineGame extends Phaser.Scene {
     }
 
     removeInputListeners() {
-        if (!this.input?.keyboard || !this.directionHandlers) return;
+        if (!this.input?.keyboard || !this.directionHandlers || !this.controls) return;
 
-        this.input.keyboard.off('keydown-UP', this.directionHandlers.up);
-        this.input.keyboard.off('keydown-DOWN', this.directionHandlers.down);
-        this.input.keyboard.off('keydown-LEFT', this.directionHandlers.left);
-        this.input.keyboard.off('keydown-RIGHT', this.directionHandlers.right);
-        this.input.keyboard.off('keydown-W', this.directionHandlers.up);
-        this.input.keyboard.off('keydown-S', this.directionHandlers.down);
-        this.input.keyboard.off('keydown-A', this.directionHandlers.left);
-        this.input.keyboard.off('keydown-D', this.directionHandlers.right);
+        this.input.keyboard.off(`keydown-${this.controls.player1.up}`, this.directionHandlers.up);
+        this.input.keyboard.off(`keydown-${this.controls.player1.down}`, this.directionHandlers.down);
+        this.input.keyboard.off(`keydown-${this.controls.player1.left}`, this.directionHandlers.left);
+        this.input.keyboard.off(`keydown-${this.controls.player1.right}`, this.directionHandlers.right);
+        this.input.keyboard.off(`keydown-${this.controls.player2.up}`, this.directionHandlers.up);
+        this.input.keyboard.off(`keydown-${this.controls.player2.down}`, this.directionHandlers.down);
+        this.input.keyboard.off(`keydown-${this.controls.player2.left}`, this.directionHandlers.left);
+        this.input.keyboard.off(`keydown-${this.controls.player2.right}`, this.directionHandlers.right);
     }
 
     cleanupRoom() {
@@ -413,30 +592,47 @@ export class OnlineGame extends Phaser.Scene {
         if (!state) return;
 
         this.latestState = state;
+        this.syncModeChrome(state);
         this.boardRenderer.renderState(state);
         this.redrawHillOverlay(state);
+        this.updateTerritoryClock(state);
+        this.updateTimeAttackClock(state);
+        this.updateChaosBanner(state);
 
         const { firstPlayer, secondPlayer } = this.syncHudFromPlayers(state);
+        if (this.isTerritoryMode(state)) {
+            const { firstEntry, secondEntry } = this.getHudPlayerEntries(state);
+            const firstTerritory = Number(firstEntry ? state?.territoryCounts?.get?.(firstEntry[0]) : 0) || 0;
+            const secondTerritory = Number(secondEntry ? state?.territoryCounts?.get?.(secondEntry[0]) : 0) || 0;
+
+            if (this.hudJ1ScoreBig) this.hudJ1ScoreBig.textContent = `${firstTerritory}`;
+            if (this.hudJ2ScoreBig) this.hudJ2ScoreBig.textContent = `${secondTerritory}`;
+        }
+
+        if (state?.matchEnded) {
+            this.finishMatch(String(state.matchEndReason || 'lives'));
+            return;
+        }
 
         if (firstPlayer && secondPlayer) {
             const hillWinScore = Number(state?.hillWinScore) || HILL_WIN_SCORE;
             if (this.isKingOfTheHillMode(state) && ((Number(firstPlayer.score) || 0) >= hillWinScore || (Number(secondPlayer.score) || 0) >= hillWinScore)) {
-                this.gameOver(true);
+                this.finishMatch('hill');
                 return;
             }
 
-            if (shouldEndStandardMatchByScore(firstPlayer, secondPlayer)) {
-                this.gameOver(true);
+            if (!this.isTimeAttackMode(state) && !this.isKingOfTheHillMode(state) && !this.isTerritoryMode(state) && shouldEndStandardMatchByScore(firstPlayer, secondPlayer, WIN_SCORE)) {
+                this.finishMatch('score');
                 return;
             }
 
             if (shouldEndStandardMatchByLives(firstPlayer, secondPlayer)) {
-                this.gameOver(false);
+                this.finishMatch('lives');
             }
         }
     }
 
-    gameOver(reason) {
+    finishMatch(reason) {
         if (this.isLeavingRoom) return;
         this.isLeavingRoom = true;
         const currentSessionId = this.room?.sessionId;
@@ -448,13 +644,19 @@ export class OnlineGame extends Phaser.Scene {
         const p1Name = p1?.playerName || 'Jugador 1';
         const p2Name = p2?.playerName || 'Jugador 2';
         const isHillMode = this.isKingOfTheHillMode(this.latestState);
+        const isTerritoryMode = this.isTerritoryMode(this.latestState);
+        const isTimeAttackMode = this.isTimeAttackMode(this.latestState);
+        const p1Territory = Number(p1SessionId ? this.latestState?.territoryCounts?.get?.(p1SessionId) : 0) || 0;
+        const p2Territory = Number(p2SessionId ? this.latestState?.territoryCounts?.get?.(p2SessionId) : 0) || 0;
 
         if (!p1 || !p2) {
             this.scene.start('MainMenu');
             return;
         }
 
-        const winner = reason
+        const winner = (reason === 'territory')
+            ? (p1Territory > p2Territory ? 'J1' : 'J2')
+            : (reason === 'hill' || reason === 'score')
             ? (p1.score > p2.score ? 'J1' : 'J2')
             : (p1.lives > 0 ? 'J1' : 'J2');
         const winnerSessionId = winner === 'J1' ? p1SessionId : p2SessionId;
@@ -463,7 +665,7 @@ export class OnlineGame extends Phaser.Scene {
             console.error('Leaderboard win update failed:', error);
         });
 
-        if (reason) {
+        if (reason === 'hill' || reason === 'score' || reason === 'time' || reason === 'tiebreaker') {
             this.scene.start('GameOver', {
                 winner: getScoreWinner(p1.score, p2.score),
                 p1Name,
@@ -472,22 +674,41 @@ export class OnlineGame extends Phaser.Scene {
                 p1Lives: p1.lives,
                 p2Score: p2.score,
                 p2Lives: p2.lives,
-                reason: isHillMode ? 'hill' : 'score',
-                mode: isHillMode ? 'kingOfTheHill' : 'online',
-                rematchScene: 'OnlineMenu'
+                reason,
+                mode: isHillMode ? 'kingOfTheHill' : (isTimeAttackMode ? 'timeAttack' : 'online'),
+                rematchScene: 'OnlineMenu',
+                rematchData: { resumeLobby: true, lobbyRoomId: this.lobbyRoomId },
+                leaveActiveLobby: true,
+            });
+        } else if (reason === 'territory') {
+            this.scene.start('GameOver', {
+                winner: getScoreWinner(p1Territory, p2Territory),
+                p1Name,
+                p2Name,
+                p1Score: p1Territory,
+                p1Lives: p1.lives,
+                p2Score: p2Territory,
+                p2Lives: p2.lives,
+                reason: 'territory',
+                mode: isTerritoryMode ? 'territory' : 'online',
+                rematchScene: 'OnlineMenu',
+                rematchData: { resumeLobby: true, lobbyRoomId: this.lobbyRoomId },
+                leaveActiveLobby: true,
             });
         } else {
             this.scene.start('GameOver', {
                 winner: getLivesWinner(p1.lives, p2.lives),
                 p1Name,
                 p2Name,
-                p1Score: p1.score,
+                p1Score: isTerritoryMode ? p1Territory : p1.score,
                 p1Lives: p1.lives,
-                p2Score: p2.score,
+                p2Score: isTerritoryMode ? p2Territory : p2.score,
                 p2Lives: p2.lives,
                 reason: 'lives',
-                mode: isHillMode ? 'kingOfTheHill' : 'online',
-                rematchScene: 'OnlineMenu'
+                mode: isTerritoryMode ? 'territory' : (isHillMode ? 'kingOfTheHill' : 'online'),
+                rematchScene: 'OnlineMenu',
+                rematchData: { resumeLobby: true, lobbyRoomId: this.lobbyRoomId },
+                leaveActiveLobby: true,
             });
         }
     }

@@ -7,7 +7,7 @@ export class LobbyRoomState extends Schema {
   @type("string") status: string = "waiting";
   @type("string") visibility: string = "public";
   @type("string") inviteCode: string = "";
-  @type("string") gameMode: string = "classic";
+  @type("string") gameMode: string = "normal";
   @type("string") difficulty: string = "normal";
   @type("string") mapId: string = "arena01";
   @type("string") matchRoomId: string = "";

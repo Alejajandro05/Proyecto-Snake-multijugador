@@ -17,6 +17,7 @@ import { KingOfTheHillGame } from './scenes/modes/KingOfTheHillGame.js';
 import { TerritoryGame } from './scenes/modes/TerritoryGame.js';
 import { Pause } from './scenes/Pause.js';
 import {LocalGameSetup} from "./scenes/LocalGameSetup";
+import { ControlsMenu } from './scenes/ControlsMenu.js';
 
 const config = {
     type: Phaser.AUTO,
@@ -56,6 +57,7 @@ const config = {
         MainMenu,
         Tutorial,
         TutorialGame,
+        ControlsMenu,
         OnlineMenu,
         Registration,
         Login,

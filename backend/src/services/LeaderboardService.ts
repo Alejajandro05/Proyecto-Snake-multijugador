@@ -1,5 +1,4 @@
-import admin from "firebase-admin";
-import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
+import admin from "firebase-admin";import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
 
 const COLLECTION_NAME = "leaderboard-wins";
 
@@ -114,3 +113,4 @@ export class LeaderboardService {
 // If existing, update with winCount + 1, else create new with winCount: 1
 
 export type { LeaderboardEntry };
+export const auth = admin.auth();
