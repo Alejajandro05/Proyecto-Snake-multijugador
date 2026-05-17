@@ -13,14 +13,11 @@ services:
       target: production
     container_name: snake_backend_prod
     restart: unless-stopped
-    volumes:
-      - ${FIREBASE_SERVICE_ACCOUNT_FILE:-./snake-multijugador-firebase-adminsdk-fbsvc-77269dde1b.json}:/app/secrets/firebase-service-account.json:ro
     expose:
       - "2567"
     environment:
       NODE_ENV: production
-      FIREBASE_SERVICE_ACCOUNT_PATH: /app/secrets/firebase-service-account.json
-      GOOGLE_APPLICATION_CREDENTIALS: /app/secrets/firebase-service-account.json
+      FIREBASE_SERVICE_ACCOUNT_JSON_B64: ${FIREBASE_SERVICE_ACCOUNT_JSON_B64:-}
     # Descomenta para depurar Colyseus desde el host sin pasar por Caddy:
     # ports:
     #   - "2567:2567"
