@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import admin from "firebase-admin";
 import type { ServiceAccount } from "firebase-admin";
 import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
@@ -43,6 +43,12 @@ const firebaseConfig = () => {
     DEFAULT_SERVICE_ACCOUNT_PATH;
 
   if (configuredCredentialPath && existsSync(configuredCredentialPath)) {
+    if (!statSync(configuredCredentialPath).isFile()) {
+      throw new Error(
+        `Firebase credential path is not a file: ${configuredCredentialPath}. Check your Docker bind mount; a directory may have been mounted instead of a JSON file.`,
+      );
+    }
+
     const serviceAccountJson = readFileSync(configuredCredentialPath, "utf8");
 
     return {
@@ -51,7 +57,7 @@ const firebaseConfig = () => {
   }
 
   throw new Error(
-    "Firebase service account credentials are required. Set FIREBASE_SERVICE_ACCOUNT_JSON_B64, FIREBASE_SERVICE_ACCOUNT_PATH, or GOOGLE_APPLICATION_CREDENTIALS.",
+    `Firebase service account credentials are required. Checked path: ${configuredCredentialPath}. Set FIREBASE_SERVICE_ACCOUNT_JSON_B64, FIREBASE_SERVICE_ACCOUNT_PATH, or GOOGLE_APPLICATION_CREDENTIALS.`,
   );
 };
 
