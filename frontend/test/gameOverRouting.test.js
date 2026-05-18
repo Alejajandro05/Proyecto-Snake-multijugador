@@ -17,6 +17,11 @@ test('keeps king of the hill rematches in the hill flow', () => {
   assert.equal(getGameOverRematchScene({ mode: 'kingOfTheHill', reason: 'hill' }), 'KingOfTheHillGame');
 });
 
+test('keeps capture the flag rematches in the flag flow', () => {
+  assert.equal(getGameOverRematchScene({ mode: 'captureTheFlag', reason: 'ctfCaptures' }), 'CaptureTheFlagGame');
+  assert.equal(getGameOverRematchScene({ mode: 'captureTheFlag', reason: 'ctfTime' }), 'CaptureTheFlagGame');
+});
+
 test('returns online players to the online lobby instead of local play', () => {
   assert.equal(getGameOverRematchScene({ mode: 'online', reason: 'score' }), 'OnlineMenu');
   assert.equal(getGameOverRematchScene({ mode: 'online', reason: 'lives' }), 'OnlineMenu');

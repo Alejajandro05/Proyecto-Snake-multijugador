@@ -6,6 +6,7 @@ import { loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSetting
 import { applyPlayerThemeToHud, buildPlayerIdentityMap } from '../../utils/playerIdentity.js';
 import { getLivesWinner, getScoreWinner } from '../gameOverRouting.js';
 import { getTerritoryPlayers, shouldTerritoryMatchEndOnDeath } from '../territoryModeHelpers.js';
+import { getControlsConfig } from '../../utils/controlsConfig.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
@@ -48,14 +49,16 @@ export class TerritoryGame extends Phaser.Scene {
 
         this.inputBuffers = { [P1_ID]: [], [P2_ID]: [] };
 
-        this.input.keyboard.on('keydown-W', () => this.pushDirection(P1_ID, 'up'));
-        this.input.keyboard.on('keydown-A', () => this.pushDirection(P1_ID, 'left'));
-        this.input.keyboard.on('keydown-S', () => this.pushDirection(P1_ID, 'down'));
-        this.input.keyboard.on('keydown-D', () => this.pushDirection(P1_ID, 'right'));
-        this.input.keyboard.on('keydown-UP', () => this.pushDirection(P2_ID, 'up'));
-        this.input.keyboard.on('keydown-LEFT', () => this.pushDirection(P2_ID, 'left'));
-        this.input.keyboard.on('keydown-DOWN', () => this.pushDirection(P2_ID, 'down'));
-        this.input.keyboard.on('keydown-RIGHT', () => this.pushDirection(P2_ID, 'right'));
+        const controls = getControlsConfig(localStorage);
+
+        this.input.keyboard.on(`keydown-${controls.player1.up}`, () => this.pushDirection(P1_ID, 'up'));
+        this.input.keyboard.on(`keydown-${controls.player1.left}`, () => this.pushDirection(P1_ID, 'left'));
+        this.input.keyboard.on(`keydown-${controls.player1.down}`, () => this.pushDirection(P1_ID, 'down'));
+        this.input.keyboard.on(`keydown-${controls.player1.right}`, () => this.pushDirection(P1_ID, 'right'));
+        this.input.keyboard.on(`keydown-${controls.player2.up}`, () => this.pushDirection(P2_ID, 'up'));
+        this.input.keyboard.on(`keydown-${controls.player2.left}`, () => this.pushDirection(P2_ID, 'left'));
+        this.input.keyboard.on(`keydown-${controls.player2.down}`, () => this.pushDirection(P2_ID, 'down'));
+        this.input.keyboard.on(`keydown-${controls.player2.right}`, () => this.pushDirection(P2_ID, 'right'));
 
         this.input.keyboard.on('keydown-ESC', () => {
             if (this.isPaused) return;

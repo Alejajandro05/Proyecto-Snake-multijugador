@@ -19,6 +19,8 @@ superpowers/
 !.env.example
 !**/.env.example
 !.env.*.example
+*-firebase-adminsdk-*.json
+firebase-service-account.json
 
 # --- Logs ---
 *.log
@@ -33,6 +35,7 @@ pnpm-debug.log*
 
 # --- Docker ---
 docker-compose.override.yml
+.docker-compose.firebase-secret.yml
 
 # --- OS / Editor ---
 .DS_Store

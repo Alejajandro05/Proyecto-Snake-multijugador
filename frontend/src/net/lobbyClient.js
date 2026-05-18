@@ -1,5 +1,7 @@
 import { Client } from '@colyseus/sdk';
 
+let activeLobbyRoom = null;
+
 function normalizeHttpUrlToWebSocket(url) {
   const value = String(url ?? '').trim();
   if (!value) return '';
@@ -51,6 +53,26 @@ export function getColyseusServerUrl() {
 
 export function getServerHttpUrl() {
   return resolveServerHttpUrl(import.meta.env, window.location);
+}
+
+export function getActiveLobbyRoom() {
+  return activeLobbyRoom;
+}
+
+export function setActiveLobbyRoom(room) {
+  activeLobbyRoom = room ?? null;
+}
+
+export async function leaveActiveLobbyRoom() {
+  const room = activeLobbyRoom;
+  activeLobbyRoom = null;
+  if (!room) return;
+
+  try {
+    await room.leave();
+  } catch {
+    // ignore
+  }
 }
 
 export function createLobbyClient() {

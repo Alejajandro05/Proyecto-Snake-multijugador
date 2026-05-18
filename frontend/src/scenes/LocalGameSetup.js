@@ -351,10 +351,7 @@ export class LocalGameSetup extends Phaser.Scene {
             saveLocalGameSettings(payload);
 
             cleanup();
-            this.scene.start(resolveLocalSceneKey(gameMode), payload); //TODO implement this
-            // Temporal test route: start the AI scene from this setup screen.
-            //console.log(resolveLocalSceneKey(gameMode));
-            //this.scene.start('AgainstAIGame', payload);//TODO delete this
+            this.scene.start(resolveLocalSceneKey(gameMode), payload);
         };
 
         document.getElementById('btn-setup-back')?.addEventListener('click', goBack);
@@ -481,9 +478,16 @@ export class LocalGameSetup extends Phaser.Scene {
                 label: 'Control de territorio',
             },
             {
+                id: 'captureTheFlag',
+                title: 'CAPTURE THE FLAG',
+                desc: 'Roba la bandera rival y vuelve a tu base. Solo puntuas si tu propia bandera sigue en casa.',
+                img: '/modoCTF.png',
+                label: 'Capture the Flag',
+            },
+            {
                 id: 'contraIA',
                 title: 'Contra IA',
-                desc: 'Juega contra una serpiente controlada por la IA',//TODO write desc
+                desc: 'Juega contra una serpiente controlada por la IA',
                 img: '/contraIA.png',
                 label: 'Contra IA',
             },

@@ -17,6 +17,7 @@ services:
       - "2567"
     environment:
       NODE_ENV: production
+      FIREBASE_SERVICE_ACCOUNT_JSON_B64: ${FIREBASE_SERVICE_ACCOUNT_JSON_B64:-}
     # Descomenta para depurar Colyseus desde el host sin pasar por Caddy:
     # ports:
     #   - "2567:2567"

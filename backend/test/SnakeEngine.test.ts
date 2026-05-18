@@ -91,6 +91,23 @@ describe("SnakeEngine – domain logic", () => {
     assert.strictEqual(playerAfter.segments.length, lenBefore + 1);
   });
 
+  it("does not reset a high score back to the classic win cap when eating food", () => {
+    const engine = createEngine();
+    engine.addPlayer("p1");
+
+    // @ts-ignore - deterministic domain setup
+    const player = engine["players"].get("p1")!;
+    player.score = 70;
+
+    const head = player.segments[0];
+    // @ts-ignore - deterministic domain setup
+    engine["food"] = [{ x: head.x + GRID_SIZE, y: head.y, type: "apple", score: 1 }];
+
+    advanceMovement(engine);
+
+    assert.strictEqual(engine.getState().players.get("p1")!.score, 71);
+  });
+
   it("does not spawn replacement food on obstacles", () => {
     const engine = createEngine();
     // @ts-ignore - controlled obstacle placement for deterministic domain test

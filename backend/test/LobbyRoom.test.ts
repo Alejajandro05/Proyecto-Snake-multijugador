@@ -21,6 +21,8 @@ describe("shared online option catalogs", () => {
     assert.ok(skinIds.includes("player1"));
     assert.ok(skinIds.includes("player2"));
     assert.ok(skinIds.includes("snake10"));
+    assert.ok(onlineOptionCatalogs.modes.some((mode) => mode.id === "kingOfTheHill"));
+    assert.ok(onlineOptionCatalogs.modes.some((mode) => mode.id === "territory"));
     assert.deepStrictEqual(difficultyIds, ["easy", "normal", "hard"]);
     assert.ok(mapIds.includes("arena01"));
     assert.ok(mapIds.includes("arena06"));
@@ -47,7 +49,7 @@ describe("LobbyRoomState", () => {
     assert.equal(state.status, "waiting");
     assert.equal(state.visibility, "public");
     assert.equal(state.inviteCode, "");
-    assert.equal(state.gameMode, "classic");
+    assert.equal(state.gameMode, "normal");
     assert.equal(state.difficulty, "normal");
     assert.equal(state.mapId, "arena01");
     assert.equal(state.maxPlayers, 2);
@@ -94,7 +96,7 @@ describe("LobbyRoomState", () => {
     assert.equal(state.guest.connected, false);
     assert.equal(initialSummary.lobbyId, "lobby-123");
     assert.equal(initialSummary.hostName, "Host");
-    assert.equal(initialSummary.gameMode, "classic");
+    assert.equal(initialSummary.gameMode, "normal");
     assert.equal(initialSummary.difficulty, "normal");
     assert.equal(initialSummary.mapId, "arena01");
     assert.equal(initialSummary.playerCount, 1);
@@ -215,7 +217,7 @@ describe("LobbyRoom", () => {
   it("starts a snake match with the host-selected config", async () => {
     const room = await colyseus.createRoom<LobbyRoomState>("lobby_room", {
       visibility: "public",
-      gameMode: "duel",
+      gameMode: "infinite",
       difficulty: "hard",
       mapId: "arena02",
     });
@@ -235,14 +237,111 @@ describe("LobbyRoom", () => {
     assert.equal(snakeListing[0].name, "snake_room");
 
     const snakeRoom = colyseus.getRoomById(room.state.matchRoomId);
-    assert.equal(room.state.gameMode, "duel");
+    assert.equal(room.state.gameMode, "infinite");
     assert.equal(room.state.difficulty, "hard");
     assert.equal(room.state.mapId, "arena02");
     assert.equal(snakeRoom.state.difficulty, "hard");
     assert.equal(snakeRoom.state.tickMs, 110);
     assert.equal(snakeRoom.state.mapId, "arena02");
-    assert.equal(snakeRoom.metadata?.gameMode, "duel");
+    assert.equal(snakeRoom.metadata?.gameMode, "infinite");
     assert.equal(snakeRoom.metadata?.lobbyId, room.roomId);
+
+    await hostClient.leave();
+  });
+
+  it("starts a time attack match with a countdown and high life pool", async () => {
+    const room = await colyseus.createRoom<LobbyRoomState>("lobby_room", {
+      visibility: "public",
+      gameMode: "timeAttack",
+      difficulty: "normal",
+      mapId: "arena05",
+    });
+
+    const hostClient = await colyseus.connectTo(room);
+    await room.waitForNextPatch();
+
+    hostClient.send("startMatch");
+    await room.waitForNextPatch();
+
+    const snakeRoom = colyseus.getRoomById(room.state.matchRoomId);
+    assert.equal(room.state.gameMode, "timeAttack");
+    assert.equal(snakeRoom.state.gameMode, "timeAttack");
+    assert.equal(snakeRoom.state.remainingTimeMs > 0, true);
+    assert.equal(snakeRoom.state.foodCount, 15);
+    assert.equal(snakeRoom.metadata?.gameMode, "timeAttack");
+
+    await hostClient.leave();
+  });
+
+  it("starts a chaos match with five lives and synchronized chaos metadata", async () => {
+    const room = await colyseus.createRoom<LobbyRoomState>("lobby_room", {
+      visibility: "public",
+      gameMode: "chaos",
+      difficulty: "normal",
+      mapId: "arena06",
+    });
+
+    const hostClient = await colyseus.connectTo(room);
+    await room.waitForNextPatch();
+
+    hostClient.send("startMatch");
+    await room.waitForNextPatch();
+
+    const snakeRoom = colyseus.getRoomById(room.state.matchRoomId);
+    assert.equal(room.state.gameMode, "chaos");
+    assert.equal(snakeRoom.state.gameMode, "chaos");
+    assert.equal(snakeRoom.state.chaosEffectId, "");
+    assert.equal(snakeRoom.metadata?.gameMode, "chaos");
+
+    await hostClient.leave();
+  });
+
+  it("starts a king of the hill match with hill metadata in the snake room", async () => {
+    const room = await colyseus.createRoom<LobbyRoomState>("lobby_room", {
+      visibility: "public",
+      gameMode: "kingOfTheHill",
+      difficulty: "normal",
+      mapId: "arena03",
+    });
+
+    const hostClient = await colyseus.connectTo(room);
+    await room.waitForNextPatch();
+
+    hostClient.send("startMatch");
+
+    await room.waitForNextPatch();
+
+    const snakeRoom = colyseus.getRoomById(room.state.matchRoomId);
+    assert.equal(room.state.gameMode, "kingOfTheHill");
+    assert.equal(snakeRoom.state.gameMode, "kingOfTheHill");
+    assert.equal(snakeRoom.state.hillWinScore, 100);
+    assert.equal(snakeRoom.metadata?.gameMode, "kingOfTheHill");
+    assert.equal(snakeRoom.state.hillZoneCol1 >= snakeRoom.state.hillZoneCol0, true);
+    assert.equal(snakeRoom.state.hillZoneRow1 >= snakeRoom.state.hillZoneRow0, true);
+
+    await hostClient.leave();
+  });
+
+  it("starts a territory match with timer metadata in the snake room", async () => {
+    const room = await colyseus.createRoom<LobbyRoomState>("lobby_room", {
+      visibility: "public",
+      gameMode: "territory",
+      difficulty: "normal",
+      mapId: "arena04",
+    });
+
+    const hostClient = await colyseus.connectTo(room);
+    await room.waitForNextPatch();
+
+    hostClient.send("startMatch");
+
+    await room.waitForNextPatch();
+
+    const snakeRoom = colyseus.getRoomById(room.state.matchRoomId);
+    assert.equal(room.state.gameMode, "territory");
+    assert.equal(snakeRoom.state.gameMode, "territory");
+    assert.equal(snakeRoom.state.remainingTimeMs > 0, true);
+    assert.equal(snakeRoom.metadata?.gameMode, "territory");
 
     await hostClient.leave();
   });

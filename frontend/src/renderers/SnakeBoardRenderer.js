@@ -16,6 +16,16 @@ const FOOD_TYPE_TO_FRAME = {
     speed: 10
 };
 
+const TUTORIAL_FRUIT_HIGHLIGHT_COLORS = {
+    apple: 0xF87171,
+    grape: 0xC084FC,
+    speed: 0xF472B6,
+    poison: 0xA3E635,
+};
+
+const TUTORIAL_OBSTACLE_HIGHLIGHT_COLOR = 0xF67D31;
+const TUTORIAL_MIXED_FRUIT_HIGHLIGHT_COLOR = 0xFDE68A;
+
 // Ángulos de rotación para cada dirección (en radianes)
 const DIR_ANGLE = {
     right: 0,
@@ -54,10 +64,8 @@ export class SnakeBoardRenderer {
                 .setOrigin(0).setAlpha(0.96).setDepth(-15)
             : null;
         this.gridGraphics    = this.scene.add.graphics().setDepth(-10);
-        this.boardFrameSprite = this.scene.textures.exists(ASSET_KEYS.MAP_BOARD_FRAME)
-            ? this.scene.add.image(0, 0, ASSET_KEYS.MAP_BOARD_FRAME)
-                .setOrigin(0).setAlpha(0.92).setDepth(5)
-            : null;
+        this.boardBorderSprites = [];
+        this.ensureBoardBorderSprites();
 
         this.identityGraphics = this.scene.add.graphics().setDepth(9);
         this.territoryGraphics = this.scene.add.graphics().setDepth(-12);
@@ -67,8 +75,81 @@ export class SnakeBoardRenderer {
         this.foodSprites      = [];
         this.obstacleSprites  = [];
 
+        this.tutorialHighlightGraphics = this.scene.add.graphics().setDepth(13);
+        this.tutorialHighlight = null;
+        this.highlightPulse = 0.5;
+        this.highlightTween = null;
+        this.lastRenderedState = null;
+
         // Pool de sprites por jugador: snakeSpritePools[playerIndex] = []
         this.snakeSpritePools = [[], []];
+    }
+
+    setTutorialHighlight(highlight) {
+        this.tutorialHighlight = highlight ?? null;
+        if (!this.tutorialHighlight) {
+            this.stopTutorialHighlightAnimation();
+            this.tutorialHighlightGraphics.clear();
+        }
+    }
+
+    startTutorialHighlightAnimation() {
+        this.stopTutorialHighlightAnimation();
+        if (!this.tutorialHighlight) return;
+
+        this.highlightTween = this.scene.tweens.addCounter({
+            from: 0,
+            to: 1,
+            duration: 750,
+            yoyo: true,
+            repeat: -1,
+            onUpdate: (tween) => {
+                this.highlightPulse = tween.getValue();
+                if (!this.lastRenderedState || !this.tutorialHighlight) return;
+                this.renderFood(this.lastRenderedState.food);
+                this.renderObstacles(this.lastRenderedState.obstacles);
+                this.renderTutorialHighlightOverlay(this.lastRenderedState);
+            },
+        });
+    }
+
+    stopTutorialHighlightAnimation() {
+        if (this.highlightTween) {
+            this.highlightTween.stop();
+            this.highlightTween = null;
+        }
+        this.highlightPulse = 0.5;
+        this.tutorialHighlightGraphics.clear();
+    }
+
+    hasTutorialHighlight() {
+        return this.tutorialHighlight != null;
+    }
+
+    isFoodHighlighted(food) {
+        const highlight = this.tutorialHighlight;
+        if (!highlight || !food) return false;
+        if (highlight.type === 'fruit') return food.type === highlight.fruitType;
+        if (highlight.type === 'fruits-and-obstacles') return true;
+        return false;
+    }
+
+    isObstacleHighlighted() {
+        const highlight = this.tutorialHighlight;
+        if (!highlight) return false;
+        return highlight.type === 'obstacles' || highlight.type === 'fruits-and-obstacles';
+    }
+
+    getTutorialDimAlpha(isHighlighted) {
+        if (!this.tutorialHighlight) return 1;
+        return isHighlighted ? 1 : 0.22;
+    }
+
+    getHighlightColorForFood(food) {
+        if (this.tutorialHighlight?.type === 'fruit') {
+            return TUTORIAL_FRUIT_HIGHLIGHT_COLORS[food.type] ?? 0xFDE68A;
+        }
+        return TUTORIAL_MIXED_FRUIT_HIGHLIGHT_COLOR;
     }
 
     setMapId(mapId) {
@@ -89,7 +170,9 @@ export class SnakeBoardRenderer {
         }
 
         this.obstacleSprites.forEach((sprite) => sprite.setVisible(false));
+        this.ensureBoardBorderSprites();
         this.updateFloorTileLayer();
+        this.updateBoardBorderSprites();
         this.drawBoardFrame();
         this.drawGrid();
     }
@@ -122,7 +205,7 @@ export class SnakeBoardRenderer {
             .setDisplaySize(viewportWidth, viewportHeight);
 
         this.updateFloorTileLayer();
-        this.updateBoardFrameSprite();
+        this.updateBoardBorderSprites();
 
         [this.gridGraphics, this.territoryGraphics, this.identityGraphics, this.snakeGraphics, this.foodGraphics, this.obstacleGraphics].forEach((layer) => {
             layer.setPosition(0, 0).setScale(1);
@@ -164,14 +247,57 @@ export class SnakeBoardRenderer {
         this.floorTileSprite.tileScaleY    = scaleY;
     }
 
-    updateBoardFrameSprite() {
-        if (!this.boardFrameSprite) return;
-        const frameWidth  = this.boardWidth  + this.outerPadding * 2;
-        const frameHeight = this.boardHeight + this.outerPadding * 2;
-        this.boardFrameSprite
-            .setPosition(this.boardOffsetX - this.outerPadding, this.boardOffsetY - this.outerPadding)
-            .setDisplaySize(frameWidth, frameHeight)
-            .setVisible(true);
+    ensureBoardBorderSprites() {
+        const borderKey = this.mapAsset.border?.key;
+        if (!borderKey || !this.scene.textures.exists(borderKey)) {
+            this.boardBorderSprites.forEach((sprite) => sprite.setVisible(false));
+            return false;
+        }
+
+        while (this.boardBorderSprites.length < 4) {
+            this.boardBorderSprites.push(
+                this.scene.add.tileSprite(0, 0, 1, 1, borderKey)
+                    .setOrigin(0)
+                    .setAlpha(0.96)
+                    .setDepth(5)
+                    .setVisible(false)
+            );
+        }
+
+        this.boardBorderSprites.forEach((sprite) => {
+            if (sprite.texture.key !== borderKey) {
+                sprite.setTexture(borderKey);
+            }
+        });
+
+        return true;
+    }
+
+    updateBoardBorderSprites() {
+        const borderKey = this.mapAsset.border?.key;
+        if (!this.ensureBoardBorderSprites()) return;
+
+        const borderThickness = this.outerPadding;
+        const frameWidth  = this.boardWidth  + borderThickness * 2;
+        const x = this.boardOffsetX - borderThickness;
+        const y = this.boardOffsetY - borderThickness;
+        const textureFrame = this.scene.textures.get(borderKey).get();
+        const scaleX = borderThickness / textureFrame.realWidth;
+        const scaleY = borderThickness / textureFrame.realHeight;
+        const [top, bottom, left, right] = this.boardBorderSprites;
+
+        top.setPosition(x, y).setSize(frameWidth, borderThickness);
+        bottom.setPosition(x, y + borderThickness + this.boardHeight).setSize(frameWidth, borderThickness);
+        left.setPosition(x, y + borderThickness).setSize(borderThickness, this.boardHeight);
+        right.setPosition(x + borderThickness + this.boardWidth, y + borderThickness).setSize(borderThickness, this.boardHeight);
+
+        this.boardBorderSprites.forEach((sprite) => {
+            sprite.tilePositionX = 0;
+            sprite.tilePositionY = 0;
+            sprite.tileScaleX = scaleX;
+            sprite.tileScaleY = scaleY;
+            sprite.setVisible(true);
+        });
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -192,11 +318,63 @@ export class SnakeBoardRenderer {
 
     renderState(state) {
         if (state?.mapId) this.setMapId(state.mapId);
+        this.lastRenderedState = state;
         this.clearDynamicLayers();
         this.renderTerritory(state?.territory);
         this.renderPlayers(state?.players);
         this.renderFood(state?.food);
         this.renderObstacles(state?.obstacles);
+        this.renderTutorialHighlightOverlay(state);
+    }
+
+    renderTutorialHighlightOverlay(state) {
+        const g = this.tutorialHighlightGraphics;
+        g.clear();
+        if (!this.tutorialHighlight || !state) return;
+
+        const pulse = this.highlightPulse;
+        const ringExpand = 2 + pulse * 4;
+        const lineWidth = 2 + pulse * 2.5;
+        const fillAlpha = 0.1 + pulse * 0.14;
+        const strokeAlpha = 0.55 + pulse * 0.4;
+
+        const drawCellRing = (x, y, color) => {
+            const col = Math.floor(x / GRID_SIZE);
+            const row = Math.floor(y / GRID_SIZE);
+            const px = this.boardOffsetX + col * this.cellSize;
+            const py = this.boardOffsetY + row * this.cellSize;
+            const inset = -ringExpand;
+            const size = this.cellSize + ringExpand * 2;
+            g.fillStyle(color, fillAlpha);
+            g.fillRoundedRect(px + inset, py + inset, size, size, Math.max(4, this.cellSize * 0.18));
+            g.lineStyle(lineWidth, color, strokeAlpha);
+            g.strokeRoundedRect(px + inset, py + inset, size, size, Math.max(4, this.cellSize * 0.18));
+        };
+
+        if (this.tutorialHighlight.type === 'fruit') {
+            state.food?.forEach?.((food) => {
+                if (food.type === this.tutorialHighlight.fruitType) {
+                    drawCellRing(food.x, food.y, this.getHighlightColorForFood(food));
+                }
+            });
+            return;
+        }
+
+        if (this.tutorialHighlight.type === 'obstacles') {
+            state.obstacles?.forEach?.((obstacle) => {
+                drawCellRing(obstacle.x, obstacle.y, TUTORIAL_OBSTACLE_HIGHLIGHT_COLOR);
+            });
+            return;
+        }
+
+        if (this.tutorialHighlight.type === 'fruits-and-obstacles') {
+            state.food?.forEach?.((food) => {
+                drawCellRing(food.x, food.y, TUTORIAL_FRUIT_HIGHLIGHT_COLORS[food.type] ?? TUTORIAL_MIXED_FRUIT_HIGHLIGHT_COLOR);
+            });
+            state.obstacles?.forEach?.((obstacle) => {
+                drawCellRing(obstacle.x, obstacle.y, TUTORIAL_OBSTACLE_HIGHLIGHT_COLOR);
+            });
+        }
     }
 
     renderTerritory(territoryCells) {
@@ -236,8 +414,9 @@ export class SnakeBoardRenderer {
 
         if (!useSprites) {
             // FALLBACK: comportamiento original con fillRect
+            const snakeAlpha = this.tutorialHighlight ? this.getTutorialDimAlpha(false) : 1;
             segments.forEach((seg) => {
-                this.drawBoardCell(this.snakeGraphics, seg.x, seg.y, player.color);
+                this.drawBoardCell(this.snakeGraphics, seg.x, seg.y, player.color, snakeAlpha);
             });
             return;
         }
@@ -252,6 +431,11 @@ export class SnakeBoardRenderer {
             const sprite = this._getSnakeSprite(playerIndex, i, spriteKey);
             this._drawIdentityMarker(seg, player.color, isHead);
             this._placeSprite(sprite, seg, angle);
+            if (this.tutorialHighlight) {
+                sprite.setAlpha(this.getTutorialDimAlpha(false));
+            } else {
+                sprite.setAlpha(1);
+            }
         });
     }
 
@@ -461,13 +645,15 @@ export class SnakeBoardRenderer {
             const py       = this.boardOffsetY + row * this.cellSize;
             const padding  = Math.max(0, Math.floor(this.cellSize * FOOD_PADDING_RATIO));
 
+            const highlighted = this.isFoodHighlighted(food);
+            const size = Math.max(1, this.cellSize - padding * 2);
+            const scaleBoost = highlighted && this.tutorialHighlight ? 1 + this.highlightPulse * 0.1 : 1;
+
             sprite
                 .setFrame(frame)
                 .setPosition(px + padding, py + padding)
-                .setDisplaySize(
-                    Math.max(1, this.cellSize - padding * 2),
-                    Math.max(1, this.cellSize - padding * 2)
-                )
+                .setDisplaySize(size * scaleBoost, size * scaleBoost)
+                .setAlpha(this.getTutorialDimAlpha(highlighted))
                 .setVisible(true);
         });
     }
@@ -523,12 +709,14 @@ export class SnakeBoardRenderer {
                 sprite.setTexture(obstacleKey);
             }
 
+            const highlighted = this.isObstacleHighlighted();
+            const size = Math.max(1, this.cellSize - padding * 2);
+            const scaleBoost = highlighted && this.tutorialHighlight ? 1 + this.highlightPulse * 0.08 : 1;
+
             sprite
                 .setPosition(px + padding, py + padding)
-                .setDisplaySize(
-                    Math.max(1, this.cellSize - padding * 2),
-                    Math.max(1, this.cellSize - padding * 2)
-                )
+                .setDisplaySize(size * scaleBoost, size * scaleBoost)
+                .setAlpha(this.getTutorialDimAlpha(highlighted))
                 .setVisible(true);
         });
     }
@@ -559,7 +747,7 @@ export class SnakeBoardRenderer {
             this.boardHeight + this.outerPadding * 2,
             18
         );
-        if (!this.boardFrameSprite) {
+        if (!this.boardBorderSprites.some((sprite) => sprite.visible)) {
             this.boardBackgroundGraphics.lineStyle(3, this.mapAsset.theme.borderColor, 0.72);
             this.boardBackgroundGraphics.strokeRoundedRect(
                 this.boardOffsetX - this.outerPadding,

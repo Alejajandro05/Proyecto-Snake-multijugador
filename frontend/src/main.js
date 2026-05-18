@@ -3,6 +3,8 @@ import { Boot } from './scenes/Boot.js';
 import { GameOver } from './scenes/GameOver.js';
 import { Preloader } from './scenes/Preloader.js';
 import { MainMenu } from './scenes/MainMenu.js';
+import { Tutorial } from './scenes/Tutorial.js';
+import { TutorialGame } from './scenes/modes/TutorialGame.js';
 import { LocalGame } from './scenes/modes/LocalGame.js';
 import { NormalLocalGame } from './scenes/modes/NormalLocalGame.js';
 import { OnlineMenu } from './scenes/OnlineMenu.js';
@@ -14,8 +16,11 @@ import { ChaosGame } from './scenes/modes/ChaosGame.js';
 import { KingOfTheHillGame } from './scenes/modes/KingOfTheHillGame.js';
 import { TerritoryGame } from './scenes/modes/TerritoryGame.js';
 import { AgainstAIGame } from './scenes/modes/AgainstAIGame.js';
+import { CaptureTheFlagGame } from './scenes/modes/CaptureTheFlagGame.js';
 import { Pause } from './scenes/Pause.js';
 import {LocalGameSetup} from "./scenes/LocalGameSetup";
+import { ControlsMenu } from './scenes/ControlsMenu.js';
+import { bindFormKeyboardGuard } from './utils/formKeyboardGuard.js';
 
 const config = {
     type: Phaser.AUTO,
@@ -53,6 +58,9 @@ const config = {
         Boot,
         Preloader,
         MainMenu,
+        Tutorial,
+        TutorialGame,
+        ControlsMenu,
         OnlineMenu,
         Registration,
         Login,
@@ -65,9 +73,11 @@ const config = {
         KingOfTheHillGame,
         TerritoryGame,
         AgainstAIGame,
+        CaptureTheFlagGame,
         GameOver,
         Pause
     ]
 };
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+bindFormKeyboardGuard(game);

@@ -239,4 +239,9 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
   async onDispose() {
     LobbyRoom.registry.delete(this.roomId);
   }
+
+  async resetAfterMatch() {
+    this.state.matchRoomId = "";
+    await this.refreshLobbyState();
+  }
 }

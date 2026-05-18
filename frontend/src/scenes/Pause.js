@@ -7,6 +7,12 @@ import {
     saveSfxVolume,
 } from '../utils/audioSettings.js';
 import { getPlayerCardTheme } from '../utils/playerIdentity.js';
+import {
+    arcadeButton,
+    buildArcadeScreenStyles,
+    mountArcadeOverlay,
+    unmountArcadeOverlay,
+} from '../ui/arcadeScreenStyles.js';
 
 const PAUSE_MUSIC_KEYS = ['musica_in_game', 'musica2', 'musica3'];
 
@@ -25,111 +31,66 @@ export class Pause extends Phaser.Scene {
         const p1Theme = getPlayerCardTheme(p1.color);
         const p2Theme = getPlayerCardTheme(p2.color);
 
-        const pauseDiv = document.createElement('div');
-        pauseDiv.id = 'pause-screen';
-        pauseDiv.style.position = 'fixed';
-        pauseDiv.style.top = '0';
-        pauseDiv.style.left = '0';
-        pauseDiv.style.width = '100vw';
-        pauseDiv.style.height = '100vh';
-        pauseDiv.style.background = 'rgba(11,18,45,0.5)';
-        pauseDiv.style.backdropFilter = 'blur(15px)';
-        pauseDiv.style.zIndex = '1000';
-        pauseDiv.style.display = 'flex';
-        pauseDiv.style.alignItems = 'center';
-        pauseDiv.style.justifyContent = 'center';
-        pauseDiv.style.padding = '28px';
-        pauseDiv.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-
         const p1Score = data?.p1Score ?? 0;
         const p2Score = data?.p2Score ?? 0;
         const p1Lives = data?.p1Lives ?? 0;
         const p2Lives = data?.p2Lives ?? 0;
-        const scoreLabel = data?.scoreLabel ?? 'Puntuacion';
+        const scoreLabel = data?.scoreLabel ?? 'Puntuación';
+
+        const pauseDiv = document.createElement('div');
+        pauseDiv.id = 'pause-screen';
 
         pauseDiv.innerHTML = `
-            <div class="container">
-                <div class="row justify-content-center">
-                    <div class="col-xl-6 col-lg-7 col-md-9">
-                        <div class="card shadow" style="background: rgba(12, 18, 42, 0.95); border: 4px solid rgba(34, 211, 238, 0.45); border-radius: 28px; box-shadow: 0 26px 80px rgba(0,0,0,0.35);">
-                            <div class="card-body p-5 text-center">
-                                <h1 class="display-5 fw-bold text-white mb-2">PAUSA</h1>
-                                <p class="text-white mb-4">Pulsa ESC o usa los botones para continuar.</p>
+            <style>${buildArcadeScreenStyles('#pause-screen', { duelBackground: true, arcadeEnhanced: true })}</style>
+            <article class="arcade-card arcade-screen-card" aria-label="Menú de pausa">
+                <header class="arcade-screen-header">
+                    <span class="arcade-screen-badge">Partida en pausa</span>
+                    <h1 class="arcade-title">PAUSA</h1>
+                    <p class="arcade-subtitle">Pulsa ESC o usa los botones para continuar.</p>
+                </header>
 
-                                <div class="row gx-3 gy-3 mb-4">
-                                    <div class="col-6">
-                                        <div class="card h-100" style="background: ${p1Theme.gradient}; border: 2px solid ${p1Theme.softBorder}; border-radius: 18px;">
-                                            <div class="card-body text-center py-4">
-                                                <h5 class="fw-bold mb-3" style="color: ${p1Theme.textColor};">${p1.label}: ${p1.name}</h5>
-                                                <div class="mb-3">
-                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">${scoreLabel}: ${p1Score}</span>
-                                                </div>
-                                                <div>
-                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Vidas restantes: ${p1Lives}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="card h-100" style="background: ${p2Theme.gradient}; border: 2px solid ${p2Theme.softBorder}; border-radius: 18px;">
-                                            <div class="card-body text-center py-4">
-                                                <h5 class="fw-bold mb-3" style="color: ${p2Theme.textColor};">${p2.label}: ${p2.name}</h5>
-                                                <div class="mb-3">
-                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">${scoreLabel}: ${p2Score}</span>
-                                                </div>
-                                                <div>
-                                                    <span class="badge bg-white text-dark fs-6 d-inline-block px-3 py-2 rounded-pill">Vidas restantes: ${p2Lives}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="text-start rounded-4 p-4 mb-4" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);">
-                                    <h2 class="h5 text-white text-center fw-bold mb-3">Sonido</h2>
-
-                                    <div class="mb-3">
-                                        <label for="pause-music-vol" class="form-label text-white fw-semibold mb-1 small">Musica</label>
-                                        <input type="range" class="form-range" id="pause-music-vol" min="0" max="1" step="0.05" value="${audioSettings.musicVolume}">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="pause-sfx-vol" class="form-label text-white fw-semibold mb-1 small">Efectos SFX</label>
-                                        <input type="range" class="form-range" id="pause-sfx-vol" min="0" max="1" step="0.05" value="${audioSettings.sfxVolume}">
-                                    </div>
-
-                                    <div>
-                                        <label for="pause-music-select" class="form-label text-white fw-semibold mb-1 small">Pista</label>
-                                        <select class="form-select form-select-sm bg-dark text-white border-secondary" id="pause-music-select">
-                                            <option value="musica_in_game" ${audioSettings.selectedMusic === 'musica_in_game' ? 'selected' : ''}>Musica 1</option>
-                                            <option value="musica2" ${audioSettings.selectedMusic === 'musica2' ? 'selected' : ''}>Musica 2</option>
-                                            <option value="musica3" ${audioSettings.selectedMusic === 'musica3' ? 'selected' : ''}>Musica 3</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
-                                    <button id="resume-btn" class="btn btn-secondary px-5 py-3 fw-bold" style="border-radius: 50px; min-width: 180px;">Reanudar</button>
-                                    <button id="menu-btn" class="btn btn-secondary px-5 py-3 fw-bold" style="border-radius: 50px; min-width: 180px;">Salir al Menu</button>
-                                </div>
-                            </div>
-                        </div>
+                <div class="arcade-players">
+                    <div class="arcade-player-card" style="--player-accent:${p1Theme.accentHex};">
+                        <p class="arcade-player-name"><span class="player-color-tag">${p1.label}</span>: ${p1.name}</p>
+                        <span class="arcade-stat">${scoreLabel}: ${p1Score}</span>
+                        <span class="arcade-stat">Vidas: ${p1Lives}</span>
+                    </div>
+                    <div class="arcade-player-card" style="--player-accent:${p2Theme.accentHex};">
+                        <p class="arcade-player-name"><span class="player-color-tag">${p2.label}</span>: ${p2.name}</p>
+                        <span class="arcade-stat">${scoreLabel}: ${p2Score}</span>
+                        <span class="arcade-stat">Vidas: ${p2Lives}</span>
                     </div>
                 </div>
-            </div>
+
+                <section class="arcade-section" aria-label="Ajustes de sonido">
+                    <h2 class="arcade-section-title">Sonido</h2>
+                    <label class="arcade-label" for="pause-music-vol">Música</label>
+                    <input type="range" class="form-range mb-3" id="pause-music-vol" min="0" max="1" step="0.05" value="${audioSettings.musicVolume}">
+                    <label class="arcade-label" for="pause-sfx-vol">Efectos SFX</label>
+                    <input type="range" class="form-range mb-3" id="pause-sfx-vol" min="0" max="1" step="0.05" value="${audioSettings.sfxVolume}">
+                    <label class="arcade-label" for="pause-music-select">Pista</label>
+                    <select class="form-select form-select-sm" id="pause-music-select">
+                        <option value="musica_in_game" ${audioSettings.selectedMusic === 'musica_in_game' ? 'selected' : ''}>Música 1</option>
+                        <option value="musica2" ${audioSettings.selectedMusic === 'musica2' ? 'selected' : ''}>Música 2</option>
+                        <option value="musica3" ${audioSettings.selectedMusic === 'musica3' ? 'selected' : ''}>Música 3</option>
+                    </select>
+                </section>
+
+                <div class="arcade-actions is-row">
+                    ${arcadeButton('resume-btn', 'REANUDAR', 'primary')}
+                    ${arcadeButton('menu-btn', 'SALIR AL MENÚ', 'secondary')}
+                </div>
+            </article>
         `;
 
-        document.body.appendChild(pauseDiv);
+
+        mountArcadeOverlay(pauseDiv);
 
         const musicSlider = pauseDiv.querySelector('#pause-music-vol');
         const sfxSlider = pauseDiv.querySelector('#pause-sfx-vol');
         const musicSelect = pauseDiv.querySelector('#pause-music-select');
 
-        const removePauseOverlay = () => {
-            if (document.body.contains(pauseDiv)) {
-                document.body.removeChild(pauseDiv);
-            }
-        };
+        const removePauseOverlay = () => unmountArcadeOverlay(pauseDiv);
 
         const syncCallerSceneAudio = () => {
             if (!callerGameScene) return;
@@ -182,9 +143,9 @@ export class Pause extends Phaser.Scene {
             syncCallerSceneAudio();
         });
 
-        pauseDiv.querySelector('#resume-btn').addEventListener('click', reanudarJuego);
+        pauseDiv.querySelector('#resume-btn')?.addEventListener('click', reanudarJuego);
 
-        pauseDiv.querySelector('#menu-btn').addEventListener('click', () => {
+        pauseDiv.querySelector('#menu-btn')?.addEventListener('click', () => {
             removePauseOverlay();
             document.getElementById('hud-food-help')?.classList.add('d-none');
             this.scene.stop(callerScene);
