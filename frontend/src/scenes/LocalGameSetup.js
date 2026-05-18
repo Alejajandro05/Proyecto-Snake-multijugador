@@ -351,10 +351,10 @@ export class LocalGameSetup extends Phaser.Scene {
             saveLocalGameSettings(payload);
 
             cleanup();
-            //this.scene.start(resolveLocalSceneKey(gameMode), payload); //TODO implement this
+            this.scene.start(resolveLocalSceneKey(gameMode), payload); //TODO implement this
             // Temporal test route: start the AI scene from this setup screen.
-            console.log(resolveLocalSceneKey(gameMode));
-            this.scene.start('AgainstAIGame', payload);//TODO delete this
+            //console.log(resolveLocalSceneKey(gameMode));
+            //this.scene.start('AgainstAIGame', payload);//TODO delete this
         };
 
         document.getElementById('btn-setup-back')?.addEventListener('click', goBack);
@@ -477,6 +477,13 @@ export class LocalGameSetup extends Phaser.Scene {
                 desc: 'Cada serpiente deja un rastro de su color. Si invades una casilla rival, la conquistas. Gana quien tenga mas casillas al terminar el tiempo.',
                 img: '/territorygame.png',
                 label: 'Control de territorio',
+            },
+            {
+                id: 'contraIA',
+                title: 'Contra IA',
+                desc: 'Juega contra una serpiente controlada por la IA',//TODO write desc
+                img: '/contraIA.png',
+                label: 'Contra IA',
             },
         ];
 
