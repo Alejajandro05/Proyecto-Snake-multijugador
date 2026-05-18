@@ -6,6 +6,7 @@ import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings,
 import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.js';
 import { recordLocalMatchResult } from '../../utils/localProfiles.js';
 import { getControlsConfig } from '../../utils/controlsConfig.js';
+import { applyPlayerThemeToHud } from '../../utils/playerIdentity.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
@@ -267,16 +268,24 @@ export class ChaosGame extends Phaser.Scene {
         if (this.hudJ1Score) this.hudJ1Score.textContent = p1Name;
         if (this.hudJ2Score) this.hudJ2Score.textContent = p2Name;
 
-        if (this.hudLeftPlayer && p1Color !== undefined) {
-            const hex = colorNumberToCssHex(p1Color);
-            this.hudLeftPlayer.style.borderColor = `${hex}55`;
-            this.hudLeftPlayer.style.boxShadow = `0 12px 40px rgba(0,0,0,0.35), 0 0 0 2px ${hex}33 inset`;
+        if (p1Color !== undefined) {
+            applyPlayerThemeToHud({
+                panelEl: this.hudLeftPlayer,
+                titleEl: this.hudJ1Score,
+                scoreEl: this.hudJ1ScoreBig,
+                livesEl: this.hudJ1Lives,
+                colorNumber: p1Color,
+            });
         }
 
-        if (this.hudRightPlayer && p2Color !== undefined) {
-            const hex = colorNumberToCssHex(p2Color);
-            this.hudRightPlayer.style.borderColor = `${hex}55`;
-            this.hudRightPlayer.style.boxShadow = `0 12px 40px rgba(0,0,0,0.35), 0 0 0 2px ${hex}33 inset`;
+        if (p2Color !== undefined) {
+            applyPlayerThemeToHud({
+                panelEl: this.hudRightPlayer,
+                titleEl: this.hudJ2Score,
+                scoreEl: this.hudJ2ScoreBig,
+                livesEl: this.hudJ2Lives,
+                colorNumber: p2Color,
+            });
         }
 
         if (this.hudHelp) {
