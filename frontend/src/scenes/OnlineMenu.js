@@ -296,8 +296,13 @@ export class OnlineMenu extends Phaser.Scene {
     // BOTONES ORIGINALES
     overlay.querySelector('#btn-online-create').addEventListener('click', () => this.showView('create'));
     overlay.querySelector('#btn-online-join').addEventListener('click', () => this.openJoinView());
-    overlay.querySelector('#btn-online-back').addEventListener('click', () => this.scene.start('MainMenu'));
-    overlay.querySelector('#btn-create-back').addEventListener('click', () => this.showView('home'));
+    overlay.querySelector('#btn-online-back').addEventListener('click', () => {
+      if (this.queueRoom) {
+        this.queueRoom.leave();
+        this.queueRoom = null;
+      }
+      this.scene.start('MainMenu');
+    });    overlay.querySelector('#btn-create-back').addEventListener('click', () => this.showView('home'));
     overlay.querySelector('#btn-join-back').addEventListener('click', () => this.showView('home'));
     overlay.querySelector('#btn-join-login').addEventListener('click', () => this.scene.start('Login'));
     overlay.querySelector('#btn-waiting-back').addEventListener('click', () => this.leaveLobbyRoom());
@@ -306,11 +311,26 @@ export class OnlineMenu extends Phaser.Scene {
     overlay.querySelector('#btn-private-join').addEventListener('click', () => this.handlePrivateJoin());
     overlay.querySelector('#btn-waiting-start').addEventListener('click', () => this.startMatch());
 
-    // BOTÓN RANKED REESCRITO (CON CLIENTE COLYSEUS PURO)
+// BOTÓN RANKED REESCRITO (CON CLIENTE COLYSEUS PURO)
+    this.isSearchingRanked = false;
+
     overlay.querySelector('#btn-online-ranked').addEventListener('click', async () => {
       const btnRanked = overlay.querySelector('#btn-online-ranked');
 
-      const originalText = btnRanked.textContent;
+      // 1. SI YA ESTÁ BUSCANDO, CANCELAMOS LA BÚSQUEDA
+      if (this.isSearchingRanked) {
+        if (this.queueRoom) {
+          this.queueRoom.leave();
+          this.queueRoom = null;
+        }
+        this.isSearchingRanked = false;
+        btnRanked.textContent = "BUSCAR PARTIDA";
+        btnRanked.style.background = "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)";
+        this.hideError();
+        return;
+      }
+
+      // 2. SI NO ESTÁ BUSCANDO, INICIAMOS LA CONEXIÓN
       btnRanked.disabled = true;
       btnRanked.textContent = "COMPROBANDO...";
 
@@ -326,25 +346,25 @@ export class OnlineMenu extends Phaser.Scene {
 
         btnRanked.textContent = "CONECTANDO AL SERVIDOR...";
 
-        // Pedimos la llave a Firebase
-        const token = await user.getIdToken();
+        const token = await user.getIdToken(true);
 
-        // ¡AQUÍ ESTÁ LA MAGIA! Cliente directo hacia la URL calculada
         const colyseusClient = new Client(getColyseusServerUrl());
 
-        // Nos unimos a la sala de cola
         this.queueRoom = await colyseusClient.joinOrCreate("ranked_queue", {
           token: token,
           playerName: user.displayName || "Jugador"
         });
 
+        // ¡CONECTADO! Cambiamos el botón a modo "Cancelar"
+        this.isSearchingRanked = true;
+        btnRanked.disabled = false;
+        btnRanked.textContent = "CANCELAR BÚSQUEDA";
+        btnRanked.style.background = "#DE1A58"; // Color rojo
         this.showError('¡Conectado a la cola! Buscando rival...');
-        btnRanked.textContent = "BUSCANDO...";
 
-        // Escuchamos al servidor para cuando encuentre partida
         this.queueRoom.onMessage("matchFound", (data) => {
           this.showError('¡Partida encontrada! Conectando...');
-
+          this.isSearchingRanked = false;
           this.queueRoom.leave();
 
           this.scene.start('OnlineGame', {
@@ -358,8 +378,9 @@ export class OnlineMenu extends Phaser.Scene {
       } catch (error) {
         console.error(error);
         this.showError('Error al conectar con el servidor de Matchmaking.');
-        btnRanked.textContent = originalText;
+        btnRanked.textContent = "BUSCAR PARTIDA";
         btnRanked.disabled = false;
+        this.isSearchingRanked = false;
       }
     });
 
