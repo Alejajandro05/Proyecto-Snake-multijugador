@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   DEFAULT_MAP_ID,
   DEFAULT_SNAKE_SKIN_ID,
+  getAllMapImageAssets,
   getMapAsset,
   getSnakeAsset,
   mapAssets,
@@ -45,7 +46,15 @@ test('registers the available arena maps with preloadable floor tiles', () => {
 
   assert.deepEqual(ids, ['arena01', 'arena02', 'arena03', 'arena04', 'arena05', 'arena06']);
   assert.equal(DEFAULT_MAP_ID, 'arena01');
-  assert.equal(getMapAsset('arena01').floor.path, 'map/arena01/tile005.png');
-  assert.equal(getMapAsset('arena06').floor.path, 'map/arena06/tile085.png');
+  assert.equal(getMapAsset('arena01').floor.path, 'map/tiles/arena1.png');
+  assert.equal(getMapAsset('arena01').border.path, 'map/borders/arena1.png');
+  assert.equal(getMapAsset('arena01').obstacle.path, 'map/obstacles/arena1.png');
+  assert.equal(getMapAsset('arena06').floor.path, 'map/tiles/arena6.png');
+  assert.equal(getMapAsset('arena06').border.path, 'map/borders/arena6.png');
+  assert.equal(getMapAsset('arena06').obstacle.path, 'map/obstacles/arena6.png');
   assert.equal(getMapAsset('classic').id, 'arena01');
+
+  const preloadPaths = getAllMapImageAssets().map((asset) => asset.path);
+  assert.equal(preloadPaths.includes('map/borders/arena1.png'), true);
+  assert.equal(preloadPaths.includes('map/obstacles/arena6.png'), true);
 });

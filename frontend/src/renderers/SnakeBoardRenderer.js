@@ -64,10 +64,8 @@ export class SnakeBoardRenderer {
                 .setOrigin(0).setAlpha(0.96).setDepth(-15)
             : null;
         this.gridGraphics    = this.scene.add.graphics().setDepth(-10);
-        this.boardFrameSprite = this.scene.textures.exists(ASSET_KEYS.MAP_BOARD_FRAME)
-            ? this.scene.add.image(0, 0, ASSET_KEYS.MAP_BOARD_FRAME)
-                .setOrigin(0).setAlpha(0.92).setDepth(5)
-            : null;
+        this.boardBorderSprites = [];
+        this.ensureBoardBorderSprites();
 
         this.identityGraphics = this.scene.add.graphics().setDepth(9);
         this.territoryGraphics = this.scene.add.graphics().setDepth(-12);
@@ -172,7 +170,9 @@ export class SnakeBoardRenderer {
         }
 
         this.obstacleSprites.forEach((sprite) => sprite.setVisible(false));
+        this.ensureBoardBorderSprites();
         this.updateFloorTileLayer();
+        this.updateBoardBorderSprites();
         this.drawBoardFrame();
         this.drawGrid();
     }
@@ -205,7 +205,7 @@ export class SnakeBoardRenderer {
             .setDisplaySize(viewportWidth, viewportHeight);
 
         this.updateFloorTileLayer();
-        this.updateBoardFrameSprite();
+        this.updateBoardBorderSprites();
 
         [this.gridGraphics, this.territoryGraphics, this.identityGraphics, this.snakeGraphics, this.foodGraphics, this.obstacleGraphics].forEach((layer) => {
             layer.setPosition(0, 0).setScale(1);
@@ -247,14 +247,57 @@ export class SnakeBoardRenderer {
         this.floorTileSprite.tileScaleY    = scaleY;
     }
 
-    updateBoardFrameSprite() {
-        if (!this.boardFrameSprite) return;
-        const frameWidth  = this.boardWidth  + this.outerPadding * 2;
-        const frameHeight = this.boardHeight + this.outerPadding * 2;
-        this.boardFrameSprite
-            .setPosition(this.boardOffsetX - this.outerPadding, this.boardOffsetY - this.outerPadding)
-            .setDisplaySize(frameWidth, frameHeight)
-            .setVisible(true);
+    ensureBoardBorderSprites() {
+        const borderKey = this.mapAsset.border?.key;
+        if (!borderKey || !this.scene.textures.exists(borderKey)) {
+            this.boardBorderSprites.forEach((sprite) => sprite.setVisible(false));
+            return false;
+        }
+
+        while (this.boardBorderSprites.length < 4) {
+            this.boardBorderSprites.push(
+                this.scene.add.tileSprite(0, 0, 1, 1, borderKey)
+                    .setOrigin(0)
+                    .setAlpha(0.96)
+                    .setDepth(5)
+                    .setVisible(false)
+            );
+        }
+
+        this.boardBorderSprites.forEach((sprite) => {
+            if (sprite.texture.key !== borderKey) {
+                sprite.setTexture(borderKey);
+            }
+        });
+
+        return true;
+    }
+
+    updateBoardBorderSprites() {
+        const borderKey = this.mapAsset.border?.key;
+        if (!this.ensureBoardBorderSprites()) return;
+
+        const borderThickness = this.outerPadding;
+        const frameWidth  = this.boardWidth  + borderThickness * 2;
+        const x = this.boardOffsetX - borderThickness;
+        const y = this.boardOffsetY - borderThickness;
+        const textureFrame = this.scene.textures.get(borderKey).get();
+        const scaleX = borderThickness / textureFrame.realWidth;
+        const scaleY = borderThickness / textureFrame.realHeight;
+        const [top, bottom, left, right] = this.boardBorderSprites;
+
+        top.setPosition(x, y).setSize(frameWidth, borderThickness);
+        bottom.setPosition(x, y + borderThickness + this.boardHeight).setSize(frameWidth, borderThickness);
+        left.setPosition(x, y + borderThickness).setSize(borderThickness, this.boardHeight);
+        right.setPosition(x + borderThickness + this.boardWidth, y + borderThickness).setSize(borderThickness, this.boardHeight);
+
+        this.boardBorderSprites.forEach((sprite) => {
+            sprite.tilePositionX = 0;
+            sprite.tilePositionY = 0;
+            sprite.tileScaleX = scaleX;
+            sprite.tileScaleY = scaleY;
+            sprite.setVisible(true);
+        });
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -704,7 +747,7 @@ export class SnakeBoardRenderer {
             this.boardHeight + this.outerPadding * 2,
             18
         );
-        if (!this.boardFrameSprite) {
+        if (!this.boardBorderSprites.some((sprite) => sprite.visible)) {
             this.boardBackgroundGraphics.lineStyle(3, this.mapAsset.theme.borderColor, 0.72);
             this.boardBackgroundGraphics.strokeRoundedRect(
                 this.boardOffsetX - this.outerPadding,

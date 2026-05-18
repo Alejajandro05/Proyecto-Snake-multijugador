@@ -47,10 +47,14 @@ export class GameOver extends Phaser.Scene {
             reasonText = 'Ganador por dominar la zona.';
         } else if (data.reason === 'territory') {
             reasonText = 'Ganador por controlar más territorio al final del tiempo.';
+        } else if (data.reason === 'ctfCaptures') {
+            reasonText = 'Ganador por capturar la bandera rival.';
+        } else if (data.reason === 'ctfTime') {
+            reasonText = data.winner === 'EMPATE' ? 'El tiempo se ha agotado con empate.' : 'Ganador por más capturas al acabarse el tiempo.';
         }
 
-        const mostrarVidas = data.reason !== 'time' && data.reason !== 'tiebreaker';
-        const scoreLabel = data.reason === 'territory' ? 'Territorio' : 'Puntuación';
+        const mostrarVidas = data.showLives !== false && data.reason !== 'time' && data.reason !== 'tiebreaker';
+        const scoreLabel = data.scoreLabel ?? (data.reason === 'territory' ? 'Territorio' : 'Puntuación');
         const vidasJ1HTML = mostrarVidas ? `<span class="arcade-stat">Vidas: ${data.p1Lives}</span>` : '';
         const vidasJ2HTML = mostrarVidas ? `<span class="arcade-stat">Vidas: ${data.p2Lives}</span>` : '';
 
