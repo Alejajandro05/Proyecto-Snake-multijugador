@@ -280,11 +280,11 @@ export class AgainstAIGame extends Phaser.Scene {
 
         this.renderState(state);
 
-        this.gameTimer.paused = true;//TODO Dev testen entfernen
+        /*this.gameTimer.paused = true;//TODO Dev testen entfernen
 
         this.time.delayedCall(1000, () => {//TODO Dev testen entfernen
             this.gameTimer.paused = false;
-        });
+        });*/
     }
 
     handleInput() {

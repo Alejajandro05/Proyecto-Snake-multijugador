@@ -84,7 +84,7 @@ export const againstAIGameAiLogic = {
             const randomRow = (Math.floor(Math.random() * snakeboard.length))
             return this.findFirstTargetApple(snakeboard, randomRow);
         }
-            console.log(this.targetApple);
+            console.log("Apple"); console.log(this.targetApple);
         return this.targetApple;
     },
 
@@ -123,11 +123,12 @@ export const againstAIGameAiLogic = {
     },
 
     calculateDirectionToTargetApple(snakeboard, aiPlayerHead, targetApple, currentAiDirection) {
-        if (aiPlayerHead.x === targetApple.x) {//TODO avoiding an obstacle could cause problems when requiring x to be the same
-            return this.fastestVerticalDirectionToApple(snakeboard, aiPlayerHead, targetApple);
+        console.log("AI Head x: "); console.log(aiPlayerHead);
+        if (aiPlayerHead.y === targetApple.y) {//TODO avoiding an obstacle could cause problems when requiring x to be the same
+            return this.fastestHorizontalDirectionToApple(snakeboard, aiPlayerHead, targetApple);
         }
         else {
-            return this.fastestHorizontalDirectionToApple(snakeboard, aiPlayerHead, targetApple);
+            return this.fastestVerticalDirectionToApple(snakeboard, aiPlayerHead, targetApple);
         }
     },
 
@@ -150,15 +151,16 @@ export const againstAIGameAiLogic = {
     },
 
     verticalBorderDirectionFaster(snakeboard, aiPlayerHead, targetApple) {
-        return !(snakeboard.length/2 < aiPlayerHead.y-targetApple.y && aiPlayerHead.y-targetApple.y < snakeboard.length/2);
+        return !(Math.abs(aiPlayerHead.y-targetApple.y) < snakeboard.length/2);
     },
 
     horizontalBorderDirectionFaster(snakeboard, aiPlayerHead, targetApple) {
-        return !(snakeboard[0].length/2 < aiPlayerHead.x-targetApple.x && aiPlayerHead.x-targetApple.x < snakeboard[0].length/2);
+        return !(Math.abs(aiPlayerHead.x-targetApple.x) < snakeboard[0].length/2);
     },
 
     avoidObstaculeOrEnemy(snakeboard, aiPlayerHead, targetAppleDirection, targetApple, currentAiDirection) {
         if (this.obstaculInAISnakeDirection(snakeboard, aiPlayerHead, targetAppleDirection)) {
+            console.log("AVOIDING OBSTACULE DIRECTION WAS: " + targetAppleDirection);
             return this.avoidObstacule_Helper(snakeboard, aiPlayerHead, targetAppleDirection, targetApple, currentAiDirection);
         }
         else {
@@ -172,7 +174,7 @@ export const againstAIGameAiLogic = {
 
         // count Direciton one up
         if (nextSnakeDirection == SNAKE_DIRECTIONS.up) {
-            nextY += 1;
+            nextY -= 1;
         }
         else if (nextSnakeDirection == SNAKE_DIRECTIONS.left) {
             nextX -= 1;
@@ -188,13 +190,13 @@ export const againstAIGameAiLogic = {
         if (nextY >= snakeboard.length)
             nextY = 0;
         else if (nextY < 0)
-            nextY = snakeboard.length;
+            nextY = snakeboard.length-1;
         if (nextX >= snakeboard[0].length)
             nextX = 0;
         else if (nextX < 0)
-            nextX = snakeboard[0].length;
+            nextX = snakeboard[0].length-1;
 
-        return (snakeboard[nextY][nextX] != SNAKE_BOARD_TILE.empty);
+        return (snakeboard[nextY][nextX] != SNAKE_BOARD_TILE.empty && snakeboard[nextY][nextX] != SNAKE_BOARD_TILE.food);
     },
 
     avoidObstacule_Helper(snakeboard, aiPlayerHead, targetAppleDirection, targetApple, currentAiDirection) { //TODO better logic for avoiding obstacules, a queue could be nesecarry to move arount abstacules
