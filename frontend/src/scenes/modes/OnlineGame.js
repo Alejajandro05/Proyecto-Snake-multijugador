@@ -10,6 +10,7 @@ import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.j
 import { loadOnlinePrefs } from '../../utils/onlineStorage.js';
 import { syncOnlineHudIdentity } from './onlineHudIdentity.js';
 import { getControlsConfig } from '../../utils/controlsConfig.js';
+import { showOnlineExitConfirm } from '../../ui/onlineExitConfirm.js';
 
 const HILL_WIN_SCORE = 100;
 const TERRITORY_MATCH_MS = 60_000;
@@ -88,7 +89,8 @@ export class OnlineGame extends Phaser.Scene {
         this.controls = controls;
 
         this.isLeavingRoom = false;
-        this.input.keyboard.on('keydown-ESC', () => this.leaveRoom());
+        this.exitConfirmOpen = false;
+        this.input.keyboard.on('keydown-ESC', () => this.requestLeaveRoom());
 
         this.directionHandlers = {
             up: () => this.sendDirection('up'),
@@ -159,7 +161,7 @@ export class OnlineGame extends Phaser.Scene {
         this.hudRightPlayer = document.getElementById('hud-right-player');
 
         if (this.hudHelp) {
-            this.hudHelp.textContent = 'Online | WASD | Flechas - ESC: Menu';
+            this.hudHelp.textContent = 'Online | WASD | Flechas - ESC: Salir';
         }
 
         this.updateLivesHud(this.hudJ1Lives, this.getModeMaxLives());
@@ -473,7 +475,7 @@ export class OnlineGame extends Phaser.Scene {
             } else if (this.isChaosMode(state)) {
                 this.hudHelp.textContent = `Modo Caos | ${summary.difficultyLabel} | ${firstName} (WASD) vs ${secondName} (Flechas) | ${mapId} | ESC`;
             } else {
-                this.hudHelp.textContent = `${summary.difficultyLabel} | ${mapId} | ${firstName} (WASD) vs ${secondName} (Flechas) - ESC: Menu`;
+                this.hudHelp.textContent = `${summary.difficultyLabel} | ${mapId} | ${firstName} (WASD) vs ${secondName} (Flechas) - ESC: Salir`;
             }
         }
 
@@ -559,8 +561,20 @@ export class OnlineGame extends Phaser.Scene {
     }
 
     sendDirection(direction) {
-        if (!this.room) return;
+        if (!this.room || this.exitConfirmOpen) return;
         this.room.send('changeDirection', direction);
+    }
+
+    async requestLeaveRoom() {
+        if (this.isLeavingRoom || this.exitConfirmOpen) return;
+
+        this.exitConfirmOpen = true;
+        const confirmed = await showOnlineExitConfirm();
+        this.exitConfirmOpen = false;
+
+        if (confirmed) {
+            this.leaveRoom();
+        }
     }
 
     removeInputListeners() {

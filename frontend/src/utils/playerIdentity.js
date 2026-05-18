@@ -52,12 +52,13 @@ export function applyPlayerThemeToHud({ panelEl, titleEl, scoreEl, livesEl, colo
     const theme = getPlayerCardTheme(colorNumber);
 
     if (panelEl) {
-        panelEl.style.borderColor = theme.softBorder;
-        panelEl.style.boxShadow = `0 12px 40px rgba(0,0,0,0.35), 0 0 0 2px ${theme.glowInset} inset`;
+        panelEl.style.setProperty('--player-accent', theme.accentHex);
+        panelEl.style.borderColor = '';
+        panelEl.style.boxShadow = '';
     }
-    if (titleEl) titleEl.style.color = theme.textColor;
-    if (scoreEl) titleEl ? scoreEl.style.color = theme.textColor : scoreEl.style.color = theme.textColor;
-    if (livesEl) livesEl.style.color = theme.textColor;
+    if (titleEl) titleEl.style.color = '';
+    if (scoreEl) scoreEl.style.color = '';
+    if (livesEl) livesEl.style.color = '';
 
     return theme;
 }

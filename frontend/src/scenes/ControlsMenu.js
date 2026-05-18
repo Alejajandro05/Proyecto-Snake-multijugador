@@ -313,12 +313,12 @@ export class ControlsMenu extends Phaser.Scene {
     backBtn.addEventListener('click', () => this.goBack());
     applyBtn.addEventListener('click', () => this.applyChanges());
 
-    // Listen for keyboard input
-    this.input.keyboard.on('keydown', (event) => {
+    this.onControlsKeydown = (event) => {
       if (this.waitingForInput) {
         this.handleKeyInput(event.key.toUpperCase());
       }
-    });
+    };
+    this.input.keyboard.on('keydown', this.onControlsKeydown);
   }
 
   startWaitingForInput(button) {
@@ -425,6 +425,11 @@ export class ControlsMenu extends Phaser.Scene {
   }
 
   shutdown() {
+    if (this.onControlsKeydown) {
+      this.input.keyboard?.off('keydown', this.onControlsKeydown);
+      this.onControlsKeydown = null;
+    }
+
     const overlay = document.getElementById('controls-menu-overlay');
     if (overlay) overlay.remove();
   }
