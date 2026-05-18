@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { loginUser, validateUserName } from '../services/firebaseAuthService.js';
+import { disableGameKeyboardForOverlayScene } from '../utils/formKeyboardGuard.js';
 
 export class Login extends Phaser.Scene {
   constructor() {
@@ -7,6 +8,8 @@ export class Login extends Phaser.Scene {
   }
 
   create() {
+    disableGameKeyboardForOverlayScene(this);
+
     const fondo = this.add.image(this.scale.width / 2, this.scale.height / 2, 'fondo_duelo');
 
     const ajustarFondo = (width, height) => {

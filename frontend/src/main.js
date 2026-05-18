@@ -18,6 +18,7 @@ import { TerritoryGame } from './scenes/modes/TerritoryGame.js';
 import { Pause } from './scenes/Pause.js';
 import {LocalGameSetup} from "./scenes/LocalGameSetup";
 import { ControlsMenu } from './scenes/ControlsMenu.js';
+import { bindFormKeyboardGuard } from './utils/formKeyboardGuard.js';
 
 const config = {
     type: Phaser.AUTO,
@@ -74,4 +75,5 @@ const config = {
     ]
 };
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+bindFormKeyboardGuard(game);

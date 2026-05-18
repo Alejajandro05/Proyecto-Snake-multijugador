@@ -5,6 +5,7 @@ import { createLobbyClient } from '../net/lobbyClient.js';
 import { getMapAsset, getSnakeAsset } from '../config/gameAssetRegistry.js';
 import { loadOnlinePrefs, saveOnlinePrefs } from '../utils/onlineStorage.js';
 import { isUserLoggedIn, getCurrentUser } from '../services/firebaseAuthService.js';
+import { disableGameKeyboardForOverlayScene } from '../utils/formKeyboardGuard.js';
 
 // --- FUNCIONES GLOBALES PARA LA URL DEL SERVIDOR ---
 function normalizeHttpUrlToWebSocket(url) {
@@ -45,6 +46,8 @@ export class OnlineMenu extends Phaser.Scene {
   }
 
   create() {
+    disableGameKeyboardForOverlayScene(this);
+
     const fondo = this.add.image(this.scale.width / 2, this.scale.height / 2, 'fondo_duelo');
 
     const ajustarFondo = (width, height) => {
