@@ -1,12 +1,18 @@
 export const DUEL_BACKGROUND_URL = './assets/fondo_duelo.png';
 
 /** Estilos compartidos para overlays (pausa, game over, menús). */
-export function buildArcadeScreenStyles(scope, { duelBackground = false, arcadeEnhanced = false } = {}) {
-    const overlayBackground = duelBackground
-        ? 'transparent'
-        : 'rgba(2, 6, 23, 0.62)';
-    const overlayBlur = duelBackground ? 'none' : 'blur(10px)';
-    const duelBackdropStyles = duelBackground ? `
+export function buildArcadeScreenStyles(scope, { duelBackground = false, arcadeEnhanced = false, liveGameBackdrop = false } = {}) {
+    const overlayBackground = liveGameBackdrop
+        ? 'rgba(2, 6, 23, 0.32)'
+        : duelBackground
+            ? 'transparent'
+            : 'rgba(2, 6, 23, 0.62)';
+    const overlayBlur = liveGameBackdrop
+        ? 'blur(7px)'
+        : duelBackground
+            ? 'none'
+            : 'blur(10px)';
+    const duelBackdropStyles = duelBackground && !liveGameBackdrop ? `
         ${scope}::before {
             content: '';
             position: absolute;
