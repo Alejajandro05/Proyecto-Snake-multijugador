@@ -19,8 +19,9 @@ const SOLO_FOOD_WEIGHTS = {
 
 const PLAYER_ID = 'solo-player';
 
-const INITIAL_TICK_MS = 165;
-const MIN_TICK_MS = 72;
+const INITIAL_TICK_MS = 115;
+const MIN_TICK_MS = 65;
+const SOLO_INITIAL_PLAYER_SPEED = 1;
 const TICK_STEP_MS = 6;
 const SPEED_RAMP_INTERVAL_MS = 22_000;
 const OBSTACLE_EVERY_SCORE = 7;
@@ -55,6 +56,8 @@ export class SoloGame extends Phaser.Scene {
             obstaclesPerQuadrant: 3,
             poisonFoodTtlMs: SOLO_POISON_TTL_MS,
             foodWeightOverrides: SOLO_FOOD_WEIGHTS,
+            wallCollision: true,
+            initialPlayerSpeed: SOLO_INITIAL_PLAYER_SPEED,
         });
 
         this.engine.addPlayer(PLAYER_ID, {
@@ -231,7 +234,7 @@ export class SoloGame extends Phaser.Scene {
     updateHudHelp() {
         if (!this.hudHelp) return;
         const mapId = this.matchSettings.mapId ?? 'arena';
-        this.hudHelp.textContent = `Solitario | ${mapId} | Nivel ${this.difficultyLevel} | 1 vida | Kiwi 20s | WASD — ESC: Pausa`;
+        this.hudHelp.textContent = `Solitario | ${mapId} | Nivel ${this.difficultyLevel} | 1 vida | Paredes activas | WASD — ESC: Pausa`;
     }
 
     updateLivesHud(lives) {

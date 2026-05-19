@@ -56,7 +56,7 @@ export class SoloGameSetup extends Phaser.Scene {
                     <div class="rounded-pill px-4 py-2 mb-3 text-center" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);">
                         <h1 class="h3 text-white fw-bold mb-0" style="font-family:'Teko',sans-serif;letter-spacing:1px;">JUEGO SOLITARIO</h1>
                     </div>
-                    <p class="text-white-50 text-center small mb-4">1 vida · kiwi 20s · dificultad progresiva · elige tu skin y arena</p>
+                    <p class="text-white-50 text-center small mb-4">1 vida · paredes letales · kiwi 20s · dificultad progresiva</p>
 
                     <label for="solo-player-name" class="text-white fw-semibold small mb-2">Tu nombre</label>
                     <input id="solo-player-name" class="form-control solo-name-input mb-4" maxlength="16" value="${escapeHtml(saved.playerName)}" autocomplete="nickname" />

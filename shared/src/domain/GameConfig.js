@@ -8,6 +8,7 @@ export const RESPAWN_DELAY_MS = 3000;
 export const SAFE_MARGIN = 3;
 export const WIN_SCORE = 10;
 export const MAX_LIVES = 3;
+export const INITIAL_PLAYER_SPEED = 2;
 export const PLAYER_COLORS = [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71];
 const DEFAULT_DIFFICULTY = 'normal';
 const DIFFICULTY_PRESETS = {
@@ -71,5 +72,7 @@ export function resolveGameRuntimeConfig(input) {
         territoryMode: input?.territoryMode === true,
         poisonFoodTtlMs: clampInt(input?.poisonFoodTtlMs ?? 0, 0, 300_000),
         foodWeightOverrides: normalizeFoodWeightOverrides(input?.foodWeightOverrides),
+        wallCollision: input?.wallCollision === true,
+        initialPlayerSpeed: clampInt(input?.initialPlayerSpeed ?? INITIAL_PLAYER_SPEED, 1, 8),
     };
 }
