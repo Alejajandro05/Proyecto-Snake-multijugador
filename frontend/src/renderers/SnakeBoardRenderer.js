@@ -40,8 +40,9 @@ const BOARD_HEIGHT_PX = GRID_ROWS * GRID_SIZE;
 export class SnakeBoardRenderer {
     constructor(scene, options = {}) {
         this.scene = scene;
-        this.mapAsset = getMapAsset(options.mapId);
-        this.activeMapId = this.mapAsset.id;
+        // Resolve map asset defensively: ensure we always have an object shape
+        this.mapAsset = getMapAsset(options.mapId) || { id: null, theme: {}, floor: {}, border: {}, obstacle: {} };
+        this.activeMapId = this.mapAsset.id ?? null;
         this.outerPadding = 14;
         this.boardOffsetX = 0;
         this.boardOffsetY = 0;
@@ -50,7 +51,10 @@ export class SnakeBoardRenderer {
         this.boardHeight = GRID_ROWS * GRID_SIZE;
 
         this.scene.cameras.main.roundPixels = true;
-        this.scene.cameras.main.setBackgroundColor(this.mapAsset.theme.backgroundColor);
+        // Only set background color if theme value exists
+        if (this.mapAsset?.theme?.backgroundColor != null) {
+            this.scene.cameras.main.setBackgroundColor(this.mapAsset.theme.backgroundColor);
+        }
 
         this.backgroundImage = this.scene.add.image(
             this.scene.scale.width  * 0.5,
@@ -59,8 +63,9 @@ export class SnakeBoardRenderer {
         ).setAlpha(0.22).setDepth(-50);
 
         this.boardBackgroundGraphics = this.scene.add.graphics().setDepth(-20);
-        this.floorTileSprite = this.scene.textures.exists(this.mapAsset.floor.key)
-            ? this.scene.add.tileSprite(0, 0, 1, 1, this.mapAsset.floor.key)
+        const floorKey = this.mapAsset?.floor?.key;
+        this.floorTileSprite = (floorKey && this.scene.textures.exists(floorKey))
+            ? this.scene.add.tileSprite(0, 0, 1, 1, floorKey)
                 .setOrigin(0).setAlpha(0.96).setDepth(-15)
             : null;
         this.gridGraphics    = this.scene.add.graphics().setDepth(-10);
@@ -153,12 +158,14 @@ export class SnakeBoardRenderer {
     }
 
     setMapId(mapId) {
-        const nextMap = getMapAsset(mapId);
+        const nextMap = getMapAsset(mapId) || { id: null, theme: {}, floor: {}, border: {}, obstacle: {} };
         if (nextMap.id === this.activeMapId) return;
 
         this.mapAsset = nextMap;
-        this.activeMapId = nextMap.id;
-        this.scene.cameras.main.setBackgroundColor(nextMap.theme.backgroundColor);
+        this.activeMapId = nextMap.id ?? null;
+        if (nextMap?.theme?.backgroundColor != null) {
+            this.scene.cameras.main.setBackgroundColor(nextMap.theme.backgroundColor);
+        }
 
         if (this.floorTileSprite && this.scene.textures.exists(nextMap.floor.key)) {
             this.floorTileSprite.setTexture(nextMap.floor.key);
@@ -228,13 +235,36 @@ export class SnakeBoardRenderer {
     }
 
     updateFloorTileLayer() {
-        if (!this.floorTileSprite) return;
-        const floorKey = this.mapAsset.floor.key;
-        if (!this.scene.textures.exists(floorKey)) return;
-        if (this.floorTileSprite.texture.key !== floorKey) {
+        const floorKey = this.mapAsset?.floor?.key;
+        if (!floorKey) {
+            if (this.floorTileSprite) this.floorTileSprite.setVisible(false);
+            return;
+        }
+
+        if (!this.scene.textures.exists(floorKey)) {
+            if (this.floorTileSprite) this.floorTileSprite.setVisible(false);
+            return;
+        }
+
+        const tex = this.scene.textures.get(floorKey);
+        if (!tex || typeof tex.get !== 'function') {
+            if (this.floorTileSprite) this.floorTileSprite.setVisible(false);
+            return;
+        }
+
+        const textureFrame = tex.get();
+        if (!textureFrame || !textureFrame.realWidth || !textureFrame.realHeight) {
+            if (this.floorTileSprite) this.floorTileSprite.setVisible(false);
+            return;
+        }
+
+        if (!this.floorTileSprite) {
+            this.floorTileSprite = this.scene.add.tileSprite(0, 0, 1, 1, floorKey)
+                .setOrigin(0).setAlpha(0.96).setDepth(-15);
+        } else if (this.floorTileSprite.texture.key !== floorKey) {
             this.floorTileSprite.setTexture(floorKey);
         }
-        const textureFrame = this.scene.textures.get(floorKey).get();
+
         const scaleX = this.cellSize / textureFrame.realWidth;
         const scaleY = this.cellSize / textureFrame.realHeight;
         this.floorTileSprite
@@ -274,14 +304,30 @@ export class SnakeBoardRenderer {
     }
 
     updateBoardBorderSprites() {
-        const borderKey = this.mapAsset.border?.key;
+        const borderKey = this.mapAsset?.border?.key;
         if (!this.ensureBoardBorderSprites()) return;
+
+        if (!borderKey || !this.scene.textures.exists(borderKey)) {
+            this.boardBorderSprites.forEach((s) => s.setVisible(false));
+            return;
+        }
+
+        const tex = this.scene.textures.get(borderKey);
+        if (!tex || typeof tex.get !== 'function') {
+            this.boardBorderSprites.forEach((s) => s.setVisible(false));
+            return;
+        }
+
+        const textureFrame = tex.get();
+        if (!textureFrame || !textureFrame.realWidth || !textureFrame.realHeight) {
+            this.boardBorderSprites.forEach((s) => s.setVisible(false));
+            return;
+        }
 
         const borderThickness = this.outerPadding;
         const frameWidth  = this.boardWidth  + borderThickness * 2;
         const x = this.boardOffsetX - borderThickness;
         const y = this.boardOffsetY - borderThickness;
-        const textureFrame = this.scene.textures.get(borderKey).get();
         const scaleX = borderThickness / textureFrame.realWidth;
         const scaleY = borderThickness / textureFrame.realHeight;
         const [top, bottom, left, right] = this.boardBorderSprites;
