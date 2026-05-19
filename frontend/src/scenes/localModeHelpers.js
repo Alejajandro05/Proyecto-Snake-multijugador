@@ -62,3 +62,19 @@ export function getNextHeadPosition(head, direction, board) {
 export function shouldDieAtWall(head, direction, board) {
     return getNextHeadPosition(head, direction, board).isOutOfBounds;
 }
+
+export function getLocalPlayerSpawnPositions(gridCols, gridRows) {
+    const cols = Number.isFinite(Number(gridCols)) ? Math.max(10, Number(gridCols)) : 32;
+    const rows = Number.isFinite(Number(gridRows)) ? Math.max(8, Number(gridRows)) : 24;
+    const centerRow = Math.max(2, Math.min(rows - 3, Math.floor(rows / 2)));
+    return {
+        p1: {
+            startCol: Math.max(2, Math.min(cols - 4, Math.floor(cols / 4))),
+            startRow: centerRow,
+        },
+        p2: {
+            startCol: Math.max(3, Math.min(cols - 2, Math.ceil((cols * 3) / 4))),
+            startRow: centerRow,
+        },
+    };
+}

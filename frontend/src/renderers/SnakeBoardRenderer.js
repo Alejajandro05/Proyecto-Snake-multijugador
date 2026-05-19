@@ -45,9 +45,12 @@ export class SnakeBoardRenderer {
         this.outerPadding = 14;
         this.boardOffsetX = 0;
         this.boardOffsetY = 0;
-        this.cellSize = GRID_SIZE;
-        this.boardWidth  = GRID_COLS * GRID_SIZE;
-        this.boardHeight = GRID_ROWS * GRID_SIZE;
+        this.gridCols = Number.isFinite(Number(options.gridCols)) ? Number(options.gridCols) : GRID_COLS;
+        this.gridRows = Number.isFinite(Number(options.gridRows)) ? Number(options.gridRows) : GRID_ROWS;
+        this.gridSize = Number.isFinite(Number(options.gridSize)) ? Number(options.gridSize) : GRID_SIZE;
+        this.cellSize = this.gridSize;
+        this.boardWidth  = this.gridCols * this.gridSize;
+        this.boardHeight = this.gridRows * this.gridSize;
 
         this.scene.cameras.main.roundPixels = true;
         this.scene.cameras.main.setBackgroundColor(this.mapAsset.theme.backgroundColor);
@@ -193,9 +196,9 @@ export class SnakeBoardRenderer {
         const availableWidth  = Math.max(320, viewportWidth  - safePadding * 2 - sidePanelWidthLeft - sidePanelWidthRight - sideGap * 2);
         const availableHeight = Math.max(240, viewportHeight - topGap - safePadding);
 
-        this.cellSize    = Math.max(12, Math.floor(Math.min(availableWidth / GRID_COLS, availableHeight / GRID_ROWS)));
-        this.boardWidth  = this.cellSize * GRID_COLS;
-        this.boardHeight = this.cellSize * GRID_ROWS;
+        this.cellSize    = Math.max(12, Math.floor(Math.min(availableWidth / this.gridCols, availableHeight / this.gridRows)));
+        this.boardWidth  = this.cellSize * this.gridCols;
+        this.boardHeight = this.cellSize * this.gridRows;
 
         this.boardOffsetX = Math.floor((viewportWidth  - this.boardWidth)  * 0.5);
         this.boardOffsetY = Math.floor(topGap + (availableHeight - this.boardHeight) * 0.5);
@@ -339,8 +342,8 @@ export class SnakeBoardRenderer {
         const strokeAlpha = 0.55 + pulse * 0.4;
 
         const drawCellRing = (x, y, color) => {
-            const col = Math.floor(x / GRID_SIZE);
-            const row = Math.floor(y / GRID_SIZE);
+            const col = Math.floor(x / this.gridSize);
+            const row = Math.floor(y / this.gridSize);
             const px = this.boardOffsetX + col * this.cellSize;
             const py = this.boardOffsetY + row * this.cellSize;
             const inset = -ringExpand;
@@ -515,14 +518,14 @@ export class SnakeBoardRenderer {
     }
 
     _normalizeDelta(delta, span) {
-        if (delta > GRID_SIZE) return delta - span;
-        if (delta < -GRID_SIZE) return delta + span;
+        if (delta > this.gridSize) return delta - span;
+        if (delta < -this.gridSize) return delta + span;
         return delta;
     }
 
     _directionBetween(fromSeg, toSeg) {
-        const dx = this._normalizeDelta(toSeg.x - fromSeg.x, BOARD_WIDTH_PX);
-        const dy = this._normalizeDelta(toSeg.y - fromSeg.y, BOARD_HEIGHT_PX);
+        const dx = this._normalizeDelta(toSeg.x - fromSeg.x, this.gridCols * this.gridSize);
+        const dy = this._normalizeDelta(toSeg.y - fromSeg.y, this.gridRows * this.gridSize);
 
         if (Math.abs(dx) >= Math.abs(dy)) {
             return dx >= 0 ? 'right' : 'left';
@@ -594,8 +597,8 @@ export class SnakeBoardRenderer {
      * Posiciona y rota un sprite en una celda del tablero.
      */
     _placeSprite(sprite, segment, angle) {
-        const col     = Math.floor(segment.x / GRID_SIZE);
-        const row     = Math.floor(segment.y / GRID_SIZE);
+        const col     = Math.floor(segment.x / this.gridSize);
+        const row     = Math.floor(segment.y / this.gridSize);
         const centerX = this.boardOffsetX + col * this.cellSize + this.cellSize * 0.5;
         const centerY = this.boardOffsetY + row * this.cellSize + this.cellSize * 0.5;
 
@@ -607,8 +610,8 @@ export class SnakeBoardRenderer {
     }
 
     _drawIdentityMarker(segment, color, isHead) {
-        const col = Math.floor(segment.x / GRID_SIZE);
-        const row = Math.floor(segment.y / GRID_SIZE);
+        const col = Math.floor(segment.x / this.gridSize);
+        const row = Math.floor(segment.y / this.gridSize);
         const px = this.boardOffsetX + col * this.cellSize;
         const py = this.boardOffsetY + row * this.cellSize;
         const style = getSnakeIdentityStyle(this.cellSize, isHead);
@@ -639,8 +642,8 @@ export class SnakeBoardRenderer {
         foodItems?.forEach?.((food, index) => {
             const sprite   = this.getFoodSprite(index);
             const frame    = this._getFoodFrame(food);
-            const col      = Math.floor(food.x / GRID_SIZE);
-            const row      = Math.floor(food.y / GRID_SIZE);
+            const col      = Math.floor(food.x / this.gridSize);
+            const row      = Math.floor(food.y / this.gridSize);
             const px       = this.boardOffsetX + col * this.cellSize;
             const py       = this.boardOffsetY + row * this.cellSize;
             const padding  = Math.max(0, Math.floor(this.cellSize * FOOD_PADDING_RATIO));
@@ -699,8 +702,8 @@ export class SnakeBoardRenderer {
 
         obstacles?.forEach?.((obstacle, index) => {
             const sprite   = this.getObstacleSprite(index);
-            const col      = Math.floor(obstacle.x / GRID_SIZE);
-            const row      = Math.floor(obstacle.y / GRID_SIZE);
+            const col      = Math.floor(obstacle.x / this.gridSize);
+            const row      = Math.floor(obstacle.y / this.gridSize);
             const px       = this.boardOffsetX + col * this.cellSize;
             const py       = this.boardOffsetY + row * this.cellSize;
             const padding  = Math.max(1, Math.floor(this.cellSize * 0.04));
@@ -762,14 +765,14 @@ export class SnakeBoardRenderer {
     drawGrid() {
         this.gridGraphics.clear();
         this.gridGraphics.lineStyle(1, this.mapAsset.theme.gridColor, 0.1);
-        for (let col = 0; col <= GRID_COLS; col++) {
+        for (let col = 0; col <= this.gridCols; col++) {
             const x = this.boardOffsetX + col * this.cellSize;
             this.gridGraphics.beginPath();
             this.gridGraphics.moveTo(x, this.boardOffsetY);
             this.gridGraphics.lineTo(x, this.boardOffsetY + this.boardHeight);
             this.gridGraphics.strokePath();
         }
-        for (let row = 0; row <= GRID_ROWS; row++) {
+        for (let row = 0; row <= this.gridRows; row++) {
             const y = this.boardOffsetY + row * this.cellSize;
             this.gridGraphics.beginPath();
             this.gridGraphics.moveTo(this.boardOffsetX, y);
@@ -779,8 +782,8 @@ export class SnakeBoardRenderer {
     }
 
     drawBoardCell(layer, x, y, color, alpha = 1, paddingRatio = 0.08) {
-        const col     = Math.floor(x / GRID_SIZE);
-        const row     = Math.floor(y / GRID_SIZE);
+        const col     = Math.floor(x / this.gridSize);
+        const row     = Math.floor(y / this.gridSize);
         const px      = this.boardOffsetX + col * this.cellSize;
         const py      = this.boardOffsetY + row * this.cellSize;
         const padding = Math.max(1, Math.floor(this.cellSize * paddingRatio));

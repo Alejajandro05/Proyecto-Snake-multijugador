@@ -1,4 +1,5 @@
 import { PLAYER_COLORS } from '@shared/GameConfig';
+import { onlineOptionCatalogs } from '@shared/catalogs/onlineOptions.js';
 import { DEFAULT_MAP_ID, DEFAULT_SNAKE_SKIN_ID, getMapAsset, getSnakeAsset } from '../config/gameAssetRegistry.js';
 import { normalizeLocalGameMode } from '../scenes/localModeHelpers.js';
 
@@ -8,6 +9,8 @@ const DEFAULTS = {
     gameMode: 'normal', // normal | infinite | timeAttack | chaos | kingOfTheHill | territory
     difficulty: 'normal', // easy | normal | hard
     mapId: DEFAULT_MAP_ID,
+    boardSizeId: onlineOptionCatalogs.boardSizes[1]?.id ?? 'medium',
+    foodCountId: onlineOptionCatalogs.foodCounts[1]?.id ?? 'medium',
     players: {
         p1: { name: 'Jugador 1', color: PLAYER_COLORS?.[0] ?? 0xe74c3c, skinId: DEFAULT_SNAKE_SKIN_ID },
         p2: { name: 'Jugador 2', color: PLAYER_COLORS?.[1] ?? 0x3498db, skinId: 'player2' },
@@ -16,6 +19,26 @@ const DEFAULTS = {
 
 function normalizeGameMode(value) {
     return normalizeLocalGameMode(value);
+}
+
+function normalizeBoardSizeId(value) {
+    const id = String(value ?? '').trim();
+    const option = onlineOptionCatalogs.boardSizes.find((entry) => entry.id === id);
+    return option?.id ?? DEFAULTS.boardSizeId;
+}
+
+function normalizeFoodCountId(value) {
+    const id = String(value ?? '').trim();
+    const option = onlineOptionCatalogs.foodCounts.find((entry) => entry.id === id);
+    return option?.id ?? DEFAULTS.foodCountId;
+}
+
+function resolveBoardSize(boardSizeId) {
+    return onlineOptionCatalogs.boardSizes.find((entry) => entry.id === boardSizeId) ?? onlineOptionCatalogs.boardSizes[1];
+}
+
+function resolveFoodCount(foodCountId) {
+    return onlineOptionCatalogs.foodCounts.find((entry) => entry.id === foodCountId) ?? onlineOptionCatalogs.foodCounts[1];
 }
 
 function normalizeDifficulty(value) {
@@ -66,6 +89,10 @@ export function normalizeLocalGameSettings(input) {
     const gameMode = normalizeGameMode(input?.gameMode ?? base.gameMode);
     const difficulty = normalizeDifficulty(input?.difficulty ?? base.difficulty);
     const mapId = getMapAsset(input?.mapId ?? base.mapId).id;
+    const boardSizeId = normalizeBoardSizeId(input?.boardSizeId ?? base.boardSizeId);
+    const foodCountId = normalizeFoodCountId(input?.foodCountId ?? base.foodCountId);
+    const boardSize = resolveBoardSize(boardSizeId);
+    const foodCount = resolveFoodCount(foodCountId).value;
 
     const p1 = input?.players?.p1 ?? input?.p1 ?? {};
     const p2 = input?.players?.p2 ?? input?.p2 ?? {};
@@ -74,6 +101,11 @@ export function normalizeLocalGameSettings(input) {
         gameMode,
         difficulty,
         mapId,
+        boardSizeId,
+        foodCountId,
+        boardCols: boardSize.cols,
+        boardRows: boardSize.rows,
+        foodCount,
         players: {
             p1: {
                 name: safeName(p1?.name, base.players.p1.name),

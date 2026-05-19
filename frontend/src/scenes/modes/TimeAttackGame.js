@@ -25,12 +25,21 @@ export class TimeAttackGame extends Phaser.Scene {
     }
 
     create() {
-        this.boardRenderer = new SnakeBoardRenderer(this);
+        this.boardRenderer = new SnakeBoardRenderer(this, {
+            mapId: this.matchSettings?.mapId,
+            gridCols: this.matchSettings?.boardCols,
+            gridRows: this.matchSettings?.boardRows,
+        });
         this.cacheHudElements();
         this.crearRelojDOM();
         this.toggleHud(true);
 
-        this.engine = new SnakeEngine({ foodCount: 15, maxLives: 9999 });
+        this.engine = new SnakeEngine({
+            foodCount: 15,
+            maxLives: 9999,
+            gridCols: this.matchSettings?.boardCols,
+            gridRows: this.matchSettings?.boardRows,
+        });
 
         const p1Cfg = this.matchSettings?.players?.p1 ?? {};
         const p2Cfg = this.matchSettings?.players?.p2 ?? {};

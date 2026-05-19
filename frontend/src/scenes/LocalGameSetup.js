@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { PLAYER_COLORS } from '@shared/GameConfig';
+import { onlineOptionCatalogs } from '@shared/catalogs/onlineOptions.js';
 import { loadLocalGameSettings, saveLocalGameSettings } from '../utils/localGameSettings.js';
 import { ensureLocalPlayerProfile, loadLocalPlayerProfiles, sanitizeLocalProfileName } from '../utils/localProfiles.js';
 import { DEFAULT_MAP_ID, DEFAULT_SNAKE_SKIN_ID, getMapAsset, getSnakeAsset, mapAssets, snakeAssets } from '../config/gameAssetRegistry.js';
@@ -44,6 +45,8 @@ export class LocalGameSetup extends Phaser.Scene {
         const saved = loadLocalGameSettings();
         const initialGameMode = normalizeLocalGameMode(this.presetMode ?? saved?.gameMode ?? 'normal');
         const initialDifficulty = String(saved?.difficulty ?? DEFAULT_CONFIG.difficulty);
+        const initialBoardSizeId = String(saved?.boardSizeId ?? onlineOptionCatalogs.boardSizes[1]?.id ?? 'medium');
+        const initialFoodCountId = String(saved?.foodCountId ?? onlineOptionCatalogs.foodCounts[1]?.id ?? 'medium');
         const initialP1Name = safeName(saved?.players?.p1?.name, DEFAULT_CONFIG.p1.name);
         const initialP2Name = safeName(saved?.players?.p2?.name, DEFAULT_CONFIG.p2.name);
         let localProfiles = loadLocalPlayerProfiles(localStorage);
@@ -196,6 +199,23 @@ export class LocalGameSetup extends Phaser.Scene {
 
                     <div class="w-75 border-bottom border-secondary opacity-50 mb-4"></div>
 
+                    <div class="row w-100 mb-4 justify-content-center gap-3">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-white fw-semibold mb-2 small">Tamaño del tablero</label>
+                            <select id="board-size-select" class="form-select form-select-sm profile-select">
+                                ${buildSelectOptions(onlineOptionCatalogs.boardSizes, initialBoardSizeId)}
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label text-white fw-semibold mb-2 small">Cantidad de comida</label>
+                            <select id="food-count-select" class="form-select form-select-sm profile-select">
+                                ${buildSelectOptions(onlineOptionCatalogs.foodCounts, initialFoodCountId)}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="w-75 border-bottom border-secondary opacity-50 mb-4"></div>
+
                     <div class="w-100 mb-4">
                         <h2 class="h6 text-white text-center fw-bold mb-3" style="font-family: 'Montserrat', sans-serif; letter-spacing: 1px;">MAPA / ARENA</h2>
                         <div id="local-map-options" class="d-flex gap-2 justify-content-center flex-wrap"></div>
@@ -254,6 +274,11 @@ export class LocalGameSetup extends Phaser.Scene {
             });
             return options.join('');
         };
+
+        const buildSelectOptions = (options, selectedId) => options.map((option) => {
+            const selected = option.id === selectedId ? 'selected' : '';
+            return `<option value="${this.escapeHtml(option.id)}" ${selected}>${this.escapeHtml(option.label)}</option>`;
+        }).join('');
 
         const syncProfileSelect = (selectId, inputId) => {
             const select = document.getElementById(selectId);
@@ -337,11 +362,15 @@ export class LocalGameSetup extends Phaser.Scene {
             const p1Skin = snakeAssets[p1SkinIndex].id;
             const p2Skin = snakeAssets[p2SkinIndex].id;
             const mapId = mapAssets[mapIndex].id;
+            const boardSizeId = document.getElementById('board-size-select')?.value ?? initialBoardSizeId;
+            const foodCountId = document.getElementById('food-count-select')?.value ?? initialFoodCountId;
 
             const payload = {
                 gameMode,
                 difficulty,
                 mapId,
+                boardSizeId,
+                foodCountId,
                 players: {
                     p1: { name: p1Name, color: p1Color, skinId: p1Skin },
                     p2: { name: p2Name, color: p2Color, skinId: p2Skin },

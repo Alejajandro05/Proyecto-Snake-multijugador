@@ -50,7 +50,11 @@ export class CaptureTheFlagGame extends Phaser.Scene {
     }
 
     create() {
-        this.boardRenderer = new SnakeBoardRenderer(this, { mapId: this.matchSettings?.mapId });
+        this.boardRenderer = new SnakeBoardRenderer(this, {
+            mapId: this.matchSettings?.mapId,
+            gridCols: this.matchSettings?.boardCols,
+            gridRows: this.matchSettings?.boardRows,
+        });
         this.baseGraphics = this.add.graphics().setDepth(3);
         this.flagGraphics = this.add.graphics().setDepth(14);
 
@@ -64,6 +68,8 @@ export class CaptureTheFlagGame extends Phaser.Scene {
 
         this.engine = new SnakeEngine({
             difficulty,
+            gridCols: this.matchSettings?.boardCols,
+            gridRows: this.matchSettings?.boardRows,
             foodCount: 0,
             maxLives: RESPAWN_LIVES,
             obstaclesPerQuadrant: 0,

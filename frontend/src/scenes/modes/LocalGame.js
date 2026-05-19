@@ -41,7 +41,11 @@ export class LocalGame extends Phaser.Scene {
     }
 
     create() {
-        this.boardRenderer = new SnakeBoardRenderer(this, { mapId: this.matchSettings?.mapId });
+        this.boardRenderer = new SnakeBoardRenderer(this, {
+            mapId: this.matchSettings?.mapId,
+            gridCols: this.matchSettings?.boardCols,
+            gridRows: this.matchSettings?.boardRows,
+        });
 
         this.cacheHudElements();
         this.toggleHud(true);
@@ -51,7 +55,12 @@ export class LocalGame extends Phaser.Scene {
         const p1Cfg = this.matchSettings?.players?.p1 ?? {};
         const p2Cfg = this.matchSettings?.players?.p2 ?? {};
 
-        this.engine = new SnakeEngine({ difficulty });
+        this.engine = new SnakeEngine({
+            difficulty,
+            gridCols: this.matchSettings?.boardCols,
+            gridRows: this.matchSettings?.boardRows,
+            foodCount: this.matchSettings?.foodCount,
+        });
         this.effectTimeouts = {};
 
         this.engine.events.on("playerEatFood", ({ playerId, food }) => {
@@ -60,8 +69,9 @@ export class LocalGame extends Phaser.Scene {
         });
 
         // Aplicamos los colores y skins del menú
-        this.engine.addPlayer(P1_ID, { color: p1Cfg.color, skinId: p1Cfg.skinId, startCol: 8, startRow: 12 });
-        this.engine.addPlayer(P2_ID, { color: p2Cfg.color, skinId: p2Cfg.skinId, startCol: 24, startRow: 12 });
+        const spawnPositions = getLocalPlayerSpawnPositions(this.matchSettings?.boardCols, this.matchSettings?.boardRows);
+        this.engine.addPlayer(P1_ID, { color: p1Cfg.color, skinId: p1Cfg.skinId, ...spawnPositions.p1 });
+        this.engine.addPlayer(P2_ID, { color: p2Cfg.color, skinId: p2Cfg.skinId, ...spawnPositions.p2 });
 
         // 2. CONTROLES Y PAUSA (Corregido con 'Pause' y 'caller')
         const controls = getControlsConfig(localStorage);

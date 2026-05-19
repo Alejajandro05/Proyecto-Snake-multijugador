@@ -7,6 +7,7 @@ import { DEFAULT_MUSIC_KEY, getAudioSettings } from '../../utils/audioSettings.j
 import { recordLocalMatchResult } from '../../utils/localProfiles.js';
 import { getControlsConfig } from '../../utils/controlsConfig.js';
 import { applyPlayerThemeToHud } from '../../utils/playerIdentity.js';
+import { getLocalPlayerSpawnPositions } from '../localModeHelpers.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
@@ -39,7 +40,11 @@ export class ChaosGame extends Phaser.Scene {
     }
 
     create() {
-        this.boardRenderer = new SnakeBoardRenderer(this);
+        this.boardRenderer = new SnakeBoardRenderer(this, {
+            mapId: this.matchSettings?.mapId,
+            gridCols: this.matchSettings?.boardCols,
+            gridRows: this.matchSettings?.boardRows,
+        });
 
         this.cacheHudElements();
         this.toggleHud(true);
@@ -48,10 +53,17 @@ export class ChaosGame extends Phaser.Scene {
         const p1Cfg = this.matchSettings?.players?.p1 ?? {};
         const p2Cfg = this.matchSettings?.players?.p2 ?? {};
 
-        this.engine = new SnakeEngine({ difficulty, maxLives: CHAOS_MAX_LIVES });
+        this.engine = new SnakeEngine({
+            difficulty,
+            maxLives: CHAOS_MAX_LIVES,
+            gridCols: this.matchSettings?.boardCols,
+            gridRows: this.matchSettings?.boardRows,
+            foodCount: this.matchSettings?.foodCount,
+        });
 
-        this.engine.addPlayer(P1_ID, { color: p1Cfg.color, skinId: p1Cfg.skinId, startCol: 8, startRow: 12 });
-        this.engine.addPlayer(P2_ID, { color: p2Cfg.color, skinId: p2Cfg.skinId, startCol: 24, startRow: 12 });
+        const spawnPositions = getLocalPlayerSpawnPositions(this.matchSettings?.boardCols, this.matchSettings?.boardRows);
+        this.engine.addPlayer(P1_ID, { color: p1Cfg.color, skinId: p1Cfg.skinId, ...spawnPositions.p1 });
+        this.engine.addPlayer(P2_ID, { color: p2Cfg.color, skinId: p2Cfg.skinId, ...spawnPositions.p2 });
 
         const runtimeConfig = this.engine.getConfig?.() ?? {};
         this.baseTickMs = runtimeConfig.tickMs ?? TICK_MS;
