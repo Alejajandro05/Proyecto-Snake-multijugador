@@ -24,16 +24,18 @@ test('online prefs default to normal difficulty', () => {
   const prefs = loadOnlinePrefs();
 
   assert.equal(prefs.difficulty, 'normal');
+  assert.equal(prefs.rankedSkinId, 'player1');
 });
 
 test('online prefs persist the selected difficulty', () => {
   global.localStorage = createStorage();
 
-  saveOnlinePrefs({ difficulty: 'hard', playerName: 'Samuel' });
+  saveOnlinePrefs({ difficulty: 'hard', playerName: 'Samuel', rankedSkinId: 'snake7' });
   const prefs = loadOnlinePrefs();
 
   assert.equal(prefs.difficulty, 'hard');
   assert.equal(prefs.playerName, 'Samuel');
+  assert.equal(prefs.rankedSkinId, 'snake7');
 
   clearOnlinePrefs();
   assert.equal(loadOnlinePrefs().difficulty, 'normal');

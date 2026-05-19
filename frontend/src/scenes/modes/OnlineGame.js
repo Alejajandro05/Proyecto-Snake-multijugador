@@ -730,6 +730,7 @@ export class OnlineGame extends Phaser.Scene {
     }
 
     async recordWinIfCurrentUserWon(currentSessionId, winnerSessionId) {
+        if (!this.latestState?.isRanked) return;
         if (!currentSessionId || currentSessionId !== winnerSessionId) return;
 
         const currentUser = await getCurrentUser();
@@ -738,7 +739,7 @@ export class OnlineGame extends Phaser.Scene {
         const userName = extractLeaderboardUserName(currentUser);
         if (!userName) return;
 
-        await LeaderboardService.incrementWinCount(userName);
+        await LeaderboardService.incrementWinCount(userName, currentUser.uid);
     }
 
     shutdown() {

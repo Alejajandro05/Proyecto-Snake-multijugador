@@ -26,6 +26,7 @@ export class SnakeRoomState extends Schema {
   @type("number")       hillWinScore: number = 0;
   @type("number")       remainingTimeMs: number = 0;
   @type("string")       chaosEffectId: string = "";
+  @type("boolean")      isRanked: boolean = false;
   @type("boolean")      matchEnded: boolean = false;
   @type("string")       matchEndReason: string = "";
   @type("boolean")       started: boolean = false;
