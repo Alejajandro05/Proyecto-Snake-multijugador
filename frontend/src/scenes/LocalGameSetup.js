@@ -334,14 +334,20 @@ export class LocalGameSetup extends Phaser.Scene {
             const p1Color = defaultColors[0] ?? 0xe74c3c;
             const p2Color = defaultColors[1] ?? 0x3498db;
 
-            const p1Skin = snakeAssets[p1SkinIndex].id;
-            const p2Skin = snakeAssets[p2SkinIndex].id;
-            const mapId = mapAssets[mapIndex].id;
+            const p1Skin = snakeAssets[p1SkinIndex]?.id ?? DEFAULT_SNAKE_SKIN_ID;
+            const p2Skin = snakeAssets[p2SkinIndex]?.id ?? 'player2';
+            const selectedMap = mapAssets[mapIndex] ?? getMapAsset(DEFAULT_MAP_ID);
+            const mapId = selectedMap?.id ?? DEFAULT_MAP_ID;
+
+            const boardSizeId = document.getElementById('board-size-select')?.value ?? initialBoardSizeId;
+            const foodCountId = document.getElementById('food-count-select')?.value ?? initialFoodCountId;
 
             const payload = {
                 gameMode,
                 difficulty,
                 mapId,
+                boardSizeId,
+                foodCountId,
                 players: {
                     p1: { name: p1Name, color: p1Color, skinId: p1Skin },
                     p2: { name: p2Name, color: p2Color, skinId: p2Skin },
