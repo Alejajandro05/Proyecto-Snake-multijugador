@@ -339,15 +339,10 @@ export class LocalGameSetup extends Phaser.Scene {
             const selectedMap = mapAssets[mapIndex] ?? getMapAsset(DEFAULT_MAP_ID);
             const mapId = selectedMap?.id ?? DEFAULT_MAP_ID;
 
-            const boardSizeId = document.getElementById('board-size-select')?.value ?? initialBoardSizeId;
-            const foodCountId = document.getElementById('food-count-select')?.value ?? initialFoodCountId;
-
             const payload = {
                 gameMode,
                 difficulty,
                 mapId,
-                boardSizeId,
-                foodCountId,
                 players: {
                     p1: { name: p1Name, color: p1Color, skinId: p1Skin },
                     p2: { name: p2Name, color: p2Color, skinId: p2Skin },
