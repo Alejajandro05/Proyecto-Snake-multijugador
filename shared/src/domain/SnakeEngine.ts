@@ -174,6 +174,8 @@ export class SnakeEngine {
   tick(): GameState {
     this.tickCount++;
 
+    this.expireTimedPoisonFood();
+
     this.respawnQueue.forEach((respawnAt, id) => {
       if (this.tickCount >= respawnAt) {
         this.respawnQueue.delete(id);
@@ -391,21 +393,41 @@ export class SnakeEngine {
   }
 
   private randomFood(): FoodState {
-    let playerSegments: Position[] = this.getSnakesPosition();
+    const type = this.getRandomFoodType();
     let food: FoodState;
 
-    const type = this.getRandomFoodType();
-
-    do{
+    do {
       food = {
         x: Math.floor(Math.random() * this.config.gridCols) * this.config.gridSize,
         y: Math.floor(Math.random() * this.config.gridRows) * this.config.gridSize,
-        type: type,
-        score: FOOD_CONFIG[type].score
+        type,
+        score: FOOD_CONFIG[type].score,
       };
+    } while (this.isCellOccupied(food.x, food.y));
+
+    if (type === 'poison' && this.config.poisonFoodTtlMs > 0) {
+      food.spawnedAtTick = this.tickCount;
     }
-    while (this.isCellOccupied(food.x, food.y));
+
     return food;
+  }
+
+  private expireTimedPoisonFood(): void {
+    const ttlMs = this.config.poisonFoodTtlMs;
+    if (ttlMs <= 0) return;
+
+    const ttlTicks = Math.max(1, Math.ceil(ttlMs / this.config.tickMs));
+
+    for (let i = this.food.length - 1; i >= 0; i--) {
+      const item = this.food[i];
+      if (item.type !== 'poison') continue;
+
+      const spawnedAt = item.spawnedAtTick ?? 0;
+      if (this.tickCount - spawnedAt < ttlTicks) continue;
+
+      this.food.splice(i, 1);
+      this.food.push(this.randomFood());
+    }
   }
 
   setTutorialAllowedFoodTypes(types: FoodType[] | null): void {
@@ -422,11 +444,14 @@ export class SnakeEngine {
       return entries[0][0];
     }
 
-    const totalWeight = pool.reduce((sum, [, cfg]) => sum + cfg.weight, 0);
+    const weightFor = (type: FoodType, cfg: typeof FOOD_CONFIG[FoodType]) =>
+      this.config.foodWeightOverrides[type] ?? cfg.weight;
+
+    const totalWeight = pool.reduce((sum, [type, cfg]) => sum + weightFor(type, cfg), 0);
     let r = Math.random() * totalWeight;
 
     for (const [type, cfg] of pool) {
-      r -= cfg.weight;
+      r -= weightFor(type, cfg);
       if (r < 0) return type;
     }
 
@@ -534,6 +559,30 @@ export class SnakeEngine {
     const config = FOOD_CONFIG[type] ?? FOOD_CONFIG.apple;
     this.food.push({ x, y, type, score: config.score });
     return true;
+  }
+
+  /** Añade obstáculos sin borrar los existentes (p. ej. dificultad progresiva en solitario). */
+  addRandomObstacles(count: number): number {
+    const safeCount = Math.max(0, Math.min(count, this.config.gridCols * this.config.gridRows));
+    const quadrants: ('TL' | 'TR' | 'BL' | 'BR')[] = ['TL', 'TR', 'BL', 'BR'];
+    let placed = 0;
+    let guard = 0;
+
+    while (placed < safeCount && guard < safeCount * 40) {
+      guard += 1;
+      const quadrant = quadrants[Math.floor(Math.random() * quadrants.length)];
+      const candidate = this.randomObstacleInQuadrant(quadrant);
+      if (this.obstacles.some((obstacle) => obstacle.x === candidate.x && obstacle.y === candidate.y)) {
+        continue;
+      }
+      if (this.isCellOccupied(candidate.x, candidate.y)) {
+        continue;
+      }
+      this.obstacles.push(candidate);
+      placed += 1;
+    }
+
+    return placed;
   }
 
   spawnTutorialObstacles(totalCount: number): void {

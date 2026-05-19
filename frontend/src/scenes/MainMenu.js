@@ -193,6 +193,10 @@ export class MainMenu extends Phaser.Scene {
                             JUEGO LOCAL
                         </button>
 
+                        <button id="btn-solo" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #7C3AED; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">
+                            JUEGO SOLITARIO
+                        </button>
+
                         <button id="btn-online" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #8F0177; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">
                             1 VS 1 ONLINE
                         </button>
@@ -285,6 +289,12 @@ export class MainMenu extends Phaser.Scene {
             detenerAudioPrueba();
             clearMenu();
             this.scene.start('LocalGameSetup', { gameMode: 'normal' });
+        });
+
+        document.getElementById('btn-solo').addEventListener('click', () => {
+            detenerAudioPrueba();
+            clearMenu();
+            this.scene.start('SoloGameSetup');
         });
 
         document.getElementById('btn-online').addEventListener('click', () => {

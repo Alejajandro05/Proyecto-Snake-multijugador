@@ -1,7 +1,7 @@
 export const GRID_COLS = 32;
 export const GRID_ROWS = 24;
 export const GRID_SIZE = 32;
-export const TICK_MS = 60;
+export const TICK_MS = 150;
 export const FOOD_COUNT = 10;
 export const INITIAL_SNAKE_LENGTH = 3;
 export const RESPAWN_DELAY_MS = 3000;
@@ -38,6 +38,19 @@ function normalizeDifficulty(value) {
     }
     return DEFAULT_DIFFICULTY;
 }
+const FOOD_TYPES = ['apple', 'grape', 'speed', 'poison'];
+function normalizeFoodWeightOverrides(input) {
+    if (!input)
+        return {};
+    const overrides = {};
+    for (const type of FOOD_TYPES) {
+        const value = input[type];
+        if (value === undefined || !Number.isFinite(value) || value <= 0)
+            continue;
+        overrides[type] = clampInt(value, 1, 1000);
+    }
+    return overrides;
+}
 export function resolveGameRuntimeConfig(input) {
     const difficulty = normalizeDifficulty(input?.difficulty);
     const preset = DIFFICULTY_PRESETS[difficulty];
@@ -56,5 +69,7 @@ export function resolveGameRuntimeConfig(input) {
         obstaclesPerQuadrant: clampInt(input?.obstaclesPerQuadrant ?? preset.obstaclesPerQuadrant, 0, Math.max(gridCols, gridRows)),
         difficulty,
         territoryMode: input?.territoryMode === true,
+        poisonFoodTtlMs: clampInt(input?.poisonFoodTtlMs ?? 0, 0, 300_000),
+        foodWeightOverrides: normalizeFoodWeightOverrides(input?.foodWeightOverrides),
     };
 }

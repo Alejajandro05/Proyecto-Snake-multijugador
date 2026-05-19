@@ -11,6 +11,8 @@ export const MAX_LIVES = 3;
 
 export const PLAYER_COLORS: number[] = [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71];
 
+import type { FoodType } from './types.js';
+
 export type GameDifficulty = 'easy' | 'normal' | 'hard';
 
 export interface GameRuntimeConfig {
@@ -26,9 +28,15 @@ export interface GameRuntimeConfig {
 	obstaclesPerQuadrant: number;
 	difficulty: GameDifficulty;
 	territoryMode: boolean;
+	/** 0 = el kiwi no expira; >0 = ms hasta reemplazarlo por otra fruta aleatoria. */
+	poisonFoodTtlMs: number;
+	/** Pesos de aparición por tipo de fruta (sustituyen los de FOOD_CONFIG). */
+	foodWeightOverrides: Partial<Record<FoodType, number>>;
 }
 
-type RuntimeConfigInput = Partial<GameRuntimeConfig>;
+type RuntimeConfigInput = Partial<GameRuntimeConfig> & {
+	foodWeightOverrides?: Partial<Record<FoodType, number>>;
+};
 
 const DEFAULT_DIFFICULTY: GameDifficulty = 'normal';
 
@@ -62,6 +70,22 @@ function normalizeDifficulty(value?: string): GameDifficulty {
 	return DEFAULT_DIFFICULTY;
 }
 
+const FOOD_TYPES: FoodType[] = ['apple', 'grape', 'speed', 'poison'];
+
+function normalizeFoodWeightOverrides(
+	input?: Partial<Record<FoodType, number>>,
+): Partial<Record<FoodType, number>> {
+	if (!input) return {};
+
+	const overrides: Partial<Record<FoodType, number>> = {};
+	for (const type of FOOD_TYPES) {
+		const value = input[type];
+		if (value === undefined || !Number.isFinite(value) || value <= 0) continue;
+		overrides[type] = clampInt(value, 1, 1000);
+	}
+	return overrides;
+}
+
 export function resolveGameRuntimeConfig(input?: RuntimeConfigInput): GameRuntimeConfig {
 	const difficulty = normalizeDifficulty(input?.difficulty);
 	const preset = DIFFICULTY_PRESETS[difficulty];
@@ -82,5 +106,7 @@ export function resolveGameRuntimeConfig(input?: RuntimeConfigInput): GameRuntim
 		obstaclesPerQuadrant: clampInt(input?.obstaclesPerQuadrant ?? preset.obstaclesPerQuadrant, 0, Math.max(gridCols, gridRows)),
 		difficulty,
 		territoryMode: input?.territoryMode === true,
+		poisonFoodTtlMs: clampInt(input?.poisonFoodTtlMs ?? 0, 0, 300_000),
+		foodWeightOverrides: normalizeFoodWeightOverrides(input?.foodWeightOverrides),
 	};
 }

@@ -19,6 +19,8 @@ import { AgainstAIGame } from './scenes/modes/AgainstAIGame.js';
 import { CaptureTheFlagGame } from './scenes/modes/CaptureTheFlagGame.js';
 import { Pause } from './scenes/Pause.js';
 import {LocalGameSetup} from "./scenes/LocalGameSetup";
+import { SoloGameSetup } from './scenes/SoloGameSetup.js';
+import { SoloGame } from './scenes/modes/SoloGame.js';
 import { ControlsMenu } from './scenes/ControlsMenu.js';
 import { bindFormKeyboardGuard } from './utils/formKeyboardGuard.js';
 
@@ -65,6 +67,8 @@ const config = {
         Registration,
         Login,
         LocalGameSetup,
+        SoloGameSetup,
+        SoloGame,
         LocalGame,
         NormalLocalGame,
         OnlineGame,
