@@ -45,9 +45,9 @@ export const onlineSkins = freezeOptions([
 ]);
 
 export const onlineBoardSizes = freezeOptions([
-  { id: "small",  label: "Pequeño (20x15)", cols: 20, rows: 15 },
+  { id: "small",  label: "Pequeño (16x12)", cols: 16, rows: 12 },
   { id: "medium", label: "Mediano (32x24)", cols: 32, rows: 24 },
-  { id: "large",  label: "Grande (40x30)",  cols: 40, rows: 30 },
+  { id: "large",  label: "Grande (48x36)",  cols: 48, rows: 36 },
 ]);
 
 export const onlineFoodCounts = freezeOptions([
