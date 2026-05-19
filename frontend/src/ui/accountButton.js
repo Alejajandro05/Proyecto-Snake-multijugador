@@ -96,7 +96,7 @@ export async function refreshAccountButton(buttonEl) {
     }
 }
 
-function openAccountDropdown({ scene, buttonEl, returnScene, onBeforeNavigate }) {
+function openAccountDropdown({ scene, buttonEl, returnScene, onBeforeNavigate, onAfterLogout }) {
     closeAccountDropdown();
     ensureDropdownStyles();
 
@@ -139,6 +139,7 @@ function openAccountDropdown({ scene, buttonEl, returnScene, onBeforeNavigate })
             console.error('No se pudo cerrar sesión.', error);
         }
         await refreshAccountButton(buttonEl);
+        onAfterLogout?.();
     });
 
     dropdownOutsideListener = (event) => {
@@ -150,7 +151,7 @@ function openAccountDropdown({ scene, buttonEl, returnScene, onBeforeNavigate })
     }, 0);
 }
 
-export function bindAccountButton({ scene, buttonEl, returnScene, onBeforeNavigate }) {
+export function bindAccountButton({ scene, buttonEl, returnScene, onBeforeNavigate, onAfterLogout }) {
     if (!buttonEl) return;
 
     refreshAccountButton(buttonEl);
@@ -166,6 +167,6 @@ export function bindAccountButton({ scene, buttonEl, returnScene, onBeforeNaviga
             return;
         }
 
-        openAccountDropdown({ scene, buttonEl, returnScene, onBeforeNavigate });
+        openAccountDropdown({ scene, buttonEl, returnScene, onBeforeNavigate, onAfterLogout });
     });
 }

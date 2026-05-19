@@ -129,6 +129,26 @@ export const clearAuthSessionOnStartup = async () => {
 
 export const formatUserEmailForDisplay = (user) => String(user?.email ?? '—');
 
+export const updateUserDisplayName = async (username) => {
+  const validation = validateUserName(username);
+  if (!validation.ok) {
+    throw new Error(validation.message);
+  }
+
+  const currentAuth = getFirebaseAuth();
+  const user = currentAuth.currentUser;
+  if (!user) {
+    throw new Error('No hay una sesión activa.');
+  }
+
+  try {
+    await updateProfile(user, { displayName: validation.normalized });
+    return validation.normalized;
+  } catch (error) {
+    throw mapFirebaseAuthError(error);
+  }
+};
+
 export const updateUserPassword = async (currentPassword, newPassword) => {
   const currentAuth = getFirebaseAuth();
   const user = currentAuth.currentUser;

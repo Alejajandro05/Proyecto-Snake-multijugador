@@ -4,7 +4,11 @@ import { onlineOptionCatalogs } from '../../../shared/src/catalogs/onlineOptions
 import { createLobbyClient } from '../net/lobbyClient.js';
 import { getMapAsset, getSnakeAsset } from '../config/gameAssetRegistry.js';
 import { loadOnlinePrefs, saveOnlinePrefs } from '../utils/onlineStorage.js';
-import { isUserLoggedIn, getCurrentUser } from '../services/firebaseAuthService.js';
+import {
+  extractLeaderboardUserName,
+  getCurrentUser,
+  isUserLoggedIn,
+} from '../services/firebaseAuthService.js';
 import { disableGameKeyboardForOverlayScene } from '../utils/formKeyboardGuard.js';
 import {
   ACCOUNT_GUEST_LABEL,
@@ -71,6 +75,7 @@ export class OnlineMenu extends Phaser.Scene {
     this.publicLobbies = [];
     this.lobbyRoom = null;
     this.renderOverlay();
+    void this.applyOnlineNameFieldsForAuthUser();
 
     if (this.initialErrorMessage) {
       this.showError(this.initialErrorMessage);
@@ -106,9 +111,6 @@ export class OnlineMenu extends Phaser.Scene {
     overlay.innerHTML = `
       <div class="w-100 px-2 px-sm-3 d-flex flex-column align-items-center" style="max-width: 960px; min-height: 0;">
         <div class="online-menu-card w-100 rounded-4 text-center p-4 d-flex flex-column align-items-stretch">
-        <h1 class="fw-bold text-white mb-4 online-menu-title">
-            SNAKE CLASH
-        </h1>
           <style>
             #online-menu-overlay .online-skin-arrow { transition: transform 0.2s; cursor: pointer; }
             #online-menu-overlay .online-skin-arrow:hover { transform: scale(1.2); }
@@ -127,13 +129,6 @@ export class OnlineMenu extends Phaser.Scene {
             @media (max-width: 767.98px) {
               #online-menu-overlay .online-create-split-map { border-top: 1px solid rgba(255,255,255,0.18); padding-top: 1rem; margin-top: 0.25rem; }
               #online-menu-overlay .online-split-line { border-bottom: 1px solid rgba(255,255,255,0.18); padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
-            }
-            #online-menu-overlay .online-menu-title {
-              font-family: 'Teko', sans-serif;
-              text-shadow: 0px 4px 20px #F67D31, 0px 0px 10px #F67D31;
-              letter-spacing: 2px;
-              font-size: clamp(2.1rem, 9vw, 4.75rem);
-              line-height: 1.05;
             }
             #online-menu-overlay .online-menu-card {
               flex: 0 1 auto;
@@ -326,6 +321,9 @@ export class OnlineMenu extends Phaser.Scene {
       buttonEl: accountButton,
       returnScene: 'OnlineMenu',
       onBeforeNavigate: () => closeAccountDropdown(),
+      onAfterLogout: () => {
+        void this.applyOnlineNameFieldsForAuthUser();
+      },
     });
     overlay.querySelector('#btn-waiting-back').addEventListener('click', () => this.leaveLobbyRoom());
     overlay.querySelector('#btn-create-submit').addEventListener('click', () => this.handleCreateSubmit());
@@ -369,12 +367,13 @@ export class OnlineMenu extends Phaser.Scene {
         btnRanked.textContent = "CONECTANDO AL SERVIDOR...";
 
         const token = await user.getIdToken(true);
+        const rankedPlayerName = extractLeaderboardUserName(user) || 'Jugador';
 
         const colyseusClient = new Client(getColyseusServerUrl());
 
         this.queueRoom = await colyseusClient.joinOrCreate("ranked_queue", {
           token: token,
-          playerName: user.displayName || "Jugador"
+          playerName: rankedPlayerName,
         });
 
         // ¡CONECTADO! Cambiamos el botón a modo "Cancelar"
@@ -391,7 +390,7 @@ export class OnlineMenu extends Phaser.Scene {
 
           this.scene.start('OnlineGame', {
             matchRoomId: data.roomId,
-            playerName: user.displayName || "Jugador",
+            playerName: rankedPlayerName,
             skinId: this.prefs.guestSkinId,
             gameMode: 'normal',
           });
@@ -530,8 +529,10 @@ export class OnlineMenu extends Phaser.Scene {
   async handleCreateSubmit() {
     try {
       this.hideError();
+      const createNameInput = this.overlayRoot.querySelector('#online-create-name');
+      const playerName = await this.resolveOnlinePlayerName(createNameInput);
       this.prefs = saveOnlinePrefs({
-        playerName: this.overlayRoot.querySelector('#online-create-name').value.trim() || 'Jugador',
+        playerName,
         gameMode: this.overlayRoot.querySelector('#online-create-mode').value,
         difficulty: this.overlayRoot.querySelector('#online-create-difficulty').value,
         hostSkinId: this.overlayRoot.querySelector('#online-create-skin').value,
@@ -600,8 +601,10 @@ export class OnlineMenu extends Phaser.Scene {
 
     try {
       this.hideError();
+      const joinNameInput = this.overlayRoot.querySelector('#online-join-name');
+      const playerName = await this.resolveOnlinePlayerName(joinNameInput);
       this.prefs = saveOnlinePrefs({
-        playerName: this.overlayRoot.querySelector('#online-join-name').value.trim() || 'Jugador',
+        playerName,
         guestSkinId: this.overlayRoot.querySelector('#online-join-skin').value,
       });
 
@@ -619,8 +622,10 @@ export class OnlineMenu extends Phaser.Scene {
   async handlePrivateJoin() {
     try {
       this.hideError();
+      const joinNameInput = this.overlayRoot.querySelector('#online-join-name');
+      const playerName = await this.resolveOnlinePlayerName(joinNameInput);
       this.prefs = saveOnlinePrefs({
-        playerName: this.overlayRoot.querySelector('#online-join-name').value.trim() || 'Jugador',
+        playerName,
         guestSkinId: this.overlayRoot.querySelector('#online-join-skin').value,
       });
 
@@ -761,6 +766,59 @@ export class OnlineMenu extends Phaser.Scene {
       this.overlayRoot.parentNode.removeChild(this.overlayRoot);
     }
     this.overlayRoot = null;
+  }
+
+  async getAuthPlayerName() {
+    const user = await getCurrentUser();
+    if (!user) return null;
+    return extractLeaderboardUserName(user);
+  }
+
+  lockOnlineNameInput(input, userName) {
+    if (!input) return;
+    input.value = userName;
+    input.readOnly = true;
+    input.disabled = true;
+    input.title = 'Nombre vinculado a tu cuenta';
+    input.setAttribute('aria-readonly', 'true');
+    input.style.opacity = '0.85';
+    input.style.cursor = 'not-allowed';
+    input.style.backgroundColor = 'rgba(15, 23, 42, 0.65)';
+  }
+
+  unlockOnlineNameInput(input) {
+    if (!input) return;
+    input.readOnly = false;
+    input.disabled = false;
+    input.removeAttribute('aria-readonly');
+    input.title = '';
+    input.style.opacity = '';
+    input.style.cursor = '';
+    input.style.backgroundColor = '';
+  }
+
+  async applyOnlineNameFieldsForAuthUser() {
+    if (!this.overlayRoot) return;
+
+    const createInput = this.overlayRoot.querySelector('#online-create-name');
+    const joinInput = this.overlayRoot.querySelector('#online-join-name');
+    const authName = await this.getAuthPlayerName();
+
+    if (!authName) {
+      this.unlockOnlineNameInput(createInput);
+      this.unlockOnlineNameInput(joinInput);
+      return;
+    }
+
+    this.lockOnlineNameInput(createInput, authName);
+    this.lockOnlineNameInput(joinInput, authName);
+    this.prefs = saveOnlinePrefs({ ...this.prefs, playerName: authName });
+  }
+
+  async resolveOnlinePlayerName(fallbackInput) {
+    const authName = await this.getAuthPlayerName();
+    if (authName) return authName;
+    return String(fallbackInput?.value ?? '').trim() || 'Jugador';
   }
 
   escapeHtml(value) {

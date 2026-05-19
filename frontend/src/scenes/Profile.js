@@ -3,7 +3,9 @@ import {
     extractLeaderboardUserName,
     formatUserEmailForDisplay,
     getCurrentUser,
+    updateUserDisplayName,
     updateUserPassword,
+    validateUserName,
 } from '../services/firebaseAuthService.js';
 import { disableGameKeyboardForOverlayScene } from '../utils/formKeyboardGuard.js';
 
@@ -52,28 +54,76 @@ export class Profile extends Phaser.Scene {
 
         const overlay = document.createElement('div');
         overlay.id = 'profile-overlay';
-        overlay.className = 'position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center';
-        overlay.style.zIndex = '1100';
+        overlay.className = 'position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center';
+        overlay.style.cssText = [
+            'z-index:1100',
+            'overflow-x:hidden',
+            'overflow-y:auto',
+            'box-sizing:border-box',
+            'padding:max(0.75rem, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) max(5.75rem, calc(env(safe-area-inset-bottom, 0px) + 4.5rem)) max(12px, env(safe-area-inset-left, 0px))',
+            '-webkit-overflow-scrolling:touch',
+        ].join(';');
 
         const btnStyleBase = `width: 280px; padding: 12px; border: 2px solid #94A3B8; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.1rem; transition: transform 0.2s ease;`;
         const btnStyleBack = `${btnStyleBase} background-color: #334155; color: white;`;
         const btnStyleSubmit = `${btnStyleBase} background-color: #0F766E; color: white; border-color: #5EEAD4;`;
 
         overlay.innerHTML = `
-            <div class="text-center" style="margin-top: -40px; width: 100%; max-width: 960px;">
-                <h1 class="display-1 fw-bold text-white mb-4" style="font-family: 'Teko', sans-serif; text-shadow: 0px 4px 20px #F67D31, 0px 0px 10px #F67D31; letter-spacing: 2px;">
-                    SNAKE CLASH
-                </h1>
-
-                <div class="mx-auto p-4" style="background: rgba(15, 23, 42, 0.85); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 12px; backdrop-filter: blur(5px); max-width: 560px;">
+            <style>
+                #profile-overlay .profile-scroll-wrap {
+                    width: 100%;
+                    max-width: 960px;
+                    margin: 0 auto;
+                    flex: 0 0 auto;
+                }
+                #profile-overlay .profile-card {
+                    background: rgba(15, 23, 42, 0.85);
+                    border: 2px solid rgba(255, 255, 255, 0.2);
+                    border-radius: 12px;
+                    backdrop-filter: blur(5px);
+                    max-width: 560px;
+                    width: 100%;
+                    margin: 0 auto;
+                    max-height: min(88vh, calc(100dvh - 7.25rem));
+                    overflow-y: auto;
+                    overflow-x: hidden;
+                    -webkit-overflow-scrolling: touch;
+                }
+                #profile-overlay .profile-card::-webkit-scrollbar { width: 8px; }
+                #profile-overlay .profile-card::-webkit-scrollbar-thumb {
+                    background: rgba(246, 125, 49, 0.45);
+                    border-radius: 999px;
+                }
+                #profile-overlay .profile-card::-webkit-scrollbar-track {
+                    background: rgba(255, 255, 255, 0.06);
+                    border-radius: 999px;
+                }
+                @media (max-width: 575.98px) {
+                    #profile-overlay .profile-actions {
+                        flex-direction: column !important;
+                    }
+                    #profile-overlay .profile-actions .btn {
+                        width: 100% !important;
+                    }
+                }
+            </style>
+            <div class="profile-scroll-wrap text-center px-2">
+                <div class="profile-card mx-auto p-4">
                     <h2 class="text-white text-center fw-bold mb-4" style="font-family: 'Montserrat', sans-serif;">Mi perfil</h2>
 
+                    <form id="profile-username-form" class="text-start mb-4" novalidate>
+                        <label for="profile-username-input" class="form-label text-white fw-semibold">Nombre de usuario</label>
+                        <input id="profile-username-input" type="text" class="form-control mb-2" maxlength="24" value="${escapeHtml(userName)}" autocomplete="username" style="width:100%; padding: 0.85rem 1rem; border-radius: 10px; border: 2px solid #94A3B8; background: rgba(15, 23, 42, 0.9); color: white;" />
+                        <p class="text-white-50 small mb-3">Solo letras, números, punto, guion y guion bajo (3-24 caracteres).</p>
+                        <button id="btn-profile-save-username" type="submit" class="btn text-white fw-bold shadow w-100" style="${btnStyleSubmit}">Guardar nombre</button>
+                    </form>
+
                     <div class="text-start mb-4 p-3 rounded-3" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);">
-                        <p class="text-white-50 small mb-1">Nombre de usuario</p>
-                        <p id="profile-username" class="text-white fw-bold mb-3">${escapeHtml(userName)}</p>
                         <p class="text-white-50 small mb-1">Correo</p>
                         <p id="profile-email" class="text-white fw-semibold mb-0">${escapeHtml(userEmail)}</p>
                     </div>
+
+                    <div id="profile-username-message" class="text-start mb-3" style="min-height: 1.4rem; font-size: 0.95rem;"></div>
 
                     <h3 class="h6 text-white fw-bold mb-3 text-start" style="font-family: 'Montserrat', sans-serif;">Cambiar contraseña</h3>
 
@@ -93,7 +143,7 @@ export class Profile extends Phaser.Scene {
 
                         <div id="profile-validation-message" class="text-danger text-start mb-3" style="min-height: 1.4rem; font-size: 0.95rem;"></div>
 
-                        <div class="d-flex justify-content-between gap-2 flex-row">
+                        <div class="d-flex justify-content-between gap-2 flex-row profile-actions">
                             <button id="btn-profile-back" type="button" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleBack}">VOLVER</button>
                             <button id="btn-profile-save" type="submit" class="btn text-white fw-bold shadow" style="${btnStyleSubmit}">Guardar contraseña</button>
                         </div>
@@ -104,6 +154,11 @@ export class Profile extends Phaser.Scene {
 
         document.getElementById('game-container').appendChild(overlay);
         this.overlayRoot = overlay;
+
+        const usernameForm = overlay.querySelector('#profile-username-form');
+        const usernameInput = overlay.querySelector('#profile-username-input');
+        const usernameMessage = overlay.querySelector('#profile-username-message');
+        const saveUsernameButton = overlay.querySelector('#btn-profile-save-username');
 
         const form = overlay.querySelector('#profile-password-form');
         const currentPasswordInput = overlay.querySelector('#profile-current-password');
@@ -127,6 +182,39 @@ export class Profile extends Phaser.Scene {
 
         overlay.querySelector('#btn-profile-back')?.addEventListener('click', () => {
             this.scene.start(this.returnScene);
+        });
+
+        usernameForm?.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            usernameInput.style.borderColor = '#94A3B8';
+            usernameMessage.textContent = '';
+
+            const usernameValue = usernameInput.value.trim();
+            const usernameValidation = validateUserName(usernameValue);
+            if (!usernameValidation.ok) {
+                usernameInput.style.borderColor = 'red';
+                usernameMessage.style.color = '#f87171';
+                usernameMessage.textContent = usernameValidation.message;
+                return;
+            }
+
+            const originalText = saveUsernameButton.textContent;
+            saveUsernameButton.disabled = true;
+            saveUsernameButton.textContent = 'Guardando...';
+
+            try {
+                const updatedName = await updateUserDisplayName(usernameValue);
+                usernameInput.value = updatedName;
+                usernameMessage.style.color = '#86efac';
+                usernameMessage.textContent = 'Nombre de usuario actualizado correctamente.';
+            } catch (error) {
+                usernameInput.style.borderColor = 'red';
+                usernameMessage.style.color = '#f87171';
+                usernameMessage.textContent = error.message || 'No se pudo actualizar el nombre.';
+            } finally {
+                saveUsernameButton.disabled = false;
+                saveUsernameButton.textContent = originalText;
+            }
         });
 
         form.addEventListener('submit', async (event) => {
