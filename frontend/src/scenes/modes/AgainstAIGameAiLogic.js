@@ -27,7 +27,6 @@ export const againstAIGameAiLogic = {
             const snakeboard = this.fetchsnakeboard(oldState, engine);
             const direction = this.calculateAINextDirectionWithSnakeboard(snakeboard, oldState.players.get(P2_ID).direction);
             engine.setNextDirection(P2_ID, direction);
-            this.logSnakeboard(snakeboard); // TODO delete this
         }
     },
 
@@ -84,7 +83,6 @@ export const againstAIGameAiLogic = {
             const randomRow = (Math.floor(Math.random() * snakeboard.length))
             return this.findFirstTargetApple(snakeboard, randomRow);
         }
-            console.log("Apple"); console.log(this.targetApple);
         return this.targetApple;
     },
 
@@ -96,7 +94,7 @@ export const againstAIGameAiLogic = {
     findFirstTargetApple(snakeboard, startRow) {
         for (let yCounter = 0; yCounter < snakeboard.length; yCounter++) {
             const y = (yCounter+startRow >= snakeboard.length) ? yCounter+startRow-snakeboard.length : yCounter+startRow;
-            for (let x = 0; x < snakeboard.length; x++) {
+            for (let x = 0; x < snakeboard[0].length; x++) {
                 if (snakeboard[y][x] == SNAKE_BOARD_TILE.food) {
                     return {y: y, x: x};
                 }
@@ -107,9 +105,6 @@ export const againstAIGameAiLogic = {
 
     calculateAINextDirectionWithSnakeboardAndTargetApple(snakeboard, targetApple, currentAiDirection) {
         const aiPlayerHead = this.findAiPlayerHead(snakeboard);
-
-        const specialCaseMove = this.whenAlignedWithYExistsObstacule(snakeboard, aiPlayerHead, targetApple, currentAiDirection);// this is a rare specialcase
-        if (specialCaseMove != null) return specialCaseMove;//when logic changes it should be avoided
 
         const targetAppleDirection = this.calculateDirectionToTargetApple(snakeboard, aiPlayerHead, targetApple, currentAiDirection);
         return this.avoidObstaculeOrEnemy(snakeboard, aiPlayerHead, targetAppleDirection, targetApple, currentAiDirection);
@@ -126,25 +121,6 @@ export const againstAIGameAiLogic = {
         console.error("AI Player Head not found!");
     },
 
-    whenAlignedWithYExistsObstacule(snakeboard, aiPlayerHead, targetApple, currentAiDirection) {
-        //TODO comment  what this function does and why it exists
-        // this function is a rare case. When the sourrounding logic / method changes it should be avoided using this function.
-        //TODO refactor this code
-        const aiHeadAfterOneMove = this.calculateNextSnakeheadPosition(snakeboard, aiPlayerHead, currentAiDirection);
-
-        if (aiHeadAfterOneMove.y != targetApple.y || snakeboard[aiHeadAfterOneMove.y][aiHeadAfterOneMove.x] != SNAKE_BOARD_TILE.empty) {
-            return null;
-        }
-
-        const snakeboardAfterOneMove = this.calculateSnakeboardAfterOneMove(snakeboard, aiPlayerHead, aiHeadAfterOneMove);
-        const directionAfterOneMove = this.fastestHorizontalDirectionToApple(snakeboardAfterOneMove, aiHeadAfterOneMove, targetApple);
-        if (this.obstaculeInAISnakeDirection(snakeboardAfterOneMove,  aiHeadAfterOneMove, directionAfterOneMove)) {
-            return directionAfterOneMove;
-        }
-        
-        return null;
-    },
-
     calculateSnakeboardAfterOneMove(snakeboard, currentAiPlayerHead, nextAiPlayerHead) {
         snakeboard[currentAiPlayerHead.y][currentAiPlayerHead.x] = SNAKE_BOARD_TILE.aiPlayer;
         snakeboard[nextAiPlayerHead.y][nextAiPlayerHead.x] = SNAKE_BOARD_TILE.aiPlayerHead;
@@ -152,8 +128,7 @@ export const againstAIGameAiLogic = {
     },
 
     calculateDirectionToTargetApple(snakeboard, aiPlayerHead, targetApple, currentAiDirection) {
-        console.log("AI Head x: "); console.log(aiPlayerHead);
-        if (aiPlayerHead.y === targetApple.y) {//TODO avoiding an obstacle could cause problems when requiring x to be the same
+        if (targetApple.y-2 <= aiPlayerHead.y && aiPlayerHead.y <= targetApple.y+2) {
             return this.fastestHorizontalDirectionToApple(snakeboard, aiPlayerHead, targetApple);
         }
         else {
@@ -189,7 +164,6 @@ export const againstAIGameAiLogic = {
 
     avoidObstaculeOrEnemy(snakeboard, aiPlayerHead, targetAppleDirection, targetApple, currentAiDirection) {
         if (this.obstaculeInAISnakeDirection(snakeboard, aiPlayerHead, targetAppleDirection)) {
-            console.log("AVOIDING OBSTACULE DIRECTION WAS: " + targetAppleDirection);
             return this.avoidObstacule_Helper(snakeboard, aiPlayerHead, targetAppleDirection, targetApple, currentAiDirection);
         }
         else {
