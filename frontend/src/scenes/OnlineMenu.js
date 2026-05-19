@@ -416,12 +416,12 @@ export class OnlineMenu extends Phaser.Scene {
   }
 
   wireOnlineCreateVisualPickers(overlay) {
-    const snakes = onlineOptionCatalogs.skins.map((o) => getSnakeAsset(o.id));
-    const maps = onlineOptionCatalogs.maps.map((o) => getMapAsset(o.id));
+    const snakes = onlineOptionCatalogs.skins.map((o) => getSnakeAsset(o.id)).filter(Boolean);
+    const maps = onlineOptionCatalogs.maps.map((o) => getMapAsset(o.id)).filter(Boolean);
     if (!snakes.length || !maps.length) return;
 
-    let skinIndex = Math.max(0, snakes.findIndex((s) => s.id === this.prefs.hostSkinId));
-    let mapIndex = Math.max(0, maps.findIndex((m) => m.id === this.prefs.mapId));
+    let skinIndex = Math.max(0, snakes.findIndex((s) => s && s.id === this.prefs.hostSkinId));
+    let mapIndex = Math.max(0, maps.findIndex((m) => m && m.id === this.prefs.mapId));
 
     const skinHidden = overlay.querySelector('#online-create-skin');
     const mapHidden = overlay.querySelector('#online-create-map');
@@ -433,24 +433,25 @@ export class OnlineMenu extends Phaser.Scene {
     if (!skinHidden || !mapHidden || !preview || !mapRoot || !prevBtn || !nextBtn) return;
 
     const renderSkin = () => {
-      const skin = snakes[skinIndex];
-      skinHidden.value = skin.id;
+      const skin = snakes[skinIndex] || snakes[0];
+      skinHidden.value = skin?.id || '';
       preview.innerHTML = `
         <div class="d-flex flex-column align-items-center gap-2">
-          <img src="/${skin.preview.path}" alt="" style="width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated;">
-          <span class="text-white-50 small">${this.escapeHtml(skin.label)}</span>
+          <img src="/${skin?.preview?.path || ''}" alt="" style="width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated;">
+          <span class="text-white-50 small">${this.escapeHtml(skin?.label || '')}</span>
         </div>
       `;
     };
 
     const renderMaps = () => {
-      mapHidden.value = maps[mapIndex].id;
+      const activeMap = maps[mapIndex] || maps[0];
+      mapHidden.value = activeMap?.id || '';
       mapRoot.innerHTML = maps
           .map(
               (map, index) => `
         <button type="button" class="online-map-option rounded-3 p-2 text-center ${index === mapIndex ? 'active' : ''}" data-online-map-index="${index}" style="width: 112px;">
-          <span class="d-block rounded-2 mb-2" style="height: 42px; background: url('/${map.floor.path}') center/32px 32px repeat; image-rendering: pixelated;"></span>
-          <span class="small fw-semibold">${this.escapeHtml(map.label)}</span>
+          <span class="d-block rounded-2 mb-2" style="height: 42px; background: url('/${map?.floor?.path || ''}') center/32px 32px repeat; image-rendering: pixelated;"></span>
+          <span class="small fw-semibold">${this.escapeHtml(map?.label || '')}</span>
         </button>
       `,
           )
@@ -478,10 +479,10 @@ export class OnlineMenu extends Phaser.Scene {
   }
 
   wireOnlineJoinSkinPicker(overlay) {
-    const snakes = onlineOptionCatalogs.skins.map((o) => getSnakeAsset(o.id));
+    const snakes = onlineOptionCatalogs.skins.map((o) => getSnakeAsset(o.id)).filter(Boolean);
     if (!snakes.length) return;
 
-    let skinIndex = Math.max(0, snakes.findIndex((s) => s.id === this.prefs.guestSkinId));
+    let skinIndex = Math.max(0, snakes.findIndex((s) => s && s.id === this.prefs.guestSkinId));
 
     const skinHidden = overlay.querySelector('#online-join-skin');
     const preview = overlay.querySelector('#online-join-skin-preview');
@@ -491,12 +492,12 @@ export class OnlineMenu extends Phaser.Scene {
     if (!skinHidden || !preview || !prevBtn || !nextBtn) return;
 
     const renderSkin = () => {
-      const skin = snakes[skinIndex];
-      skinHidden.value = skin.id;
+      const skin = snakes[skinIndex] || snakes[0];
+      skinHidden.value = skin?.id || '';
       preview.innerHTML = `
         <div class="d-flex flex-column align-items-center gap-2">
-          <img src="/${skin.preview.path}" alt="" style="width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated;">
-          <span class="text-white-50 small">${this.escapeHtml(skin.label)}</span>
+          <img src="/${skin?.preview?.path || ''}" alt="" style="width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated;">
+          <span class="text-white-50 small">${this.escapeHtml(skin?.label || '')}</span>
         </div>
       `;
     };
@@ -551,6 +552,8 @@ export class OnlineMenu extends Phaser.Scene {
         difficulty: this.prefs.difficulty,
         mapId: this.prefs.mapId,
         visibility: this.prefs.visibility,
+        boardSizeId: this.prefs.boardSizeId,
+        foodCountId: this.prefs.foodCountId,
       });
 
       this.attachLobbyRoom(room);
