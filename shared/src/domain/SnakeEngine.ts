@@ -1,10 +1,19 @@
 import type { Direction, GameState, PlayerState, FoodState, SnakeSegmentState, ObstacleState, Position, FoodType, FoodConfigItem, TerritoryCellState } from './types.js';
+import { ITeamState } from './TeamState';
+import { GameModeLogic } from './gameModes/GameModeLogic';
+import { CTFGameModeLogic } from './gameModes/CTFGameModeLogic';
+import { IGameMode } from './gameModes/IGameMode';
+import { ICaptureTheFlagMode } from './gameModes/CaptureTheFlagMode';
 import {
   type GameRuntimeConfig,
   PLAYER_COLORS,
   resolveGameRuntimeConfig,
+  GameConfig,
 } from './GameConfig.js';
 import { EventEmitter } from "./EventEmitter.js"
+
+// Assuming this constant location for snake length - this needs to be moved to GameConfig.ts later
+// const SNAKE_INITIAL_LENGTH = 3; // Placeholder, as it's used in CTFGameModeLogic
 
 const OPPOSITE: Record<Direction, Direction> = {
   up: 'down',

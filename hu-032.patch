@@ -1,0 +1,155 @@
+diff --git a/shared/src/catalogs/onlineOptions.js b/shared/src/catalogs/onlineOptions.js
+index 8f0c2a1..e5b9f3c 100644
+--- a/shared/src/catalogs/onlineOptions.js
++++ b/shared/src/catalogs/onlineOptions.js
+@@ -32,6 +32,22 @@ export const onlineSkins = freezeOptions([
+   { id: "snake10", label: "Snake 10" },
+ ]);
+ 
++export const onlineBoardSizes = freezeOptions([
++  { id: "small",  label: "Pequeño (20x15)", cols: 20, rows: 15 },
++  { id: "medium", label: "Mediano (32x24)", cols: 32, rows: 24 },
++  { id: "large",  label: "Grande (40x30)",  cols: 40, rows: 30 },
++]);
++
++export const onlineFoodCounts = freezeOptions([
++  { id: "low",    label: "Bajo (5)",  value: 5 },
++  { id: "medium", label: "Medio (10)", value: 10 },
++  { id: "high",   label: "Alto (15)", value: 15 },
++]);
++
+ export const onlineOptionCatalogs = Object.freeze({
+   modes: onlineModes,
+   difficulties: onlineDifficulties,
+   maps: onlineMaps,
+   skins: onlineSkins,
++  boardSizes: onlineBoardSizes,
++  foodCounts: onlineFoodCounts,
+ });
+diff --git a/frontend/src/utils/onlineStorage.js b/frontend/src/utils/onlineStorage.js
+index 4d7e8f9..9c2a1b3 100644
+--- a/frontend/src/utils/onlineStorage.js
++++ b/frontend/src/utils/onlineStorage.js
+@@ -3,6 +3,8 @@ const DEFAULT_ONLINE_PREFS = Object.freeze({
+   gameMode: 'normal',
+   difficulty: 'normal',
+   mapId: 'arena01',
++  boardSizeId: 'medium',
++  foodCountId: 'medium',
+   visibility: 'public',
+ });
+ 
+diff --git a/frontend/src/scenes/OnlineMenu.js b/frontend/src/scenes/OnlineMenu.js
+index 6a1f2c4..d8e9f0a 100644
+--- a/frontend/src/scenes/OnlineMenu.js
++++ b/frontend/src/scenes/OnlineMenu.js
+@@ -312,6 +312,18 @@ export class OnlineMenu extends Phaser.Scene {
+                 ${this.renderSelectBlock('Mapa', 'online-create-map', onlineOptionCatalogs.maps, this.prefs.mapId)}
+               </div>
+ 
++              <!-- === HU-032: Opciones adicionales === -->
++              <div class="col-12 col-md-6">
++                ${this.renderSelectBlock('Tamaño del tablero', 'online-create-board', onlineOptionCatalogs.boardSizes, this.prefs.boardSizeId)}
++              </div>
++              <div class="col-12 col-md-6">
++                ${this.renderSelectBlock('Cantidad de objetos', 'online-create-food', onlineOptionCatalogs.foodCounts, this.prefs.foodCountId)}
++              </div>
++              <!-- ==================================== -->
++
+               <div class="col-12">
+                 ${this.renderSelectBlock('Visibilidad', 'online-create-visibility', visibilityOptions, this.prefs.visibility)}
+               </div>
+@@ -378,6 +390,8 @@ export class OnlineMenu extends Phaser.Scene {
+         mapId: this.overlayRoot.querySelector('#online-create-map').value,
+         visibility: this.overlayRoot.querySelector('#online-create-visibility').value,
+         maxPlayers: 2,
++        boardSizeId: this.overlayRoot.querySelector('#online-create-board').value,
++        foodCountId: this.overlayRoot.querySelector('#online-create-food').value,
+       });
+ 
+       saveOnlinePrefs({
+@@ -386,6 +400,8 @@ export class OnlineMenu extends Phaser.Scene {
+         mapId: this.overlayRoot.querySelector('#online-create-map').value,
+         visibility: this.overlayRoot.querySelector('#online-create-visibility').value,
+         maxPlayers: 2,
++        boardSizeId: this.overlayRoot.querySelector('#online-create-board').value,
++        foodCountId: this.overlayRoot.querySelector('#online-create-food').value,
+       });
+ 
+       this.switchToWaitingView();
+diff --git a/backend/src/rooms/LobbyRoom.ts b/backend/src/rooms/LobbyRoom.ts
+index 5b9c1d2..f3a8e7b 100644
+--- a/backend/src/rooms/LobbyRoom.ts
++++ b/backend/src/rooms/LobbyRoom.ts
+@@ -12,7 +12,9 @@ interface LobbyRoomCreateOptions {
+   mapId?: unknown;
+   maxPlayers?: unknown;
+   playerName?: unknown;
+-  skinId?: unknown;
++  skinId?: unknown;
++  boardSizeId?: unknown;
++  foodCountId?: unknown;
+ }
+ 
+ interface LobbyRoomStartMatchOptions {
+@@ -68,6 +70,33 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
+       onlineOptionCatalogs.maps.map((map) => map.id),
+       this.state.mapId
+     );
++
++    // === HU-032: Opciones de tablero y objetos ===
++    let boardCols = 32;
++    let boardRows = 24;
++    let foodCount = 10;
++
++    const boardId = resolveCatalogOption(
++      options?.boardSizeId,
++      onlineOptionCatalogs.boardSizes.map(b => b.id),
++      'medium'
++    );
++    const boardOpt = onlineOptionCatalogs.boardSizes.find(b => b.id === boardId);
++    if (boardOpt) {
++      boardCols = boardOpt.cols;
++      boardRows = boardOpt.rows;
++    }
++
++    const foodId = resolveCatalogOption(
++      options?.foodCountId,
++      onlineOptionCatalogs.foodCounts.map(f => f.id),
++      'medium'
++    );
++    const foodOpt = onlineOptionCatalogs.foodCounts.find(f => f.id === foodId);
++    if (foodOpt) foodCount = foodOpt.value;
++
++    this.state.boardCols = boardCols;
++    this.state.boardRows = boardRows;
++    this.state.foodCount = foodCount;
++    // ============================================
++
+     this.state.maxPlayers = 2;
+     this.maxClients = 2;
+ 
+@@ -138,6 +167,9 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
+           onlineOptionCatalogs.maps.map((map) => map.id),
+           this.state.mapId
+         ),
++        boardCols: this.state.boardCols,
++        boardRows: this.state.boardRows,
++        foodCount: this.state.foodCount,
+       });
+ 
+       this.state.matchRoomId = snakeRoom.roomId;
+diff --git a/backend/src/rooms/schema/LobbyRoomState.ts b/backend/src/rooms/schema/LobbyRoomState.ts
+index 9d2e4f1..a7b8c9d 100644
+--- a/backend/src/rooms/schema/LobbyRoomState.ts
++++ b/backend/src/rooms/schema/LobbyRoomState.ts
+@@ -10,6 +10,9 @@ export class LobbyRoomState extends Schema {
+   @type("string") gameMode: string = "normal";
+   @type("string") difficulty: string = "normal";
+   @type("string") mapId: string = "arena01";
++  @type("number") boardCols: number = 32;
++  @type("number") boardRows: number = 24;
++  @type("number") foodCount: number = 10;
+   @type("string") matchRoomId: string = "";
+   @type("number") maxPlayers: number = 2;
+   @type(LobbyPlayer) host = new LobbyPlayer();

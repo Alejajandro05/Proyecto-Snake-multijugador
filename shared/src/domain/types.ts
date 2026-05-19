@@ -1,3 +1,5 @@
+import { ITeamState } from './TeamState';
+
 export type Direction = 'up' | 'down' | 'left' | 'right';
 
 export interface Position {
@@ -37,6 +39,7 @@ export interface TerritoryCellState extends Position {
 
 export interface PlayerState {
   id: string;
+  teamId: string; // Added for team modes
   skinId: string;
   color: number;
   direction: Direction;
@@ -60,4 +63,6 @@ export interface GameState {
   obstacles: ObstacleState[];
   territory: TerritoryCellState[];
   territoryCounts: Map<string, number>;
+  teams: { [teamId: string]: ITeamState }; // Added for team modes
+  gameModeId: string; // Added to identify the active game mode
 }
