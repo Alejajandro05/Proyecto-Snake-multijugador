@@ -6,6 +6,11 @@ import { getMapAsset, getSnakeAsset } from '../config/gameAssetRegistry.js';
 import { loadOnlinePrefs, saveOnlinePrefs } from '../utils/onlineStorage.js';
 import { isUserLoggedIn, getCurrentUser } from '../services/firebaseAuthService.js';
 import { disableGameKeyboardForOverlayScene } from '../utils/formKeyboardGuard.js';
+import {
+  ACCOUNT_GUEST_LABEL,
+  bindAccountButton,
+  closeAccountDropdown,
+} from '../ui/accountButton.js';
 
 // --- FUNCIONES GLOBALES PARA LA URL DEL SERVIDOR ---
 function normalizeHttpUrlToWebSocket(url) {
@@ -46,6 +51,7 @@ export class OnlineMenu extends Phaser.Scene {
   }
 
   create() {
+    closeAccountDropdown();
     disableGameKeyboardForOverlayScene(this);
 
     const fondo = this.add.image(this.scale.width / 2, this.scale.height / 2, 'fondo_duelo');
@@ -71,6 +77,7 @@ export class OnlineMenu extends Phaser.Scene {
     }
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      closeAccountDropdown();
       this.cleanupLobbyRoom(false);
       this.destroyOverlay();
     });
@@ -168,7 +175,7 @@ export class OnlineMenu extends Phaser.Scene {
                     </div>
                     <div class="d-flex flex-column gap-3 w-100 mt-auto px-xl-2">
                         <button id="btn-online-ranked" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleRanked}">BUSCAR PARTIDA</button>
-                        <button id="btn-join-login" class="btn fw-bold shadow menu-btn" style="${btnStyleLogin}">🔑 MI CUENTA / LOGIN</button>
+                        <button id="btn-join-login" class="btn fw-bold shadow menu-btn" style="${btnStyleLogin}">${ACCOUNT_GUEST_LABEL}</button>
                     </div>
                 </div>
             </div>
@@ -313,7 +320,13 @@ export class OnlineMenu extends Phaser.Scene {
       this.scene.start('MainMenu');
     });    overlay.querySelector('#btn-create-back').addEventListener('click', () => this.showView('home'));
     overlay.querySelector('#btn-join-back').addEventListener('click', () => this.showView('home'));
-    overlay.querySelector('#btn-join-login').addEventListener('click', () => this.scene.start('Login'));
+    const accountButton = overlay.querySelector('#btn-join-login');
+    bindAccountButton({
+      scene: this,
+      buttonEl: accountButton,
+      returnScene: 'OnlineMenu',
+      onBeforeNavigate: () => closeAccountDropdown(),
+    });
     overlay.querySelector('#btn-waiting-back').addEventListener('click', () => this.leaveLobbyRoom());
     overlay.querySelector('#btn-create-submit').addEventListener('click', () => this.handleCreateSubmit());
     overlay.querySelector('#btn-refresh-public').addEventListener('click', () => this.loadPublicLobbies());
@@ -349,7 +362,7 @@ export class OnlineMenu extends Phaser.Scene {
         if (!user) {
           this.showError('¡Alto ahí! Debes iniciar sesión o crear una cuenta para jugar en el modo Competitivo.');
           btnRanked.textContent = "REDIRIGIENDO...";
-          setTimeout(() => { this.scene.start('Login'); }, 2500);
+          setTimeout(() => { this.scene.start('Login', { returnScene: 'OnlineMenu' }); }, 2500);
           return;
         }
 

@@ -7,6 +7,10 @@ export class Registration extends Phaser.Scene {
     super('Registration');
   }
 
+  init(data) {
+    this.returnScene = data?.returnScene ?? 'OnlineMenu';
+  }
+
   create() {
     disableGameKeyboardForOverlayScene(this);
 
@@ -32,11 +36,7 @@ export class Registration extends Phaser.Scene {
     const btnStyleSubmit = `${btnStyleBase} background-color: #0F766E; color: white; border-color: #5EEAD4;`;
 
     overlay.innerHTML = `
-      <div class="text-center" style="margin-top: -40px; width: 100%; max-width: 960px;">
-        <h1 class="display-1 fw-bold text-white mb-4" style="font-family: 'Teko', sans-serif; text-shadow: 0px 4px 20px #F67D31, 0px 0px 10px #F67D31; letter-spacing: 2px;">
-            SNAKE CLASH
-        </h1>
-
+      <div class="text-center" style="width: 100%; max-width: 960px;">
         <div class="mx-auto p-4" style="background: rgba(15, 23, 42, 0.85); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 12px; backdrop-filter: blur(5px); max-width: 520px;">
           <h2 class="text-white text-center fw-bold mb-3" style="font-family: 'Montserrat', sans-serif;">Registro</h2>
 
@@ -125,7 +125,7 @@ export class Registration extends Phaser.Scene {
       toggleConfirmPasswordButton.style.textDecoration = isVisible ? 'none' : 'line-through';
     });
 
-    backButton.addEventListener('click', () => this.scene.start('Login'));
+    backButton.addEventListener('click', () => this.scene.start('Login', { returnScene: this.returnScene }));
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -182,7 +182,7 @@ export class Registration extends Phaser.Scene {
           
           // Clear form and redirect after 2 seconds
           setTimeout(() => {
-            this.scene.start('Login');
+            this.scene.start('Login', { returnScene: this.returnScene });
           }, 2000);
         } else {
           usernameInput.style.borderColor = 'red';
