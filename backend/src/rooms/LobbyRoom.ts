@@ -17,6 +17,8 @@ interface LobbyRoomCreateOptions {
   maxPlayers?: unknown;
   playerName?: unknown;
   skinId?: unknown;
+  boardSizeId?: unknown;
+  foodCountId?: unknown;
 }
 
 interface LobbyRoomStartMatchOptions {
@@ -123,6 +125,35 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
     );
     this.state.maxPlayers = 2;
     this.maxClients = 2;
+    
+        // === HU-032: Opciones de tablero y objetos ===
+    let boardCols = 32;
+    let boardRows = 24;
+    let foodCount = 10;
+
+    const boardId = resolveCatalogOption(
+      options?.boardSizeId,
+      onlineOptionCatalogs.boardSizes.map(b => b.id),
+      'medium'
+    );
+    const boardOpt = onlineOptionCatalogs.boardSizes.find(b => b.id === boardId);
+    if (boardOpt) {
+      boardCols = boardOpt.cols;
+      boardRows = boardOpt.rows;
+    }
+
+    const foodId = resolveCatalogOption(
+      options?.foodCountId,
+      onlineOptionCatalogs.foodCounts.map(f => f.id),
+      'medium'
+    );
+    const foodOpt = onlineOptionCatalogs.foodCounts.find(f => f.id === foodId);
+    if (foodOpt) foodCount = foodOpt.value;
+
+    this.state.boardCols = boardCols;
+    this.state.boardRows = boardRows;
+    this.state.foodCount = foodCount;
+    // ============================================
 
     if (this.state.visibility === "private") {
       this.state.inviteCode = generateInviteCode();
@@ -155,6 +186,9 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
           onlineOptionCatalogs.maps.map((map) => map.id),
           this.state.mapId
         ),
+        boardCols: this.state.boardCols,
+        boardRows: this.state.boardRows,
+        foodCount: this.state.foodCount,
       });
 
       this.state.matchRoomId = snakeRoom.roomId;

@@ -39,9 +39,23 @@ export const onlineSkins = freezeOptions([
   { id: "snake10", label: "Snake 10" },
 ]);
 
+export const onlineBoardSizes = freezeOptions([
+  { id: "small",  label: "Pequeño (20x15)", cols: 20, rows: 15 },
+  { id: "medium", label: "Mediano (32x24)", cols: 32, rows: 24 },
+  { id: "large",  label: "Grande (40x30)",  cols: 40, rows: 30 },
+]);
+
+export const onlineFoodCounts = freezeOptions([
+  { id: "low",    label: "Bajo (5)",  value: 5 },
+  { id: "medium", label: "Medio (10)", value: 10 },
+  { id: "high",   label: "Alto (15)", value: 15 },
+]);
+
 export const onlineOptionCatalogs = Object.freeze({
   modes: onlineModes,
   difficulties: onlineDifficulties,
   maps: onlineMaps,
   skins: onlineSkins,
+  boardSizes: onlineBoardSizes,
+  foodCounts: onlineFoodCounts,
 });

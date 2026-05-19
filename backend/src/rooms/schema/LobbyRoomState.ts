@@ -10,6 +10,9 @@ export class LobbyRoomState extends Schema {
   @type("string") gameMode: string = "normal";
   @type("string") difficulty: string = "normal";
   @type("string") mapId: string = "arena01";
+  @type("number") boardCols: number = 32;
+  @type("number") boardRows: number = 24;
+  @type("number") foodCount: number = 10;
   @type("string") matchRoomId: string = "";
   @type("number") maxPlayers: number = 2;
   @type(LobbyPlayer) host = new LobbyPlayer();

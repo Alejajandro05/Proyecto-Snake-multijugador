@@ -191,6 +191,12 @@ export class OnlineMenu extends Phaser.Scene {
               <div class="col-12 col-md-6 col-lg-4">
                 ${this.renderSelectBlock('Dificultad', 'online-create-difficulty', onlineOptionCatalogs.difficulties, this.prefs.difficulty)}
               </div>
+              <div class="col-12 col-md-6">
+                ${this.renderSelectBlock('Tamaño del tablero', 'online-create-board', onlineOptionCatalogs.boardSizes, this.prefs.boardSizeId)}
+              </div>
+              <div class="col-12 col-md-6">
+                ${this.renderSelectBlock('Cantidad de objetos', 'online-create-food', onlineOptionCatalogs.foodCounts, this.prefs.foodCountId)}
+              </div>
               <div class="col-12">
                 <div class="w-100 border-bottom border-secondary opacity-50 my-1"></div>
               </div>
@@ -517,6 +523,10 @@ export class OnlineMenu extends Phaser.Scene {
         difficulty: this.overlayRoot.querySelector('#online-create-difficulty').value,
         hostSkinId: this.overlayRoot.querySelector('#online-create-skin').value,
         mapId: this.overlayRoot.querySelector('#online-create-map').value,
+        boardSizeId: this.overlayRoot.querySelector('#online-create-board').value,
+        foodCountId: this.overlayRoot.querySelector('#online-create-food').value,
+        visibility: this.overlayRoot.querySelector('#online-create-visibility').value,
+        maxPlayers: 2,
         visibility: this.overlayRoot.querySelector('#online-create-visibility').value,
       });
 

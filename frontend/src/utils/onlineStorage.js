@@ -7,6 +7,8 @@ const DEFAULT_ONLINE_PREFS = Object.freeze({
   gameMode: 'normal',
   difficulty: 'normal',
   mapId: 'arena01',
+  boardSizeId: 'medium',
+  foodCountId: 'medium',
   visibility: 'public',
 });
 
