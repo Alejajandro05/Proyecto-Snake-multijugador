@@ -178,7 +178,7 @@ export class LocalGameSetup extends Phaser.Scene {
                                 </div>
                                 <button id="p1-next" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height: 1;">&rsaquo;</button>
                             </div>
-                            <div class="badge rounded-pill mt-3 px-3 py-2" style="background: rgba(222, 26, 88, 0.22); color: #fff; border: 1px solid rgba(222, 26, 88, 0.4); letter-spacing: 1px;">WASD</div>
+                            <div id="p1-control-label" class="badge rounded-pill mt-3 px-3 py-2" style="background: rgba(222, 26, 88, 0.22); color: #fff; border: 1px solid rgba(222, 26, 88, 0.4); letter-spacing: 1px;">WASD</div>
                         </div>
 
                         <div class="col-12 col-sm-auto text-center d-flex flex-column align-items-center">
@@ -190,7 +190,7 @@ export class LocalGameSetup extends Phaser.Scene {
                                 </div>
                                 <button id="p2-next" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height: 1;">&rsaquo;</button>
                             </div>
-                            <div class="badge rounded-pill mt-3 px-3 py-2" style="background: rgba(56, 189, 248, 0.18); color: #fff; border: 1px solid rgba(56, 189, 248, 0.35); letter-spacing: 1px;">FLECHAS</div>
+                            <div id="p2-control-label" class="badge rounded-pill mt-3 px-3 py-2" style="background: rgba(56, 189, 248, 0.18); color: #fff; border: 1px solid rgba(56, 189, 248, 0.35); letter-spacing: 1px;">FLECHAS</div>
                         </div>
                     </div>
 
@@ -423,6 +423,8 @@ export class LocalGameSetup extends Phaser.Scene {
         const gameModeInput = document.getElementById('gameMode');
         const modeSelectedLabel = document.getElementById('mode-selected-label');
         const modeOpenBtn = document.getElementById('btn-open-mode');
+        const p1ControlLabel = document.getElementById('p1-control-label');
+        const p2ControlLabel = document.getElementById('p2-control-label');
 
         const modeModal = document.getElementById('mode-modal');
         const modeClose = document.getElementById('mode-close');
@@ -482,6 +484,13 @@ export class LocalGameSetup extends Phaser.Scene {
                 img: '/modoCTF.png',
                 label: 'Capture the Flag',
             },
+            {
+                id: 'contraIA',
+                title: 'Contra IA',
+                desc: 'Juega contra una serpiente controlada por la IA',
+                img: '/contraIA.png',
+                label: 'Contra IA',
+            },
         ];
 
         let modeIndex = Math.max(0, MODES.findIndex((m) => m.id === initialGameMode));
@@ -493,6 +502,8 @@ export class LocalGameSetup extends Phaser.Scene {
             if (gameModeInput) gameModeInput.value = safe;
             const current = MODES.find((m) => m.id === safe);
             if (modeSelectedLabel) modeSelectedLabel.textContent = current ? `Seleccionado: ${current.label}` : 'Seleccionado: -';
+            if (p1ControlLabel) p1ControlLabel.textContent = safe === 'contraIA' ? 'WASD / FLECHAS' : 'WASD';
+            if (p2ControlLabel) p2ControlLabel.textContent = safe === 'contraIA' ? 'Controlado por IA' : 'FLECHAS';
         };
 
         const renderModeCard = () => {
