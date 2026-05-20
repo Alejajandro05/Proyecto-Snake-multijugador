@@ -1,6 +1,6 @@
 import assert from "assert";
 import { SnakeEngine } from "../../shared/src/domain/SnakeEngine.js";
-import { GRID_SIZE, TICK_MS, RESPAWN_DELAY_MS, GRID_COLS } from "../../shared/src/domain/GameConfig.js";
+import { GRID_SIZE, TICK_MS, RESPAWN_DELAY_MS, GRID_COLS, resolveGameRuntimeConfig } from "../../shared/src/domain/GameConfig.js";
 
 function createEngine(): SnakeEngine {
   return new SnakeEngine({ foodCount: 0, obstaclesPerQuadrant: 0 });
@@ -20,6 +20,17 @@ function advanceMovement(engine: SnakeEngine, playerId = "p1"): void {
 }
 
 describe("SnakeEngine – domain logic", () => {
+  it("sets difficulty tick rates around the 90ms normal mode", () => {
+    const normal = resolveGameRuntimeConfig({ difficulty: "normal" });
+    const easy = resolveGameRuntimeConfig({ difficulty: "easy" });
+    const hard = resolveGameRuntimeConfig({ difficulty: "hard" });
+
+    assert.strictEqual(TICK_MS, 90);
+    assert.strictEqual(normal.tickMs, 90);
+    assert.strictEqual(easy.tickMs, 110);
+    assert.strictEqual(hard.tickMs, 75);
+  });
+
   it("adds a player with 3 segments pointing right", () => {
     const engine = createEngine();
     const p = engine.addPlayer("p1");
@@ -106,6 +117,30 @@ describe("SnakeEngine – domain logic", () => {
     advanceMovement(engine);
 
     assert.strictEqual(engine.getState().players.get("p1")!.score, 71);
+  });
+
+  it("applies a gentler strawberry speed boost than moving every tick", () => {
+    const engine = createEngine();
+    const player = engine.addPlayer("p1");
+    const head = player.segments[0];
+    // @ts-ignore - deterministic domain setup
+    engine["food"] = [{ x: head.x + GRID_SIZE, y: head.y, type: "speed", score: 0 }];
+
+    advanceMovement(engine);
+
+    const boostedPlayer = engine.getState().players.get("p1")!;
+    const xAfterEating = boostedPlayer.segments[0].x;
+    assert.strictEqual(boostedPlayer.speed, 1.5);
+
+    engine.tick();
+    assert.strictEqual(engine.getState().players.get("p1")!.segments[0].x, xAfterEating);
+
+    engine.tick();
+    const xAfterFirstBoostMove = engine.getState().players.get("p1")!.segments[0].x;
+    assert.strictEqual(xAfterFirstBoostMove - xAfterEating, GRID_SIZE);
+
+    engine.tick();
+    assert.strictEqual(engine.getState().players.get("p1")!.segments[0].x - xAfterFirstBoostMove, GRID_SIZE);
   });
 
   it("does not spawn replacement food on obstacles", () => {

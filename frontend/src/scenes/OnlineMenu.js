@@ -1,7 +1,11 @@
 import Phaser from 'phaser';
 import { Client } from '@colyseus/sdk';
 import { onlineOptionCatalogs } from '../../../shared/src/catalogs/onlineOptions.js';
-import { createLobbyClient } from '../net/lobbyClient.js';
+import {
+  createLobbyClient,
+  getResumableActiveLobbyRoom,
+  setActiveLobbyRoom,
+} from '../net/lobbyClient.js';
 import { getMapAsset, getSnakeAsset } from '../config/gameAssetRegistry.js';
 import { loadOnlinePrefs, saveOnlinePrefs } from '../utils/onlineStorage.js';
 import {
@@ -52,6 +56,9 @@ export class OnlineMenu extends Phaser.Scene {
 
   init(data) {
     this.initialErrorMessage = data?.errorMessage ?? '';
+    this.resumeLobby = data?.resumeLobby === true;
+    this.resumeLobbyRoomId = data?.lobbyRoomId ?? '';
+    this.completedMatchRoomId = data?.completedMatchRoomId ?? '';
   }
 
   create() {
@@ -80,6 +87,8 @@ export class OnlineMenu extends Phaser.Scene {
     if (this.initialErrorMessage) {
       this.showError(this.initialErrorMessage);
     }
+
+    this.resumeActiveLobbyIfRequested();
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       closeAccountDropdown();
@@ -291,6 +300,20 @@ export class OnlineMenu extends Phaser.Scene {
               <div class="col-12 d-none" id="waiting-code-wrap"><div class="p-3 rounded-3 text-center" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1);"><strong>Código:</strong> <span id="waiting-code" class="text-success fw-bold fs-5">-</span></div></div>
             </div>
             <p id="waiting-status" class="text-center mb-4 fw-bold" style="font-family: 'Montserrat', sans-serif;">Esperando jugador...</p>
+            <div id="waiting-settings-panel" class="mb-4">
+              <div class="row g-3">
+                <div class="col-12 col-md-4">
+                  ${this.renderSelectBlock('Modo', 'waiting-mode-select', onlineOptionCatalogs.modes, this.prefs.gameMode)}
+                </div>
+                <div class="col-12 col-md-4">
+                  ${this.renderSelectBlock('Dificultad', 'waiting-difficulty-select', onlineOptionCatalogs.difficulties, this.prefs.difficulty)}
+                </div>
+                <div class="col-12 col-md-4">
+                  ${this.renderSelectBlock('Mapa', 'waiting-map-select', onlineOptionCatalogs.maps, this.prefs.mapId)}
+                </div>
+              </div>
+            </div>
+            <p id="waiting-settings-locked" class="text-center text-white-50 small mb-4 d-none" style="font-family: 'Montserrat', sans-serif;">Esperando a que el host configure la siguiente partida.</p>
             <div class="d-flex justify-content-center gap-3">
               <button id="btn-waiting-back" class="btn text-white fw-bold shadow menu-btn flex-fill" style="${btnStyleVolver}">SALIR</button>
               <button id="btn-waiting-start" class="btn text-white fw-bold shadow menu-btn flex-fill" style="${btnStyleAction}" disabled>INICIAR</button>
@@ -309,6 +332,11 @@ export class OnlineMenu extends Phaser.Scene {
     this.waitingView = overlay.querySelector('#online-waiting-view');
     this.publicLobbiesRoot = overlay.querySelector('#online-public-lobbies');
     this.waitingStartButton = overlay.querySelector('#btn-waiting-start');
+    this.waitingSettingsPanel = overlay.querySelector('#waiting-settings-panel');
+    this.waitingSettingsLocked = overlay.querySelector('#waiting-settings-locked');
+    this.waitingModeSelect = overlay.querySelector('#waiting-mode-select');
+    this.waitingDifficultySelect = overlay.querySelector('#waiting-difficulty-select');
+    this.waitingMapSelect = overlay.querySelector('#waiting-map-select');
 
     // BOTONES ORIGINALES
     overlay.querySelector('#btn-online-create').addEventListener('click', () => this.showView('create'));
@@ -336,6 +364,9 @@ export class OnlineMenu extends Phaser.Scene {
     overlay.querySelector('#btn-refresh-public').addEventListener('click', () => this.loadPublicLobbies());
     overlay.querySelector('#btn-private-join').addEventListener('click', () => this.handlePrivateJoin());
     overlay.querySelector('#btn-waiting-start').addEventListener('click', () => this.startMatch());
+    [this.waitingModeSelect, this.waitingDifficultySelect, this.waitingMapSelect].forEach((select) => {
+      select?.addEventListener('change', () => this.updateLobbySettingsFromWaiting());
+    });
 
 // BOTÓN RANKED REESCRITO (CON CLIENTE COLYSEUS PURO)
     this.isSearchingRanked = false;
@@ -707,35 +738,81 @@ export class OnlineMenu extends Phaser.Scene {
   attachLobbyRoom(room) {
     this.cleanupLobbyRoom(false);
     this.lobbyRoom = room;
+    setActiveLobbyRoom(room);
 
-    room.onStateChange((state) => {
-      this.updateWaitingState(state);
-      if (state.matchRoomId) {
-        const isHost = room.sessionId === state.host.sessionId;
-        const skinId = isHost ? state.host.skinId : state.guest.skinId;
-        const playerName = isHost ? state.host.playerName : state.guest.playerName;
-        this.scene.start('OnlineGame', {
-          matchRoomId: state.matchRoomId,
-          lobbyRoomId: state.lobbyId,
-          skinId,
-          playerName,
-          gameMode: state.gameMode,
-          difficulty: state.difficulty,
-          mapId: state.mapId,
-        });
-      }
-    });
-
-    room.onLeave(() => {
+    this.lobbyListenerRoom = room;
+    this.lobbyStateChangeHandler = (state) => this.handleLobbyState(room, state);
+    this.lobbyLeaveHandler = () => {
+      if (this.lobbyRoom !== room) return;
+      setActiveLobbyRoom(null);
+      this.clearLobbyRoomListenerRefs();
       if (this.scene.isActive('OnlineMenu')) {
         this.lobbyRoom = null;
         this.showError('La sala se ha cerrado.');
         this.showView('home');
       }
-    });
+    };
+
+    room.onStateChange(this.lobbyStateChangeHandler);
+    room.onLeave(this.lobbyLeaveHandler);
 
     this.showView('waiting');
-    this.updateWaitingState(room.state);
+    this.handleLobbyState(room, room.state);
+  }
+
+  detachLobbyRoomListeners() {
+    if (this.lobbyListenerRoom && this.lobbyStateChangeHandler) {
+      this.lobbyListenerRoom.onStateChange.remove(this.lobbyStateChangeHandler);
+    }
+    if (this.lobbyListenerRoom && this.lobbyLeaveHandler) {
+      this.lobbyListenerRoom.onLeave.remove(this.lobbyLeaveHandler);
+    }
+    this.clearLobbyRoomListenerRefs();
+  }
+
+  clearLobbyRoomListenerRefs() {
+    this.lobbyListenerRoom = null;
+    this.lobbyStateChangeHandler = null;
+    this.lobbyLeaveHandler = null;
+  }
+
+  resumeActiveLobbyIfRequested() {
+    if (!this.resumeLobby) return;
+
+    const room = getResumableActiveLobbyRoom(this.resumeLobbyRoomId);
+    if (!room) {
+      this.showError('No se pudo recuperar la sala anterior.');
+      this.showView('home');
+      return;
+    }
+
+    this.attachLobbyRoom(room);
+  }
+
+  handleLobbyState(room, state) {
+    if (this.lobbyRoom !== room) return;
+
+    this.updateWaitingState(state);
+    const matchRoomId = String(state?.matchRoomId ?? '');
+    if (!matchRoomId) {
+      this.completedMatchRoomId = '';
+      return;
+    }
+
+    if (matchRoomId === this.completedMatchRoomId) return;
+
+    const isHost = room.sessionId === state.host.sessionId;
+    const skinId = isHost ? state.host.skinId : state.guest.skinId;
+    const playerName = isHost ? state.host.playerName : state.guest.playerName;
+    this.scene.start('OnlineGame', {
+      matchRoomId,
+      lobbyRoomId: state.lobbyId,
+      skinId,
+      playerName,
+      gameMode: state.gameMode,
+      difficulty: state.difficulty,
+      mapId: state.mapId,
+    });
   }
 
   updateWaitingState(state) {
@@ -748,6 +825,8 @@ export class OnlineMenu extends Phaser.Scene {
     const gameMode = state?.gameMode ?? '-';
     const difficulty = state?.difficulty ?? 'normal';
     const mapId = state?.mapId ?? '-';
+    const isHost = this.lobbyRoom && this.lobbyRoom.sessionId === host.sessionId;
+    const hasActiveMatch = Boolean(state?.matchRoomId);
 
     this.overlayRoot.querySelector('#waiting-host-name').textContent = host.playerName || 'Pendiente';
     this.overlayRoot.querySelector('#waiting-guest-name').textContent = guest.playerName || 'Esperando...';
@@ -755,9 +834,20 @@ export class OnlineMenu extends Phaser.Scene {
     this.overlayRoot.querySelector('#waiting-difficulty').textContent = difficulty;
     this.overlayRoot.querySelector('#waiting-map').textContent = mapId;
     this.overlayRoot.querySelector('#waiting-visibility').textContent = visibility === 'private' ? 'Privada' : 'Publica';
-    this.overlayRoot.querySelector('#waiting-status').textContent = status === 'ready'
+    this.overlayRoot.querySelector('#waiting-status').textContent = hasActiveMatch
+        ? 'Partida en curso. Al terminar volveréis a esta sala.'
+        : status === 'ready'
         ? 'Sala lista. El host puede iniciar.'
         : 'Esperando jugador...';
+    this.syncSelectValue(this.waitingModeSelect, gameMode);
+    this.syncSelectValue(this.waitingDifficultySelect, difficulty);
+    this.syncSelectValue(this.waitingMapSelect, mapId);
+
+    this.waitingSettingsPanel?.classList.toggle('d-none', !isHost);
+    this.waitingSettingsLocked?.classList.toggle('d-none', isHost);
+    [this.waitingModeSelect, this.waitingDifficultySelect, this.waitingMapSelect].forEach((select) => {
+      if (select) select.disabled = !isHost || hasActiveMatch;
+    });
 
     const codeWrap = this.overlayRoot.querySelector('#waiting-code-wrap');
     const codeValue = this.overlayRoot.querySelector('#waiting-code');
@@ -765,14 +855,41 @@ export class OnlineMenu extends Phaser.Scene {
     codeWrap.classList.toggle('d-none', !isPrivate);
     codeValue.textContent = isPrivate ? inviteCode : '';
 
-    const isHost = this.lobbyRoom && this.lobbyRoom.sessionId === host.sessionId;
-    this.waitingStartButton.disabled = !(isHost && status === 'ready' && !state?.matchRoomId);
+    this.waitingStartButton.disabled = !(isHost && status === 'ready' && !hasActiveMatch);
   }
 
   async startMatch() {
     if (!this.lobbyRoom) return;
     this.hideError();
-    this.lobbyRoom.send('startMatch');
+    const payload = this.getWaitingSettingsPayload();
+    this.prefs = saveOnlinePrefs({ ...this.prefs, ...payload });
+    this.lobbyRoom.send('startMatch', payload);
+  }
+
+  updateLobbySettingsFromWaiting() {
+    if (!this.lobbyRoom) return;
+    const hostSessionId = this.lobbyRoom.state?.host?.sessionId;
+    if (this.lobbyRoom.sessionId !== hostSessionId || this.lobbyRoom.state?.matchRoomId) return;
+
+    const payload = this.getWaitingSettingsPayload();
+    this.prefs = saveOnlinePrefs({ ...this.prefs, ...payload });
+    this.lobbyRoom.send('updateSettings', payload);
+  }
+
+  getWaitingSettingsPayload() {
+    return {
+      gameMode: this.waitingModeSelect?.value || this.lobbyRoom?.state?.gameMode || this.prefs.gameMode,
+      difficulty: this.waitingDifficultySelect?.value || this.lobbyRoom?.state?.difficulty || this.prefs.difficulty,
+      mapId: this.waitingMapSelect?.value || this.lobbyRoom?.state?.mapId || this.prefs.mapId,
+    };
+  }
+
+  syncSelectValue(select, value) {
+    if (!select || value === undefined || value === null) return;
+    const nextValue = String(value);
+    if (select.value !== nextValue) {
+      select.value = nextValue;
+    }
   }
 
   async leaveLobbyRoom() {
@@ -783,8 +900,10 @@ export class OnlineMenu extends Phaser.Scene {
   async cleanupLobbyRoom(leaveRoom) {
     if (!this.lobbyRoom) return;
     const room = this.lobbyRoom;
+    this.detachLobbyRoomListeners();
     this.lobbyRoom = null;
     if (leaveRoom) {
+      setActiveLobbyRoom(null);
       try {
         await room.leave();
       } catch {

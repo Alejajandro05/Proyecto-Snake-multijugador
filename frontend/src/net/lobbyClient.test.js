@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  getResumableActiveLobbyRoom,
   resolveColyseusServerUrl,
   resolveServerHttpUrl,
+  setActiveLobbyRoom,
 } from './lobbyClient.js';
 
 const localViteLocation = Object.freeze({
@@ -51,4 +53,16 @@ test('uses same-origin HTTP for lobby API requests unless VITE_SERVER_URL is exp
   assert.equal(resolveServerHttpUrl({
     VITE_SERVER_URL: 'https://example.com/',
   }, localViteLocation), 'https://example.com');
+});
+
+test('returns the active lobby only when the requested room matches', () => {
+  const room = { roomId: 'lobby-a' };
+
+  setActiveLobbyRoom(room);
+
+  assert.equal(getResumableActiveLobbyRoom('lobby-a'), room);
+  assert.equal(getResumableActiveLobbyRoom('lobby-b'), null);
+  assert.equal(getResumableActiveLobbyRoom(''), room);
+
+  setActiveLobbyRoom(null);
 });
