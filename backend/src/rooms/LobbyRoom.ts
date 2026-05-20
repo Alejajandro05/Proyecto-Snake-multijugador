@@ -27,6 +27,12 @@ interface LobbyRoomStartMatchOptions {
   mapId?: unknown;
 }
 
+interface LobbyRoomUpdateSettingsOptions {
+  gameMode?: unknown;
+  difficulty?: unknown;
+  mapId?: unknown;
+}
+
 interface LobbyRoomJoinOptions {
   playerName?: unknown;
   skinId?: unknown;
@@ -173,23 +179,13 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
         return;
       }
 
+      this.applyLobbySettings(payload);
+
       const snakeRoom = await matchMaker.createRoom("snake_room", {
         lobbyId: this.state.lobbyId,
-        gameMode: resolveCatalogOption(
-          payload?.gameMode ?? this.state.gameMode,
-          onlineOptionCatalogs.modes.map((mode) => mode.id),
-          this.state.gameMode
-        ),
-        difficulty: resolveCatalogOption(
-          payload?.difficulty ?? this.state.difficulty,
-          onlineOptionCatalogs.difficulties.map((difficulty) => difficulty.id),
-          this.state.difficulty
-        ),
-        mapId: resolveCatalogOption(
-          payload?.mapId ?? this.state.mapId,
-          onlineOptionCatalogs.maps.map((map) => map.id),
-          this.state.mapId
-        ),
+        gameMode: this.state.gameMode,
+        difficulty: this.state.difficulty,
+        mapId: this.state.mapId,
         boardCols: this.state.boardCols,
         boardRows: this.state.boardRows,
         foodCount: this.state.foodCount,
@@ -197,6 +193,19 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
 
       this.state.matchRoomId = snakeRoom.roomId;
       this.state.status = "starting";
+      await this.syncMatchmakingState();
+    });
+
+    this.onMessage("updateSettings", async (client, payload?: LobbyRoomUpdateSettingsOptions) => {
+      if (client.sessionId !== this.state.host.sessionId) {
+        return;
+      }
+
+      if (this.state.matchRoomId.length > 0) {
+        return;
+      }
+
+      this.applyLobbySettings(payload);
       await this.syncMatchmakingState();
     });
   }
@@ -235,6 +244,24 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
 
     this.state.status = playerCount >= this.state.maxPlayers ? "ready" : "waiting";
     await this.syncMatchmakingState();
+  }
+
+  private applyLobbySettings(payload?: LobbyRoomUpdateSettingsOptions) {
+    this.state.gameMode = resolveCatalogOption(
+      payload?.gameMode ?? this.state.gameMode,
+      onlineOptionCatalogs.modes.map((mode) => mode.id),
+      this.state.gameMode
+    );
+    this.state.difficulty = resolveCatalogOption(
+      payload?.difficulty ?? this.state.difficulty,
+      onlineOptionCatalogs.difficulties.map((difficulty) => difficulty.id),
+      this.state.difficulty
+    );
+    this.state.mapId = resolveCatalogOption(
+      payload?.mapId ?? this.state.mapId,
+      onlineOptionCatalogs.maps.map((map) => map.id),
+      this.state.mapId
+    );
   }
 
   private async syncMatchmakingState() {

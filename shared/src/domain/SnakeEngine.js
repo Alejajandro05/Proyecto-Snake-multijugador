@@ -6,6 +6,7 @@ const OPPOSITE = {
     left: 'right',
     right: 'left',
 };
+const SPEED_FOOD_MOVE_INTERVAL = 1.5;
 export const FOOD_CONFIG = {
     apple: {
         frame: 0,
@@ -28,7 +29,7 @@ export const FOOD_CONFIG = {
         score: 0,
         weight: 10,
         effect: (player) => {
-            player.speed = 1;
+            player.speed = SPEED_FOOD_MOVE_INTERVAL;
             player.speedEffectRemaining = Math.max(player.speedEffectRemaining, 50);
         },
         hudEffect: "speed boost",
@@ -153,9 +154,10 @@ export class SnakeEngine {
                 }
             }
             player.moveCounter++;
-            if (player.moveCounter >= player.speed) {
+            const movementInterval = player.speed;
+            if (player.moveCounter >= movementInterval) {
                 this.movePlayer(player);
-                player.moveCounter = 0;
+                player.moveCounter -= movementInterval;
             }
         }
         return this.getState();

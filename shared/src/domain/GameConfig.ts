@@ -3,7 +3,9 @@ import type { FoodType } from './types.js';
 export const GRID_COLS = 32;
 export const GRID_ROWS = 24;
 export const GRID_SIZE = 32;
-export const TICK_MS = 150;
+export const TICK_MS = 90;
+const EASY_TICK_MS = TICK_MS + 20;
+const HARD_TICK_MS = TICK_MS - 15;
 export const FOOD_COUNT = 10;
 export const INITIAL_SNAKE_LENGTH = 3;
 export const RESPAWN_DELAY_MS = 3000;
@@ -47,7 +49,7 @@ const DEFAULT_DIFFICULTY: GameDifficulty = 'normal';
 
 const DIFFICULTY_PRESETS: Record<GameDifficulty, Pick<GameRuntimeConfig, 'tickMs' | 'foodCount' | 'obstaclesPerQuadrant'>> = {
 	easy: {
-		tickMs: 180,
+		tickMs: EASY_TICK_MS,
 		foodCount: 10,
 		obstaclesPerQuadrant: 6,
 	},
@@ -57,7 +59,7 @@ const DIFFICULTY_PRESETS: Record<GameDifficulty, Pick<GameRuntimeConfig, 'tickMs
 		obstaclesPerQuadrant: 8,
 	},
 	hard: {
-		tickMs: 110,
+		tickMs: HARD_TICK_MS,
 		foodCount: 5,
 		obstaclesPerQuadrant: 10,
 	},
