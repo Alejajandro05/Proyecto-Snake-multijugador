@@ -57,6 +57,22 @@ describe("SnakeRoom schema sync", () => {
     assert.equal(room.state.territoryCounts.get("p1"), 1);
   });
 
+  it("syncs whether a match is ranked for online clients", () => {
+    const room = new SnakeRoom();
+    room.state = new SnakeRoomState();
+    room["isRanked"] = true;
+
+    room["syncToSchema"]({
+      players: new Map(),
+      food: [],
+      obstacles: [],
+      territory: [],
+      territoryCounts: new Map(),
+    });
+
+    assert.equal((room.state as any).isRanked, true);
+  });
+
   it("kills normal-mode players before the shared engine can wrap them around walls", () => {
     const room = new SnakeRoom();
     const engine = new SnakeEngine({

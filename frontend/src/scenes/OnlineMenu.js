@@ -1,11 +1,24 @@
 import Phaser from 'phaser';
 import { Client } from '@colyseus/sdk';
 import { onlineOptionCatalogs } from '../../../shared/src/catalogs/onlineOptions.js';
-import { createLobbyClient } from '../net/lobbyClient.js';
+import {
+  createLobbyClient,
+  getResumableActiveLobbyRoom,
+  setActiveLobbyRoom,
+} from '../net/lobbyClient.js';
 import { getMapAsset, getSnakeAsset } from '../config/gameAssetRegistry.js';
 import { loadOnlinePrefs, saveOnlinePrefs } from '../utils/onlineStorage.js';
-import { isUserLoggedIn, getCurrentUser } from '../services/firebaseAuthService.js';
+import {
+  extractLeaderboardUserName,
+  getCurrentUser,
+  isUserLoggedIn,
+} from '../services/firebaseAuthService.js';
 import { disableGameKeyboardForOverlayScene } from '../utils/formKeyboardGuard.js';
+import {
+  ACCOUNT_GUEST_LABEL,
+  bindAccountButton,
+  closeAccountDropdown,
+} from '../ui/accountButton.js';
 
 // --- FUNCIONES GLOBALES PARA LA URL DEL SERVIDOR ---
 function normalizeHttpUrlToWebSocket(url) {
@@ -43,9 +56,13 @@ export class OnlineMenu extends Phaser.Scene {
 
   init(data) {
     this.initialErrorMessage = data?.errorMessage ?? '';
+    this.resumeLobby = data?.resumeLobby === true;
+    this.resumeLobbyRoomId = data?.lobbyRoomId ?? '';
+    this.completedMatchRoomId = data?.completedMatchRoomId ?? '';
   }
 
   create() {
+    closeAccountDropdown();
     disableGameKeyboardForOverlayScene(this);
 
     const fondo = this.add.image(this.scale.width / 2, this.scale.height / 2, 'fondo_duelo');
@@ -65,12 +82,16 @@ export class OnlineMenu extends Phaser.Scene {
     this.publicLobbies = [];
     this.lobbyRoom = null;
     this.renderOverlay();
+    void this.applyOnlineNameFieldsForAuthUser();
 
     if (this.initialErrorMessage) {
       this.showError(this.initialErrorMessage);
     }
 
+    this.resumeActiveLobbyIfRequested();
+
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      closeAccountDropdown();
       this.cleanupLobbyRoom(false);
       this.destroyOverlay();
     });
@@ -99,9 +120,6 @@ export class OnlineMenu extends Phaser.Scene {
     overlay.innerHTML = `
       <div class="w-100 px-2 px-sm-3 d-flex flex-column align-items-center" style="max-width: 960px; min-height: 0;">
         <div class="online-menu-card w-100 rounded-4 text-center p-4 d-flex flex-column align-items-stretch">
-        <h1 class="fw-bold text-white mb-4 online-menu-title">
-            SNAKE CLASH
-        </h1>
           <style>
             #online-menu-overlay .online-skin-arrow { transition: transform 0.2s; cursor: pointer; }
             #online-menu-overlay .online-skin-arrow:hover { transform: scale(1.2); }
@@ -120,13 +138,6 @@ export class OnlineMenu extends Phaser.Scene {
             @media (max-width: 767.98px) {
               #online-menu-overlay .online-create-split-map { border-top: 1px solid rgba(255,255,255,0.18); padding-top: 1rem; margin-top: 0.25rem; }
               #online-menu-overlay .online-split-line { border-bottom: 1px solid rgba(255,255,255,0.18); padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
-            }
-            #online-menu-overlay .online-menu-title {
-              font-family: 'Teko', sans-serif;
-              text-shadow: 0px 4px 20px #F67D31, 0px 0px 10px #F67D31;
-              letter-spacing: 2px;
-              font-size: clamp(2.1rem, 9vw, 4.75rem);
-              line-height: 1.05;
             }
             #online-menu-overlay .online-menu-card {
               flex: 0 1 auto;
@@ -167,8 +178,14 @@ export class OnlineMenu extends Phaser.Scene {
                         <p class="text-white-50 small mb-0" style="font-family: 'Montserrat', sans-serif; line-height: 1.4;">Emparejamiento automático por nivel (Matchmaking). Gana para subir en el Leaderboard.</p>
                     </div>
                     <div class="d-flex flex-column gap-3 w-100 mt-auto px-xl-2">
+                        <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
+                          <button type="button" id="online-ranked-skin-prev" class="btn btn-link text-white fs-2 text-decoration-none px-2 py-0 online-skin-arrow" style="line-height: 1;" aria-label="Skin competitiva anterior">&lsaquo;</button>
+                          <div id="online-ranked-skin-preview" class="rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 116px; height: 116px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); padding: 8px;"></div>
+                          <button type="button" id="online-ranked-skin-next" class="btn btn-link text-white fs-2 text-decoration-none px-2 py-0 online-skin-arrow" style="line-height: 1;" aria-label="Skin competitiva siguiente">&rsaquo;</button>
+                        </div>
+                        <input type="hidden" id="online-ranked-skin" value="${this.escapeHtml(this.prefs.rankedSkinId)}">
                         <button id="btn-online-ranked" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleRanked}">BUSCAR PARTIDA</button>
-                        <button id="btn-join-login" class="btn fw-bold shadow menu-btn" style="${btnStyleLogin}">🔑 MI CUENTA / LOGIN</button>
+                        <button id="btn-join-login" class="btn fw-bold shadow menu-btn" style="${btnStyleLogin}">${ACCOUNT_GUEST_LABEL}</button>
                     </div>
                 </div>
             </div>
@@ -190,6 +207,12 @@ export class OnlineMenu extends Phaser.Scene {
               </div>
               <div class="col-12 col-md-6 col-lg-4">
                 ${this.renderSelectBlock('Dificultad', 'online-create-difficulty', onlineOptionCatalogs.difficulties, this.prefs.difficulty)}
+              </div>
+              <div class="col-12 col-md-6">
+                ${this.renderSelectBlock('Tamaño del tablero', 'online-create-board', onlineOptionCatalogs.boardSizes, this.prefs.boardSizeId)}
+              </div>
+              <div class="col-12 col-md-6">
+                ${this.renderSelectBlock('Cantidad de objetos', 'online-create-food', onlineOptionCatalogs.foodCounts, this.prefs.foodCountId)}
               </div>
               <div class="col-12">
                 <div class="w-100 border-bottom border-secondary opacity-50 my-1"></div>
@@ -277,6 +300,20 @@ export class OnlineMenu extends Phaser.Scene {
               <div class="col-12 d-none" id="waiting-code-wrap"><div class="p-3 rounded-3 text-center" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255, 255, 255, 0.1);"><strong>Código:</strong> <span id="waiting-code" class="text-success fw-bold fs-5">-</span></div></div>
             </div>
             <p id="waiting-status" class="text-center mb-4 fw-bold" style="font-family: 'Montserrat', sans-serif;">Esperando jugador...</p>
+            <div id="waiting-settings-panel" class="mb-4">
+              <div class="row g-3">
+                <div class="col-12 col-md-4">
+                  ${this.renderSelectBlock('Modo', 'waiting-mode-select', onlineOptionCatalogs.modes, this.prefs.gameMode)}
+                </div>
+                <div class="col-12 col-md-4">
+                  ${this.renderSelectBlock('Dificultad', 'waiting-difficulty-select', onlineOptionCatalogs.difficulties, this.prefs.difficulty)}
+                </div>
+                <div class="col-12 col-md-4">
+                  ${this.renderSelectBlock('Mapa', 'waiting-map-select', onlineOptionCatalogs.maps, this.prefs.mapId)}
+                </div>
+              </div>
+            </div>
+            <p id="waiting-settings-locked" class="text-center text-white-50 small mb-4 d-none" style="font-family: 'Montserrat', sans-serif;">Esperando a que el host configure la siguiente partida.</p>
             <div class="d-flex justify-content-center gap-3">
               <button id="btn-waiting-back" class="btn text-white fw-bold shadow menu-btn flex-fill" style="${btnStyleVolver}">SALIR</button>
               <button id="btn-waiting-start" class="btn text-white fw-bold shadow menu-btn flex-fill" style="${btnStyleAction}" disabled>INICIAR</button>
@@ -295,6 +332,11 @@ export class OnlineMenu extends Phaser.Scene {
     this.waitingView = overlay.querySelector('#online-waiting-view');
     this.publicLobbiesRoot = overlay.querySelector('#online-public-lobbies');
     this.waitingStartButton = overlay.querySelector('#btn-waiting-start');
+    this.waitingSettingsPanel = overlay.querySelector('#waiting-settings-panel');
+    this.waitingSettingsLocked = overlay.querySelector('#waiting-settings-locked');
+    this.waitingModeSelect = overlay.querySelector('#waiting-mode-select');
+    this.waitingDifficultySelect = overlay.querySelector('#waiting-difficulty-select');
+    this.waitingMapSelect = overlay.querySelector('#waiting-map-select');
 
     // BOTONES ORIGINALES
     overlay.querySelector('#btn-online-create').addEventListener('click', () => this.showView('create'));
@@ -307,12 +349,24 @@ export class OnlineMenu extends Phaser.Scene {
       this.scene.start('MainMenu');
     });    overlay.querySelector('#btn-create-back').addEventListener('click', () => this.showView('home'));
     overlay.querySelector('#btn-join-back').addEventListener('click', () => this.showView('home'));
-    overlay.querySelector('#btn-join-login').addEventListener('click', () => this.scene.start('Login'));
+    const accountButton = overlay.querySelector('#btn-join-login');
+    bindAccountButton({
+      scene: this,
+      buttonEl: accountButton,
+      returnScene: 'OnlineMenu',
+      onBeforeNavigate: () => closeAccountDropdown(),
+      onAfterLogout: () => {
+        void this.applyOnlineNameFieldsForAuthUser();
+      },
+    });
     overlay.querySelector('#btn-waiting-back').addEventListener('click', () => this.leaveLobbyRoom());
     overlay.querySelector('#btn-create-submit').addEventListener('click', () => this.handleCreateSubmit());
     overlay.querySelector('#btn-refresh-public').addEventListener('click', () => this.loadPublicLobbies());
     overlay.querySelector('#btn-private-join').addEventListener('click', () => this.handlePrivateJoin());
     overlay.querySelector('#btn-waiting-start').addEventListener('click', () => this.startMatch());
+    [this.waitingModeSelect, this.waitingDifficultySelect, this.waitingMapSelect].forEach((select) => {
+      select?.addEventListener('change', () => this.updateLobbySettingsFromWaiting());
+    });
 
 // BOTÓN RANKED REESCRITO (CON CLIENTE COLYSEUS PURO)
     this.isSearchingRanked = false;
@@ -338,24 +392,31 @@ export class OnlineMenu extends Phaser.Scene {
       btnRanked.textContent = "COMPROBANDO...";
 
       try {
+        this.prefs = saveOnlinePrefs({
+          ...this.prefs,
+          rankedSkinId: overlay.querySelector('#online-ranked-skin')?.value || this.prefs.rankedSkinId,
+        });
+
         const user = await getCurrentUser();
 
         if (!user) {
           this.showError('¡Alto ahí! Debes iniciar sesión o crear una cuenta para jugar en el modo Competitivo.');
           btnRanked.textContent = "REDIRIGIENDO...";
-          setTimeout(() => { this.scene.start('Login'); }, 2500);
+          setTimeout(() => { this.scene.start('Login', { returnScene: 'OnlineMenu' }); }, 2500);
           return;
         }
 
         btnRanked.textContent = "CONECTANDO AL SERVIDOR...";
 
         const token = await user.getIdToken(true);
+        const rankedPlayerName = extractLeaderboardUserName(user) || 'Jugador';
 
         const colyseusClient = new Client(getColyseusServerUrl());
 
         this.queueRoom = await colyseusClient.joinOrCreate("ranked_queue", {
           token: token,
-          playerName: user.displayName || "Jugador"
+          playerName: rankedPlayerName,
+          skinId: this.prefs.rankedSkinId,
         });
 
         // ¡CONECTADO! Cambiamos el botón a modo "Cancelar"
@@ -372,8 +433,8 @@ export class OnlineMenu extends Phaser.Scene {
 
           this.scene.start('OnlineGame', {
             matchRoomId: data.roomId,
-            playerName: user.displayName || "Jugador",
-            skinId: this.prefs.guestSkinId,
+            playerName: rankedPlayerName,
+            skinId: data.skinId || this.prefs.rankedSkinId,
             gameMode: 'normal',
           });
         });
@@ -394,16 +455,17 @@ export class OnlineMenu extends Phaser.Scene {
     });
 
     this.wireOnlineCreateVisualPickers(overlay);
+    this.wireOnlineRankedSkinPicker(overlay);
     this.wireOnlineJoinSkinPicker(overlay);
   }
 
   wireOnlineCreateVisualPickers(overlay) {
-    const snakes = onlineOptionCatalogs.skins.map((o) => getSnakeAsset(o.id));
-    const maps = onlineOptionCatalogs.maps.map((o) => getMapAsset(o.id));
+    const snakes = onlineOptionCatalogs.skins.map((o) => getSnakeAsset(o.id)).filter(Boolean);
+    const maps = onlineOptionCatalogs.maps.map((o) => getMapAsset(o.id)).filter(Boolean);
     if (!snakes.length || !maps.length) return;
 
-    let skinIndex = Math.max(0, snakes.findIndex((s) => s.id === this.prefs.hostSkinId));
-    let mapIndex = Math.max(0, maps.findIndex((m) => m.id === this.prefs.mapId));
+    let skinIndex = Math.max(0, snakes.findIndex((s) => s && s.id === this.prefs.hostSkinId));
+    let mapIndex = Math.max(0, maps.findIndex((m) => m && m.id === this.prefs.mapId));
 
     const skinHidden = overlay.querySelector('#online-create-skin');
     const mapHidden = overlay.querySelector('#online-create-map');
@@ -415,24 +477,25 @@ export class OnlineMenu extends Phaser.Scene {
     if (!skinHidden || !mapHidden || !preview || !mapRoot || !prevBtn || !nextBtn) return;
 
     const renderSkin = () => {
-      const skin = snakes[skinIndex];
-      skinHidden.value = skin.id;
+      const skin = snakes[skinIndex] || snakes[0];
+      skinHidden.value = skin?.id || '';
       preview.innerHTML = `
         <div class="d-flex flex-column align-items-center gap-2">
-          <img src="/${skin.preview.path}" alt="" style="width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated;">
-          <span class="text-white-50 small">${this.escapeHtml(skin.label)}</span>
+          <img src="/${skin?.preview?.path || ''}" alt="" style="width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated;">
+          <span class="text-white-50 small">${this.escapeHtml(skin?.label || '')}</span>
         </div>
       `;
     };
 
     const renderMaps = () => {
-      mapHidden.value = maps[mapIndex].id;
+      const activeMap = maps[mapIndex] || maps[0];
+      mapHidden.value = activeMap?.id || '';
       mapRoot.innerHTML = maps
           .map(
               (map, index) => `
         <button type="button" class="online-map-option rounded-3 p-2 text-center ${index === mapIndex ? 'active' : ''}" data-online-map-index="${index}" style="width: 112px;">
-          <span class="d-block rounded-2 mb-2" style="height: 42px; background: url('/${map.floor.path}') center/32px 32px repeat; image-rendering: pixelated;"></span>
-          <span class="small fw-semibold">${this.escapeHtml(map.label)}</span>
+          <span class="d-block rounded-2 mb-2" style="height: 42px; background: url('/${map?.floor?.path || ''}') center/32px 32px repeat; image-rendering: pixelated;"></span>
+          <span class="small fw-semibold">${this.escapeHtml(map?.label || '')}</span>
         </button>
       `,
           )
@@ -460,10 +523,10 @@ export class OnlineMenu extends Phaser.Scene {
   }
 
   wireOnlineJoinSkinPicker(overlay) {
-    const snakes = onlineOptionCatalogs.skins.map((o) => getSnakeAsset(o.id));
+    const snakes = onlineOptionCatalogs.skins.map((o) => getSnakeAsset(o.id)).filter(Boolean);
     if (!snakes.length) return;
 
-    let skinIndex = Math.max(0, snakes.findIndex((s) => s.id === this.prefs.guestSkinId));
+    let skinIndex = Math.max(0, snakes.findIndex((s) => s && s.id === this.prefs.guestSkinId));
 
     const skinHidden = overlay.querySelector('#online-join-skin');
     const preview = overlay.querySelector('#online-join-skin-preview');
@@ -473,11 +536,47 @@ export class OnlineMenu extends Phaser.Scene {
     if (!skinHidden || !preview || !prevBtn || !nextBtn) return;
 
     const renderSkin = () => {
+      const skin = snakes[skinIndex] || snakes[0];
+      skinHidden.value = skin?.id || '';
+      preview.innerHTML = `
+        <div class="d-flex flex-column align-items-center gap-2">
+          <img src="/${skin?.preview?.path || ''}" alt="" style="width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated;">
+          <span class="text-white-50 small">${this.escapeHtml(skin?.label || '')}</span>
+        </div>
+      `;
+    };
+
+    prevBtn.addEventListener('click', () => {
+      skinIndex = (skinIndex - 1 + snakes.length) % snakes.length;
+      renderSkin();
+    });
+    nextBtn.addEventListener('click', () => {
+      skinIndex = (skinIndex + 1) % snakes.length;
+      renderSkin();
+    });
+
+    renderSkin();
+  }
+
+  wireOnlineRankedSkinPicker(overlay) {
+    const snakes = onlineOptionCatalogs.skins.map((o) => getSnakeAsset(o.id));
+    if (!snakes.length) return;
+
+    let skinIndex = Math.max(0, snakes.findIndex((s) => s.id === this.prefs.rankedSkinId));
+
+    const skinHidden = overlay.querySelector('#online-ranked-skin');
+    const preview = overlay.querySelector('#online-ranked-skin-preview');
+    const prevBtn = overlay.querySelector('#online-ranked-skin-prev');
+    const nextBtn = overlay.querySelector('#online-ranked-skin-next');
+
+    if (!skinHidden || !preview || !prevBtn || !nextBtn) return;
+
+    const renderSkin = () => {
       const skin = snakes[skinIndex];
       skinHidden.value = skin.id;
       preview.innerHTML = `
-        <div class="d-flex flex-column align-items-center gap-2">
-          <img src="/${skin.preview.path}" alt="" style="width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated;">
+        <div class="d-flex flex-column align-items-center gap-1">
+          <img src="/${skin.preview.path}" alt="" style="width: 72px; height: 72px; object-fit: contain; image-rendering: pixelated;">
           <span class="text-white-50 small">${this.escapeHtml(skin.label)}</span>
         </div>
       `;
@@ -511,12 +610,18 @@ export class OnlineMenu extends Phaser.Scene {
   async handleCreateSubmit() {
     try {
       this.hideError();
+      const createNameInput = this.overlayRoot.querySelector('#online-create-name');
+      const playerName = await this.resolveOnlinePlayerName(createNameInput);
       this.prefs = saveOnlinePrefs({
-        playerName: this.overlayRoot.querySelector('#online-create-name').value.trim() || 'Jugador',
+        playerName,
         gameMode: this.overlayRoot.querySelector('#online-create-mode').value,
         difficulty: this.overlayRoot.querySelector('#online-create-difficulty').value,
         hostSkinId: this.overlayRoot.querySelector('#online-create-skin').value,
         mapId: this.overlayRoot.querySelector('#online-create-map').value,
+        boardSizeId: this.overlayRoot.querySelector('#online-create-board').value,
+        foodCountId: this.overlayRoot.querySelector('#online-create-food').value,
+        visibility: this.overlayRoot.querySelector('#online-create-visibility').value,
+        maxPlayers: 2,
         visibility: this.overlayRoot.querySelector('#online-create-visibility').value,
       });
 
@@ -527,6 +632,8 @@ export class OnlineMenu extends Phaser.Scene {
         difficulty: this.prefs.difficulty,
         mapId: this.prefs.mapId,
         visibility: this.prefs.visibility,
+        boardSizeId: this.prefs.boardSizeId,
+        foodCountId: this.prefs.foodCountId,
       });
 
       this.attachLobbyRoom(room);
@@ -577,8 +684,10 @@ export class OnlineMenu extends Phaser.Scene {
 
     try {
       this.hideError();
+      const joinNameInput = this.overlayRoot.querySelector('#online-join-name');
+      const playerName = await this.resolveOnlinePlayerName(joinNameInput);
       this.prefs = saveOnlinePrefs({
-        playerName: this.overlayRoot.querySelector('#online-join-name').value.trim() || 'Jugador',
+        playerName,
         guestSkinId: this.overlayRoot.querySelector('#online-join-skin').value,
       });
 
@@ -596,8 +705,10 @@ export class OnlineMenu extends Phaser.Scene {
   async handlePrivateJoin() {
     try {
       this.hideError();
+      const joinNameInput = this.overlayRoot.querySelector('#online-join-name');
+      const playerName = await this.resolveOnlinePlayerName(joinNameInput);
       this.prefs = saveOnlinePrefs({
-        playerName: this.overlayRoot.querySelector('#online-join-name').value.trim() || 'Jugador',
+        playerName,
         guestSkinId: this.overlayRoot.querySelector('#online-join-skin').value,
       });
 
@@ -627,35 +738,81 @@ export class OnlineMenu extends Phaser.Scene {
   attachLobbyRoom(room) {
     this.cleanupLobbyRoom(false);
     this.lobbyRoom = room;
+    setActiveLobbyRoom(room);
 
-    room.onStateChange((state) => {
-      this.updateWaitingState(state);
-      if (state.matchRoomId) {
-        const isHost = room.sessionId === state.host.sessionId;
-        const skinId = isHost ? state.host.skinId : state.guest.skinId;
-        const playerName = isHost ? state.host.playerName : state.guest.playerName;
-        this.scene.start('OnlineGame', {
-          matchRoomId: state.matchRoomId,
-          lobbyRoomId: state.lobbyId,
-          skinId,
-          playerName,
-          gameMode: state.gameMode,
-          difficulty: state.difficulty,
-          mapId: state.mapId,
-        });
-      }
-    });
-
-    room.onLeave(() => {
+    this.lobbyListenerRoom = room;
+    this.lobbyStateChangeHandler = (state) => this.handleLobbyState(room, state);
+    this.lobbyLeaveHandler = () => {
+      if (this.lobbyRoom !== room) return;
+      setActiveLobbyRoom(null);
+      this.clearLobbyRoomListenerRefs();
       if (this.scene.isActive('OnlineMenu')) {
         this.lobbyRoom = null;
         this.showError('La sala se ha cerrado.');
         this.showView('home');
       }
-    });
+    };
+
+    room.onStateChange(this.lobbyStateChangeHandler);
+    room.onLeave(this.lobbyLeaveHandler);
 
     this.showView('waiting');
-    this.updateWaitingState(room.state);
+    this.handleLobbyState(room, room.state);
+  }
+
+  detachLobbyRoomListeners() {
+    if (this.lobbyListenerRoom && this.lobbyStateChangeHandler) {
+      this.lobbyListenerRoom.onStateChange.remove(this.lobbyStateChangeHandler);
+    }
+    if (this.lobbyListenerRoom && this.lobbyLeaveHandler) {
+      this.lobbyListenerRoom.onLeave.remove(this.lobbyLeaveHandler);
+    }
+    this.clearLobbyRoomListenerRefs();
+  }
+
+  clearLobbyRoomListenerRefs() {
+    this.lobbyListenerRoom = null;
+    this.lobbyStateChangeHandler = null;
+    this.lobbyLeaveHandler = null;
+  }
+
+  resumeActiveLobbyIfRequested() {
+    if (!this.resumeLobby) return;
+
+    const room = getResumableActiveLobbyRoom(this.resumeLobbyRoomId);
+    if (!room) {
+      this.showError('No se pudo recuperar la sala anterior.');
+      this.showView('home');
+      return;
+    }
+
+    this.attachLobbyRoom(room);
+  }
+
+  handleLobbyState(room, state) {
+    if (this.lobbyRoom !== room) return;
+
+    this.updateWaitingState(state);
+    const matchRoomId = String(state?.matchRoomId ?? '');
+    if (!matchRoomId) {
+      this.completedMatchRoomId = '';
+      return;
+    }
+
+    if (matchRoomId === this.completedMatchRoomId) return;
+
+    const isHost = room.sessionId === state.host.sessionId;
+    const skinId = isHost ? state.host.skinId : state.guest.skinId;
+    const playerName = isHost ? state.host.playerName : state.guest.playerName;
+    this.scene.start('OnlineGame', {
+      matchRoomId,
+      lobbyRoomId: state.lobbyId,
+      skinId,
+      playerName,
+      gameMode: state.gameMode,
+      difficulty: state.difficulty,
+      mapId: state.mapId,
+    });
   }
 
   updateWaitingState(state) {
@@ -668,6 +825,8 @@ export class OnlineMenu extends Phaser.Scene {
     const gameMode = state?.gameMode ?? '-';
     const difficulty = state?.difficulty ?? 'normal';
     const mapId = state?.mapId ?? '-';
+    const isHost = this.lobbyRoom && this.lobbyRoom.sessionId === host.sessionId;
+    const hasActiveMatch = Boolean(state?.matchRoomId);
 
     this.overlayRoot.querySelector('#waiting-host-name').textContent = host.playerName || 'Pendiente';
     this.overlayRoot.querySelector('#waiting-guest-name').textContent = guest.playerName || 'Esperando...';
@@ -675,9 +834,20 @@ export class OnlineMenu extends Phaser.Scene {
     this.overlayRoot.querySelector('#waiting-difficulty').textContent = difficulty;
     this.overlayRoot.querySelector('#waiting-map').textContent = mapId;
     this.overlayRoot.querySelector('#waiting-visibility').textContent = visibility === 'private' ? 'Privada' : 'Publica';
-    this.overlayRoot.querySelector('#waiting-status').textContent = status === 'ready'
+    this.overlayRoot.querySelector('#waiting-status').textContent = hasActiveMatch
+        ? 'Partida en curso. Al terminar volveréis a esta sala.'
+        : status === 'ready'
         ? 'Sala lista. El host puede iniciar.'
         : 'Esperando jugador...';
+    this.syncSelectValue(this.waitingModeSelect, gameMode);
+    this.syncSelectValue(this.waitingDifficultySelect, difficulty);
+    this.syncSelectValue(this.waitingMapSelect, mapId);
+
+    this.waitingSettingsPanel?.classList.toggle('d-none', !isHost);
+    this.waitingSettingsLocked?.classList.toggle('d-none', isHost);
+    [this.waitingModeSelect, this.waitingDifficultySelect, this.waitingMapSelect].forEach((select) => {
+      if (select) select.disabled = !isHost || hasActiveMatch;
+    });
 
     const codeWrap = this.overlayRoot.querySelector('#waiting-code-wrap');
     const codeValue = this.overlayRoot.querySelector('#waiting-code');
@@ -685,14 +855,41 @@ export class OnlineMenu extends Phaser.Scene {
     codeWrap.classList.toggle('d-none', !isPrivate);
     codeValue.textContent = isPrivate ? inviteCode : '';
 
-    const isHost = this.lobbyRoom && this.lobbyRoom.sessionId === host.sessionId;
-    this.waitingStartButton.disabled = !(isHost && status === 'ready' && !state?.matchRoomId);
+    this.waitingStartButton.disabled = !(isHost && status === 'ready' && !hasActiveMatch);
   }
 
   async startMatch() {
     if (!this.lobbyRoom) return;
     this.hideError();
-    this.lobbyRoom.send('startMatch');
+    const payload = this.getWaitingSettingsPayload();
+    this.prefs = saveOnlinePrefs({ ...this.prefs, ...payload });
+    this.lobbyRoom.send('startMatch', payload);
+  }
+
+  updateLobbySettingsFromWaiting() {
+    if (!this.lobbyRoom) return;
+    const hostSessionId = this.lobbyRoom.state?.host?.sessionId;
+    if (this.lobbyRoom.sessionId !== hostSessionId || this.lobbyRoom.state?.matchRoomId) return;
+
+    const payload = this.getWaitingSettingsPayload();
+    this.prefs = saveOnlinePrefs({ ...this.prefs, ...payload });
+    this.lobbyRoom.send('updateSettings', payload);
+  }
+
+  getWaitingSettingsPayload() {
+    return {
+      gameMode: this.waitingModeSelect?.value || this.lobbyRoom?.state?.gameMode || this.prefs.gameMode,
+      difficulty: this.waitingDifficultySelect?.value || this.lobbyRoom?.state?.difficulty || this.prefs.difficulty,
+      mapId: this.waitingMapSelect?.value || this.lobbyRoom?.state?.mapId || this.prefs.mapId,
+    };
+  }
+
+  syncSelectValue(select, value) {
+    if (!select || value === undefined || value === null) return;
+    const nextValue = String(value);
+    if (select.value !== nextValue) {
+      select.value = nextValue;
+    }
   }
 
   async leaveLobbyRoom() {
@@ -703,8 +900,10 @@ export class OnlineMenu extends Phaser.Scene {
   async cleanupLobbyRoom(leaveRoom) {
     if (!this.lobbyRoom) return;
     const room = this.lobbyRoom;
+    this.detachLobbyRoomListeners();
     this.lobbyRoom = null;
     if (leaveRoom) {
+      setActiveLobbyRoom(null);
       try {
         await room.leave();
       } catch {
@@ -738,6 +937,59 @@ export class OnlineMenu extends Phaser.Scene {
       this.overlayRoot.parentNode.removeChild(this.overlayRoot);
     }
     this.overlayRoot = null;
+  }
+
+  async getAuthPlayerName() {
+    const user = await getCurrentUser();
+    if (!user) return null;
+    return extractLeaderboardUserName(user);
+  }
+
+  lockOnlineNameInput(input, userName) {
+    if (!input) return;
+    input.value = userName;
+    input.readOnly = true;
+    input.disabled = true;
+    input.title = 'Nombre vinculado a tu cuenta';
+    input.setAttribute('aria-readonly', 'true');
+    input.style.opacity = '0.85';
+    input.style.cursor = 'not-allowed';
+    input.style.backgroundColor = 'rgba(15, 23, 42, 0.65)';
+  }
+
+  unlockOnlineNameInput(input) {
+    if (!input) return;
+    input.readOnly = false;
+    input.disabled = false;
+    input.removeAttribute('aria-readonly');
+    input.title = '';
+    input.style.opacity = '';
+    input.style.cursor = '';
+    input.style.backgroundColor = '';
+  }
+
+  async applyOnlineNameFieldsForAuthUser() {
+    if (!this.overlayRoot) return;
+
+    const createInput = this.overlayRoot.querySelector('#online-create-name');
+    const joinInput = this.overlayRoot.querySelector('#online-join-name');
+    const authName = await this.getAuthPlayerName();
+
+    if (!authName) {
+      this.unlockOnlineNameInput(createInput);
+      this.unlockOnlineNameInput(joinInput);
+      return;
+    }
+
+    this.lockOnlineNameInput(createInput, authName);
+    this.lockOnlineNameInput(joinInput, authName);
+    this.prefs = saveOnlinePrefs({ ...this.prefs, playerName: authName });
+  }
+
+  async resolveOnlinePlayerName(fallbackInput) {
+    const authName = await this.getAuthPlayerName();
+    if (authName) return authName;
+    return String(fallbackInput?.value ?? '').trim() || 'Jugador';
   }
 
   escapeHtml(value) {

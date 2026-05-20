@@ -39,7 +39,10 @@ export class ChaosGame extends Phaser.Scene {
     }
 
     create() {
-        this.boardRenderer = new SnakeBoardRenderer(this);
+        this.boardRenderer = new SnakeBoardRenderer(this, { 
+            gridCols: this.matchSettings?.boardCols,
+            gridRows: this.matchSettings?.boardRows
+        });
 
         this.cacheHudElements();
         this.toggleHud(true);

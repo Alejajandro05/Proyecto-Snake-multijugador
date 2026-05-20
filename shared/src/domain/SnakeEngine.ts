@@ -12,6 +12,7 @@ const OPPOSITE: Record<Direction, Direction> = {
   left: 'right',
   right: 'left',
 };
+const SPEED_FOOD_MOVE_INTERVAL = 1.5;
 
 export interface AddPlayerOptions {
   color?: number;
@@ -44,7 +45,7 @@ export const FOOD_CONFIG: Record<string, FoodConfigItem> = {
     score: 0,
     weight: 10,
     effect: (player) => {
-      player.speed = 1;
+      player.speed = SPEED_FOOD_MOVE_INTERVAL;
       player.speedEffectRemaining = Math.max(player.speedEffectRemaining, 50);
     },
     hudEffect: "speed boost",
@@ -134,7 +135,7 @@ export class SnakeEngine {
       score: 0,
       segments,
       lastEatenFood: null,
-      speed: 2,
+      speed: this.config.initialPlayerSpeed,
       moveCounter: 0,
       speedEffectRemaining: 0
     };
@@ -174,6 +175,8 @@ export class SnakeEngine {
   tick(): GameState {
     this.tickCount++;
 
+    this.expireTimedPoisonFood();
+
     this.respawnQueue.forEach((respawnAt, id) => {
       if (this.tickCount >= respawnAt) {
         this.respawnQueue.delete(id);
@@ -189,15 +192,16 @@ export class SnakeEngine {
         player.speedEffectRemaining--;
 
         if (player.speedEffectRemaining <= 0) {
-        player.speed = 2;
+        player.speed = this.config.initialPlayerSpeed;
         }
       }
 
       player.moveCounter++;
 
-      if (player.moveCounter >= player.speed) {
+      const movementInterval = player.speed;
+      if (player.moveCounter >= movementInterval) {
         this.movePlayer(player);
-        player.moveCounter = 0;
+        player.moveCounter -= movementInterval;
       }
     }
 
@@ -230,11 +234,21 @@ export class SnakeEngine {
       case 'down':  newY += this.config.gridSize; break;
     }
 
-    // Wrap around walls (toroidal board)
-    if (newX < 0)                        newX = (this.config.gridCols - 1) * this.config.gridSize;
-    else if (newX >= this.config.gridCols * this.config.gridSize) newX = 0;
-    if (newY < 0)                        newY = (this.config.gridRows - 1) * this.config.gridSize;
-    else if (newY >= this.config.gridRows * this.config.gridSize) newY = 0;
+    const maxX = (this.config.gridCols - 1) * this.config.gridSize;
+    const maxY = (this.config.gridRows - 1) * this.config.gridSize;
+
+    if (this.config.wallCollision) {
+      if (newX < 0 || newX > maxX || newY < 0 || newY > maxY) {
+        this.killPlayer(player);
+        return;
+      }
+    } else {
+      // Wrap around walls (toroidal board)
+      if (newX < 0) newX = maxX;
+      else if (newX > maxX) newX = 0;
+      if (newY < 0) newY = maxY;
+      else if (newY > maxY) newY = 0;
+    }
 
     // Self collision
     for (const seg of player.segments) {
@@ -346,7 +360,7 @@ export class SnakeEngine {
     player.direction = 'right';
     player.nextDirection = 'right';
     this.inputQueues.set(id, []);
-    player.speed = 2;
+    player.speed = this.config.initialPlayerSpeed;
     player.moveCounter = 0;
     player.speedEffectRemaining = 0;
     player.alive = true;
@@ -391,21 +405,41 @@ export class SnakeEngine {
   }
 
   private randomFood(): FoodState {
-    let playerSegments: Position[] = this.getSnakesPosition();
+    const type = this.getRandomFoodType();
     let food: FoodState;
 
-    const type = this.getRandomFoodType();
-
-    do{
+    do {
       food = {
         x: Math.floor(Math.random() * this.config.gridCols) * this.config.gridSize,
         y: Math.floor(Math.random() * this.config.gridRows) * this.config.gridSize,
-        type: type,
-        score: FOOD_CONFIG[type].score
+        type,
+        score: FOOD_CONFIG[type].score,
       };
+    } while (this.isCellOccupied(food.x, food.y));
+
+    if (type === 'poison' && this.config.poisonFoodTtlMs > 0) {
+      food.spawnedAtTick = this.tickCount;
     }
-    while (this.isCellOccupied(food.x, food.y));
+
     return food;
+  }
+
+  private expireTimedPoisonFood(): void {
+    const ttlMs = this.config.poisonFoodTtlMs;
+    if (ttlMs <= 0) return;
+
+    const ttlTicks = Math.max(1, Math.ceil(ttlMs / this.config.tickMs));
+
+    for (let i = this.food.length - 1; i >= 0; i--) {
+      const item = this.food[i];
+      if (item.type !== 'poison') continue;
+
+      const spawnedAt = item.spawnedAtTick ?? 0;
+      if (this.tickCount - spawnedAt < ttlTicks) continue;
+
+      this.food.splice(i, 1);
+      this.food.push(this.randomFood());
+    }
   }
 
   setTutorialAllowedFoodTypes(types: FoodType[] | null): void {
@@ -422,11 +456,14 @@ export class SnakeEngine {
       return entries[0][0];
     }
 
-    const totalWeight = pool.reduce((sum, [, cfg]) => sum + cfg.weight, 0);
+    const weightFor = (type: FoodType, cfg: typeof FOOD_CONFIG[FoodType]) =>
+      this.config.foodWeightOverrides[type] ?? cfg.weight;
+
+    const totalWeight = pool.reduce((sum, [type, cfg]) => sum + weightFor(type, cfg), 0);
     let r = Math.random() * totalWeight;
 
     for (const [type, cfg] of pool) {
-      r -= cfg.weight;
+      r -= weightFor(type, cfg);
       if (r < 0) return type;
     }
 
@@ -534,6 +571,30 @@ export class SnakeEngine {
     const config = FOOD_CONFIG[type] ?? FOOD_CONFIG.apple;
     this.food.push({ x, y, type, score: config.score });
     return true;
+  }
+
+  /** Añade obstáculos sin borrar los existentes (p. ej. dificultad progresiva en solitario). */
+  addRandomObstacles(count: number): number {
+    const safeCount = Math.max(0, Math.min(count, this.config.gridCols * this.config.gridRows));
+    const quadrants: ('TL' | 'TR' | 'BL' | 'BR')[] = ['TL', 'TR', 'BL', 'BR'];
+    let placed = 0;
+    let guard = 0;
+
+    while (placed < safeCount && guard < safeCount * 40) {
+      guard += 1;
+      const quadrant = quadrants[Math.floor(Math.random() * quadrants.length)];
+      const candidate = this.randomObstacleInQuadrant(quadrant);
+      if (this.obstacles.some((obstacle) => obstacle.x === candidate.x && obstacle.y === candidate.y)) {
+        continue;
+      }
+      if (this.isCellOccupied(candidate.x, candidate.y)) {
+        continue;
+      }
+      this.obstacles.push(candidate);
+      placed += 1;
+    }
+
+    return placed;
   }
 
   spawnTutorialObstacles(totalCount: number): void {

@@ -1,13 +1,18 @@
+import type { FoodType } from './types.js';
+
 export const GRID_COLS = 32;
 export const GRID_ROWS = 24;
 export const GRID_SIZE = 32;
-export const TICK_MS = 150;
+export const TICK_MS = 90;
+const EASY_TICK_MS = TICK_MS + 20;
+const HARD_TICK_MS = TICK_MS - 15;
 export const FOOD_COUNT = 10;
 export const INITIAL_SNAKE_LENGTH = 3;
 export const RESPAWN_DELAY_MS = 3000;
 export const SAFE_MARGIN = 3;
 export const WIN_SCORE = 10;
 export const MAX_LIVES = 3;
+export const INITIAL_PLAYER_SPEED = 2;
 
 export const PLAYER_COLORS: number[] = [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71];
 
@@ -26,15 +31,25 @@ export interface GameRuntimeConfig {
 	obstaclesPerQuadrant: number;
 	difficulty: GameDifficulty;
 	territoryMode: boolean;
+	/** 0 = el kiwi no expira; >0 = ms hasta reemplazarlo por otra fruta aleatoria. */
+	poisonFoodTtlMs: number;
+	/** Pesos de aparición por tipo de fruta (sustituyen los de FOOD_CONFIG). */
+	foodWeightOverrides: Partial<Record<FoodType, number>>;
+	/** Si es true, chocar con el borde mata; si no, el tablero se envuelve. */
+	wallCollision: boolean;
+	/** Intervalo base de movimiento (menor = más rápido). */
+	initialPlayerSpeed: number;
 }
 
-type RuntimeConfigInput = Partial<GameRuntimeConfig>;
+type RuntimeConfigInput = Partial<GameRuntimeConfig> & {
+	foodWeightOverrides?: Partial<Record<FoodType, number>>;
+};
 
 const DEFAULT_DIFFICULTY: GameDifficulty = 'normal';
 
 const DIFFICULTY_PRESETS: Record<GameDifficulty, Pick<GameRuntimeConfig, 'tickMs' | 'foodCount' | 'obstaclesPerQuadrant'>> = {
 	easy: {
-		tickMs: 180,
+		tickMs: EASY_TICK_MS,
 		foodCount: 10,
 		obstaclesPerQuadrant: 6,
 	},
@@ -44,7 +59,7 @@ const DIFFICULTY_PRESETS: Record<GameDifficulty, Pick<GameRuntimeConfig, 'tickMs
 		obstaclesPerQuadrant: 8,
 	},
 	hard: {
-		tickMs: 110,
+		tickMs: HARD_TICK_MS,
 		foodCount: 5,
 		obstaclesPerQuadrant: 10,
 	},
@@ -60,6 +75,22 @@ function normalizeDifficulty(value?: string): GameDifficulty {
 		return value;
 	}
 	return DEFAULT_DIFFICULTY;
+}
+
+const FOOD_TYPES: FoodType[] = ['apple', 'grape', 'speed', 'poison'];
+
+function normalizeFoodWeightOverrides(
+	input?: Partial<Record<FoodType, number>>,
+): Partial<Record<FoodType, number>> {
+	if (!input) return {};
+
+	const overrides: Partial<Record<FoodType, number>> = {};
+	for (const type of FOOD_TYPES) {
+		const value = input[type];
+		if (value === undefined || !Number.isFinite(value) || value <= 0) continue;
+		overrides[type] = clampInt(value, 1, 1000);
+	}
+	return overrides;
 }
 
 export function resolveGameRuntimeConfig(input?: RuntimeConfigInput): GameRuntimeConfig {
@@ -82,5 +113,9 @@ export function resolveGameRuntimeConfig(input?: RuntimeConfigInput): GameRuntim
 		obstaclesPerQuadrant: clampInt(input?.obstaclesPerQuadrant ?? preset.obstaclesPerQuadrant, 0, Math.max(gridCols, gridRows)),
 		difficulty,
 		territoryMode: input?.territoryMode === true,
+		poisonFoodTtlMs: clampInt(input?.poisonFoodTtlMs ?? 0, 0, 300_000),
+		foodWeightOverrides: normalizeFoodWeightOverrides(input?.foodWeightOverrides),
+		wallCollision: input?.wallCollision === true,
+		initialPlayerSpeed: clampInt(input?.initialPlayerSpeed ?? INITIAL_PLAYER_SPEED, 1, 8),
 	};
 }

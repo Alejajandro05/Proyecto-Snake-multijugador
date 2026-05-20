@@ -28,14 +28,24 @@ export class GameOver extends Phaser.Scene {
         let winnerName = getGameOverWinnerName(data);
         const isTie = data.winner === 'EMPATE';
 
-        if (data.winner === 'J1') {
+        const soloMode = data?.soloMode === true;
+
+        if (soloMode) {
+            winnerName = `${p1Player.name} — ${data.p1Score ?? 0} pts`;
+        } else if (data.winner === 'J1') {
             winnerName = `${p1Player.label}: ${p1Player.name}`;
         } else if (data.winner === 'J2') {
             winnerName = `${p2Player.label}: ${p2Player.name}`;
         }
+        const escenaRevancha = getGameOverRematchScene(data);
+        const gameOverBadge = soloMode ? 'Juego solitario' : 'Duelo finalizado';
+        const gameOverTitle = soloMode ? 'PARTIDA TERMINADA' : 'FIN DE PARTIDA';
+        const gameOverSubtitle = soloMode ? 'Tu resultado en solitario' : 'Resultado de la partida';
 
         let reasonText = '';
-        if (data.reason === 'score') {
+        if (data.reason === 'solo') {
+            reasonText = 'Te has quedado sin vidas. ¡Inténtalo de nuevo!';
+        } else if (data.reason === 'score') {
             reasonText = 'Ganador por puntuación.';
         } else if (data.reason === 'lives') {
             reasonText = 'Ganador por dejar al rival sin vidas.';
@@ -58,8 +68,6 @@ export class GameOver extends Phaser.Scene {
         const vidasJ1HTML = mostrarVidas ? `<span class="arcade-stat">Vidas: ${data.p1Lives}</span>` : '';
         const vidasJ2HTML = mostrarVidas ? `<span class="arcade-stat">Vidas: ${data.p2Lives}</span>` : '';
 
-        const escenaRevancha = getGameOverRematchScene(data);
-
         const gameOverDiv = document.createElement('div');
         gameOverDiv.id = 'game-over-screen';
 
@@ -67,13 +75,13 @@ export class GameOver extends Phaser.Scene {
             <style>${buildArcadeScreenStyles('#game-over-screen', { duelBackground: true, arcadeEnhanced: true })}</style>
             <article class="arcade-card arcade-screen-card" aria-label="Fin de partida">
                 <header class="arcade-screen-header">
-                    <span class="arcade-screen-badge">Duelo finalizado</span>
-                    <h1 class="arcade-title">FIN DE PARTIDA</h1>
-                    <p class="arcade-subtitle">Resultado de la partida</p>
+                    <span class="arcade-screen-badge">${gameOverBadge}</span>
+                    <h1 class="arcade-title">${gameOverTitle}</h1>
+                    <p class="arcade-subtitle">${gameOverSubtitle}</p>
                 </header>
 
                 <div class="arcade-winner ${isTie ? 'is-tie' : ''}">
-                    <p class="arcade-winner-label">${isTie ? 'Empate' : 'Ganador'}</p>
+                    <p class="arcade-winner-label">${soloMode ? 'Tu puntuación' : (isTie ? 'Empate' : 'Ganador')}</p>
                     <p class="arcade-winner-name">${winnerName}</p>
                     <p class="arcade-winner-reason">${reasonText}</p>
                 </div>
@@ -99,6 +107,17 @@ export class GameOver extends Phaser.Scene {
         `;
 
         mountArcadeOverlay(gameOverDiv);
+
+        if (soloMode) {
+            const playerCards = gameOverDiv.querySelectorAll('.arcade-players .arcade-player-card');
+            if (playerCards.length > 1) playerCards[1].remove();
+            const playersRow = gameOverDiv.querySelector('.arcade-players');
+            if (playersRow) {
+                playersRow.style.gridTemplateColumns = '1fr';
+                playersRow.style.maxWidth = '320px';
+                playersRow.style.margin = '0 auto 16px';
+            }
+        }
 
         const closeOverlay = () => {
             unmountArcadeOverlay(gameOverDiv);

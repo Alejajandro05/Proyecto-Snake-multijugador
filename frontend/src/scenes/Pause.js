@@ -36,6 +36,14 @@ export class Pause extends Phaser.Scene {
         const p1Lives = data?.p1Lives ?? 0;
         const p2Lives = data?.p2Lives ?? 0;
         const scoreLabel = data?.scoreLabel ?? 'Puntuación';
+        const soloMode = data?.soloMode === true;
+        const pauseBadge = soloMode ? 'Solitario en pausa' : 'Partida en pausa';
+        const p2CardHtml = soloMode ? '' : `
+                    <div class="arcade-player-card" style="--player-accent:${p2Theme.accentHex};">
+                        <p class="arcade-player-name"><span class="player-color-tag">${p2.label}</span>: ${p2.name}</p>
+                        <span class="arcade-stat">${scoreLabel}: ${p2Score}</span>
+                        <span class="arcade-stat">Vidas: ${p2Lives}</span>
+                    </div>`;
 
         const pauseDiv = document.createElement('div');
         pauseDiv.id = 'pause-screen';
@@ -44,12 +52,12 @@ export class Pause extends Phaser.Scene {
             <style>${buildArcadeScreenStyles('#pause-screen', { duelBackground: true, arcadeEnhanced: true })}</style>
             <article class="arcade-card arcade-screen-card" aria-label="Menú de pausa">
                 <header class="arcade-screen-header">
-                    <span class="arcade-screen-badge">Partida en pausa</span>
+                    <span class="arcade-screen-badge">${pauseBadge}</span>
                     <h1 class="arcade-title">PAUSA</h1>
                     <p class="arcade-subtitle">Pulsa ESC o usa los botones para continuar.</p>
                 </header>
 
-                <div class="arcade-players">
+                <div class="arcade-players${soloMode ? ' solo-mode' : ''}" style="${soloMode ? 'grid-template-columns:1fr;max-width:320px;margin:0 auto 16px;' : ''}">
                     <div class="arcade-player-card" style="--player-accent:${p1Theme.accentHex};">
                         <p class="arcade-player-name"><span class="player-color-tag">${p1.label}</span>: ${p1.name}</p>
                         <span class="arcade-stat">${scoreLabel}: ${p1Score}</span>
@@ -85,6 +93,17 @@ export class Pause extends Phaser.Scene {
 
 
         mountArcadeOverlay(pauseDiv);
+
+        if (soloMode) {
+            const playerCards = pauseDiv.querySelectorAll('.arcade-players .arcade-player-card');
+            if (playerCards.length > 1) playerCards[1].remove();
+            const playersRow = pauseDiv.querySelector('.arcade-players');
+            if (playersRow) {
+                playersRow.style.gridTemplateColumns = '1fr';
+                playersRow.style.maxWidth = '320px';
+                playersRow.style.margin = '0 auto 16px';
+            }
+        }
 
         const musicSlider = pauseDiv.querySelector('#pause-music-vol');
         const sfxSlider = pauseDiv.querySelector('#pause-sfx-vol');

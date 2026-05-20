@@ -3,7 +3,24 @@ export interface OnlineOption {
   label: string;
 }
 
+export interface OnlineBoardSizeOption extends OnlineOption {
+  cols: number;
+  rows: number;
+}
+
+export interface OnlineFoodCountOption extends OnlineOption {
+  value: number;
+}
+
 function freezeOptions(options: OnlineOption[]): ReadonlyArray<Readonly<OnlineOption>> {
+  return Object.freeze(options.map((option) => Object.freeze({ ...option })));
+}
+
+function freezeBoardSizeOptions(options: OnlineBoardSizeOption[]): ReadonlyArray<Readonly<OnlineBoardSizeOption>> {
+  return Object.freeze(options.map((option) => Object.freeze({ ...option })));
+}
+
+function freezeFoodCountOptions(options: OnlineFoodCountOption[]): ReadonlyArray<Readonly<OnlineFoodCountOption>> {
   return Object.freeze(options.map((option) => Object.freeze({ ...option })));
 }
 
@@ -44,9 +61,23 @@ export const onlineSkins = freezeOptions([
   { id: "snake10", label: "Snake 10" },
 ]);
 
+export const onlineBoardSizes = freezeBoardSizeOptions([
+  { id: "small",  label: "Pequeño (16x12)", cols: 16, rows: 12 },
+  { id: "medium", label: "Mediano (32x24)", cols: 32, rows: 24 },
+  { id: "large",  label: "Grande (48x36)",  cols: 48, rows: 36 },
+]);
+
+export const onlineFoodCounts = freezeFoodCountOptions([
+  { id: "low",    label: "Bajo (5)",  value: 5 },
+  { id: "medium", label: "Medio (10)", value: 10 },
+  { id: "high",   label: "Alto (15)", value: 15 },
+]);
+
 export const onlineOptionCatalogs = Object.freeze({
   modes: onlineModes,
   difficulties: onlineDifficulties,
   maps: onlineMaps,
   skins: onlineSkins,
+  boardSizes: onlineBoardSizes,
+  foodCounts: onlineFoodCounts,
 });

@@ -21,10 +21,38 @@ test('online lobby passes the selected mode into the online match scene', () => 
     assert.match(source, /gameMode:\s*state\.gameMode/);
 });
 
+test('online lobby removes old room listeners before reattaching after a match', () => {
+    const testDir = path.dirname(fileURLToPath(import.meta.url));
+    const onlineMenuPath = path.resolve(testDir, '../OnlineMenu.js');
+    const source = fs.readFileSync(onlineMenuPath, 'utf8');
+
+    assert.match(source, /detachLobbyRoomListeners\(\)/);
+    assert.match(source, /onStateChange\.remove/);
+    assert.match(source, /onLeave\.remove/);
+});
+
 test('online game renders the joined room initial state before waiting for patches', () => {
     const testDir = path.dirname(fileURLToPath(import.meta.url));
     const onlineGamePath = path.resolve(testDir, '../modes/OnlineGame.js');
     const source = fs.readFileSync(onlineGamePath, 'utf8');
 
     assert.match(source, /this\.renderState\(this\.room\.state\)/);
+});
+
+test('ranked matchmaking sends and reuses the selected competitive skin', () => {
+    const testDir = path.dirname(fileURLToPath(import.meta.url));
+    const onlineMenuPath = path.resolve(testDir, '../OnlineMenu.js');
+    const source = fs.readFileSync(onlineMenuPath, 'utf8');
+
+    assert.match(source, /rankedSkinId/);
+    assert.match(source, /skinId:\s*this\.prefs\.rankedSkinId/);
+    assert.match(source, /skinId:\s*data\.skinId/);
+});
+
+test('online leaderboard wins are recorded only for ranked matches', () => {
+    const testDir = path.dirname(fileURLToPath(import.meta.url));
+    const onlineGamePath = path.resolve(testDir, '../modes/OnlineGame.js');
+    const source = fs.readFileSync(onlineGamePath, 'utf8');
+
+    assert.match(source, /if\s*\(!this\.latestState\?\.isRanked\)\s*return/);
 });

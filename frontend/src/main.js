@@ -10,6 +10,7 @@ import { NormalLocalGame } from './scenes/modes/NormalLocalGame.js';
 import { OnlineMenu } from './scenes/OnlineMenu.js';
 import { Registration } from './scenes/Registration.js';
 import { Login } from './scenes/Login.js';
+import { Profile } from './scenes/Profile.js';
 import { OnlineGame } from './scenes/modes/OnlineGame.js';
 import { TimeAttackGame } from './scenes/modes/TimeAttackGame.js';
 import { ChaosGame } from './scenes/modes/ChaosGame.js';
@@ -19,8 +20,11 @@ import { AgainstAIGame } from './scenes/modes/AgainstAIGame.js';
 import { CaptureTheFlagGame } from './scenes/modes/CaptureTheFlagGame.js';
 import { Pause } from './scenes/Pause.js';
 import {LocalGameSetup} from "./scenes/LocalGameSetup";
+import { SoloGameSetup } from './scenes/SoloGameSetup.js';
+import { SoloGame } from './scenes/modes/SoloGame.js';
 import { ControlsMenu } from './scenes/ControlsMenu.js';
 import { bindFormKeyboardGuard } from './utils/formKeyboardGuard.js';
+import { clearAuthSessionOnStartup } from './services/firebaseAuthService.js';
 
 const config = {
     type: Phaser.AUTO,
@@ -64,7 +68,10 @@ const config = {
         OnlineMenu,
         Registration,
         Login,
+        Profile,
         LocalGameSetup,
+        SoloGameSetup,
+        SoloGame,
         LocalGame,
         NormalLocalGame,
         OnlineGame,
@@ -79,5 +86,7 @@ const config = {
     ]
 };
 
-const game = new Phaser.Game(config);
-bindFormKeyboardGuard(game);
+clearAuthSessionOnStartup().finally(() => {
+  const game = new Phaser.Game(config);
+  bindFormKeyboardGuard(game);
+});

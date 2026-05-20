@@ -59,6 +59,13 @@ export function getActiveLobbyRoom() {
   return activeLobbyRoom;
 }
 
+export function getResumableActiveLobbyRoom(roomId = '') {
+  if (!activeLobbyRoom) return null;
+  const requestedRoomId = String(roomId ?? '').trim();
+  if (requestedRoomId && activeLobbyRoom.roomId !== requestedRoomId) return null;
+  return activeLobbyRoom;
+}
+
 export function setActiveLobbyRoom(room) {
   activeLobbyRoom = room ?? null;
 }

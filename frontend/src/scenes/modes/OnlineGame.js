@@ -693,7 +693,7 @@ export class OnlineGame extends Phaser.Scene {
                 reason,
                 mode: isHillMode ? 'kingOfTheHill' : (isTimeAttackMode ? 'timeAttack' : 'online'),
                 rematchScene: 'OnlineMenu',
-                rematchData: { resumeLobby: true, lobbyRoomId: this.lobbyRoomId },
+                rematchData: { resumeLobby: true, lobbyRoomId: this.lobbyRoomId, completedMatchRoomId: this.matchRoomId },
                 leaveActiveLobby: true,
             });
         } else if (reason === 'territory') {
@@ -708,7 +708,7 @@ export class OnlineGame extends Phaser.Scene {
                 reason: 'territory',
                 mode: isTerritoryMode ? 'territory' : 'online',
                 rematchScene: 'OnlineMenu',
-                rematchData: { resumeLobby: true, lobbyRoomId: this.lobbyRoomId },
+                rematchData: { resumeLobby: true, lobbyRoomId: this.lobbyRoomId, completedMatchRoomId: this.matchRoomId },
                 leaveActiveLobby: true,
             });
         } else {
@@ -723,13 +723,14 @@ export class OnlineGame extends Phaser.Scene {
                 reason: 'lives',
                 mode: isTerritoryMode ? 'territory' : (isHillMode ? 'kingOfTheHill' : 'online'),
                 rematchScene: 'OnlineMenu',
-                rematchData: { resumeLobby: true, lobbyRoomId: this.lobbyRoomId },
+                rematchData: { resumeLobby: true, lobbyRoomId: this.lobbyRoomId, completedMatchRoomId: this.matchRoomId },
                 leaveActiveLobby: true,
             });
         }
     }
 
     async recordWinIfCurrentUserWon(currentSessionId, winnerSessionId) {
+        if (!this.latestState?.isRanked) return;
         if (!currentSessionId || currentSessionId !== winnerSessionId) return;
 
         const currentUser = await getCurrentUser();
@@ -738,7 +739,7 @@ export class OnlineGame extends Phaser.Scene {
         const userName = extractLeaderboardUserName(currentUser);
         if (!userName) return;
 
-        await LeaderboardService.incrementWinCount(userName);
+        await LeaderboardService.incrementWinCount(userName, currentUser.uid);
     }
 
     shutdown() {

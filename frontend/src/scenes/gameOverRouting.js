@@ -1,5 +1,6 @@
 const REMATCH_SCENE_BY_MODE = {
     local: 'LocalGame',
+    solo: 'SoloGame',
     timeAttack: 'TimeAttackGame',
     kingOfTheHill: 'KingOfTheHillGame',
     territory: 'TerritoryGame',

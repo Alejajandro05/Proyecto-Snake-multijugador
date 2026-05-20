@@ -17,9 +17,17 @@ interface LobbyRoomCreateOptions {
   maxPlayers?: unknown;
   playerName?: unknown;
   skinId?: unknown;
+  boardSizeId?: unknown;
+  foodCountId?: unknown;
 }
 
 interface LobbyRoomStartMatchOptions {
+  gameMode?: unknown;
+  difficulty?: unknown;
+  mapId?: unknown;
+}
+
+interface LobbyRoomUpdateSettingsOptions {
   gameMode?: unknown;
   difficulty?: unknown;
   mapId?: unknown;
@@ -108,21 +116,54 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
     this.state.visibility = toVisibility(options?.visibility);
     this.state.gameMode = resolveCatalogOption(
       options?.gameMode,
-      onlineOptionCatalogs.modes.map((mode) => mode.id),
+      Array.isArray(onlineOptionCatalogs.modes) ? onlineOptionCatalogs.modes.map((mode) => mode.id) : [],
       this.state.gameMode
     );
     this.state.difficulty = resolveCatalogOption(
       options?.difficulty,
-      onlineOptionCatalogs.difficulties.map((difficulty) => difficulty.id),
+      Array.isArray(onlineOptionCatalogs.difficulties) ? onlineOptionCatalogs.difficulties.map((difficulty) => difficulty.id) : [],
       this.state.difficulty
     );
     this.state.mapId = resolveCatalogOption(
       options?.mapId,
-      onlineOptionCatalogs.maps.map((map) => map.id),
+      Array.isArray(onlineOptionCatalogs.maps) ? onlineOptionCatalogs.maps.map((map) => map.id) : [],
       this.state.mapId
     );
     this.state.maxPlayers = 2;
     this.maxClients = 2;
+    
+        // === HU-032: Opciones de tablero y objetos ===
+    let boardCols = 32;
+    let boardRows = 24;
+    let foodCount = 10;
+
+    const boardId = resolveCatalogOption(
+      options?.boardSizeId,
+      Array.isArray(onlineOptionCatalogs.boardSizes) ? onlineOptionCatalogs.boardSizes.map(b => b.id) : [],
+      'medium'
+    );
+    const boardOpt = Array.isArray(onlineOptionCatalogs.boardSizes)
+      ? onlineOptionCatalogs.boardSizes.find(b => b.id === boardId)
+      : undefined;
+    if (boardOpt) {
+      boardCols = boardOpt.cols;
+      boardRows = boardOpt.rows;
+    }
+
+    const foodId = resolveCatalogOption(
+      options?.foodCountId,
+      Array.isArray(onlineOptionCatalogs.foodCounts) ? onlineOptionCatalogs.foodCounts.map(f => f.id) : [],
+      'medium'
+    );
+    const foodOpt = Array.isArray(onlineOptionCatalogs.foodCounts)
+      ? onlineOptionCatalogs.foodCounts.find(f => f.id === foodId)
+      : undefined;
+    if (foodOpt) foodCount = foodOpt.value;
+
+    this.state.boardCols = boardCols;
+    this.state.boardRows = boardRows;
+    this.state.foodCount = foodCount;
+    // ============================================
 
     if (this.state.visibility === "private") {
       this.state.inviteCode = generateInviteCode();
@@ -138,27 +179,33 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
         return;
       }
 
+      this.applyLobbySettings(payload);
+
       const snakeRoom = await matchMaker.createRoom("snake_room", {
         lobbyId: this.state.lobbyId,
-        gameMode: resolveCatalogOption(
-          payload?.gameMode ?? this.state.gameMode,
-          onlineOptionCatalogs.modes.map((mode) => mode.id),
-          this.state.gameMode
-        ),
-        difficulty: resolveCatalogOption(
-          payload?.difficulty ?? this.state.difficulty,
-          onlineOptionCatalogs.difficulties.map((difficulty) => difficulty.id),
-          this.state.difficulty
-        ),
-        mapId: resolveCatalogOption(
-          payload?.mapId ?? this.state.mapId,
-          onlineOptionCatalogs.maps.map((map) => map.id),
-          this.state.mapId
-        ),
+        gameMode: this.state.gameMode,
+        difficulty: this.state.difficulty,
+        mapId: this.state.mapId,
+        boardCols: this.state.boardCols,
+        boardRows: this.state.boardRows,
+        foodCount: this.state.foodCount,
       });
 
       this.state.matchRoomId = snakeRoom.roomId;
       this.state.status = "starting";
+      await this.syncMatchmakingState();
+    });
+
+    this.onMessage("updateSettings", async (client, payload?: LobbyRoomUpdateSettingsOptions) => {
+      if (client.sessionId !== this.state.host.sessionId) {
+        return;
+      }
+
+      if (this.state.matchRoomId.length > 0) {
+        return;
+      }
+
+      this.applyLobbySettings(payload);
       await this.syncMatchmakingState();
     });
   }
@@ -197,6 +244,24 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
 
     this.state.status = playerCount >= this.state.maxPlayers ? "ready" : "waiting";
     await this.syncMatchmakingState();
+  }
+
+  private applyLobbySettings(payload?: LobbyRoomUpdateSettingsOptions) {
+    this.state.gameMode = resolveCatalogOption(
+      payload?.gameMode ?? this.state.gameMode,
+      onlineOptionCatalogs.modes.map((mode) => mode.id),
+      this.state.gameMode
+    );
+    this.state.difficulty = resolveCatalogOption(
+      payload?.difficulty ?? this.state.difficulty,
+      onlineOptionCatalogs.difficulties.map((difficulty) => difficulty.id),
+      this.state.difficulty
+    );
+    this.state.mapId = resolveCatalogOption(
+      payload?.mapId ?? this.state.mapId,
+      onlineOptionCatalogs.maps.map((map) => map.id),
+      this.state.mapId
+    );
   }
 
   private async syncMatchmakingState() {

@@ -28,6 +28,8 @@ export type FoodState = {
   y: number;
   type: FoodType;
   score: number;
+  /** Tick en el que apareció (solo frutas con TTL, p. ej. kiwi). */
+  spawnedAtTick?: number;
 }
 
 export interface TerritoryCellState extends Position {

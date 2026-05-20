@@ -241,11 +241,104 @@ describe("LobbyRoom", () => {
     assert.equal(room.state.difficulty, "hard");
     assert.equal(room.state.mapId, "arena02");
     assert.equal(snakeRoom.state.difficulty, "hard");
-    assert.equal(snakeRoom.state.tickMs, 110);
+    assert.equal(snakeRoom.state.tickMs, 75);
     assert.equal(snakeRoom.state.mapId, "arena02");
     assert.equal(snakeRoom.metadata?.gameMode, "infinite");
     assert.equal(snakeRoom.metadata?.lobbyId, room.roomId);
 
+    await hostClient.leave();
+  });
+
+  it("lets only the host update lobby settings before starting a match", async () => {
+    const room = await colyseus.createRoom<LobbyRoomState>("lobby_room", {
+      visibility: "public",
+      gameMode: "normal",
+      difficulty: "easy",
+      mapId: "arena01",
+    });
+
+    const hostClient = await colyseus.connectTo(room);
+    await room.waitForNextPatch();
+    const guestClient = await colyseus.connectTo(room);
+    await room.waitForNextPatch();
+
+    guestClient.send("updateSettings", {
+      gameMode: "chaos",
+      difficulty: "hard",
+      mapId: "arena06",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    assert.equal(room.state.gameMode, "normal");
+    assert.equal(room.state.difficulty, "easy");
+    assert.equal(room.state.mapId, "arena01");
+
+    hostClient.send("updateSettings", {
+      gameMode: "chaos",
+      difficulty: "hard",
+      mapId: "arena06",
+    });
+    await room.waitForNextPatch();
+
+    assert.equal(room.state.gameMode, "chaos");
+    assert.equal(room.state.difficulty, "hard");
+    assert.equal(room.state.mapId, "arena06");
+
+    hostClient.send("startMatch");
+    await room.waitForNextPatch();
+
+    const snakeRoom = colyseus.getRoomById(room.state.matchRoomId);
+    assert.equal(snakeRoom.state.gameMode, "chaos");
+    assert.equal(snakeRoom.state.difficulty, "hard");
+    assert.equal(snakeRoom.state.mapId, "arena06");
+
+    await guestClient.leave();
+    await hostClient.leave();
+  });
+
+  it("keeps the lobby reusable after a match reset", async () => {
+    const room = await colyseus.createRoom<LobbyRoomState>("lobby_room", {
+      visibility: "public",
+      gameMode: "normal",
+      difficulty: "normal",
+      mapId: "arena01",
+    });
+
+    const hostClient = await colyseus.connectTo(room);
+    await room.waitForNextPatch();
+    const guestClient = await colyseus.connectTo(room);
+    await room.waitForNextPatch();
+
+    hostClient.send("startMatch");
+    await room.waitForNextPatch();
+    const firstMatchRoomId = room.state.matchRoomId;
+
+    assert.equal(firstMatchRoomId.length > 0, true);
+    assert.equal(room.state.status, "starting");
+
+    await room.resetAfterMatch();
+    await room.waitForNextPatch();
+
+    assert.equal(room.state.matchRoomId, "");
+    assert.equal(room.state.status, "ready");
+
+    hostClient.send("updateSettings", {
+      gameMode: "territory",
+      difficulty: "hard",
+      mapId: "arena04",
+    });
+    await room.waitForNextPatch();
+
+    hostClient.send("startMatch");
+    await room.waitForNextPatch();
+
+    assert.notEqual(room.state.matchRoomId, firstMatchRoomId);
+    const secondSnakeRoom = colyseus.getRoomById(room.state.matchRoomId);
+    assert.equal(secondSnakeRoom.state.gameMode, "territory");
+    assert.equal(secondSnakeRoom.state.difficulty, "hard");
+    assert.equal(secondSnakeRoom.state.mapId, "arena04");
+
+    await guestClient.leave();
     await hostClient.leave();
   });
 
