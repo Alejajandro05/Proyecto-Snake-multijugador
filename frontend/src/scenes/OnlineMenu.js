@@ -169,6 +169,12 @@ export class OnlineMenu extends Phaser.Scene {
                         <p class="text-white-50 small mb-0" style="font-family: 'Montserrat', sans-serif; line-height: 1.4;">Emparejamiento automático por nivel (Matchmaking). Gana para subir en el Leaderboard.</p>
                     </div>
                     <div class="d-flex flex-column gap-3 w-100 mt-auto px-xl-2">
+                        <div class="d-flex align-items-center justify-content-center gap-2 flex-wrap">
+                          <button type="button" id="online-ranked-skin-prev" class="btn btn-link text-white fs-2 text-decoration-none px-2 py-0 online-skin-arrow" style="line-height: 1;" aria-label="Skin competitiva anterior">&lsaquo;</button>
+                          <div id="online-ranked-skin-preview" class="rounded-3 d-flex align-items-center justify-content-center shadow-sm" style="width: 116px; height: 116px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); padding: 8px;"></div>
+                          <button type="button" id="online-ranked-skin-next" class="btn btn-link text-white fs-2 text-decoration-none px-2 py-0 online-skin-arrow" style="line-height: 1;" aria-label="Skin competitiva siguiente">&rsaquo;</button>
+                        </div>
+                        <input type="hidden" id="online-ranked-skin" value="${this.escapeHtml(this.prefs.rankedSkinId)}">
                         <button id="btn-online-ranked" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleRanked}">BUSCAR PARTIDA</button>
                         <button id="btn-join-login" class="btn fw-bold shadow menu-btn" style="${btnStyleLogin}">${ACCOUNT_GUEST_LABEL}</button>
                     </div>
@@ -355,6 +361,11 @@ export class OnlineMenu extends Phaser.Scene {
       btnRanked.textContent = "COMPROBANDO...";
 
       try {
+        this.prefs = saveOnlinePrefs({
+          ...this.prefs,
+          rankedSkinId: overlay.querySelector('#online-ranked-skin')?.value || this.prefs.rankedSkinId,
+        });
+
         const user = await getCurrentUser();
 
         if (!user) {
@@ -374,6 +385,7 @@ export class OnlineMenu extends Phaser.Scene {
         this.queueRoom = await colyseusClient.joinOrCreate("ranked_queue", {
           token: token,
           playerName: rankedPlayerName,
+          skinId: this.prefs.rankedSkinId,
         });
 
         // ¡CONECTADO! Cambiamos el botón a modo "Cancelar"
@@ -391,7 +403,7 @@ export class OnlineMenu extends Phaser.Scene {
           this.scene.start('OnlineGame', {
             matchRoomId: data.roomId,
             playerName: rankedPlayerName,
-            skinId: this.prefs.guestSkinId,
+            skinId: data.skinId || this.prefs.rankedSkinId,
             gameMode: 'normal',
           });
         });
@@ -412,6 +424,7 @@ export class OnlineMenu extends Phaser.Scene {
     });
 
     this.wireOnlineCreateVisualPickers(overlay);
+    this.wireOnlineRankedSkinPicker(overlay);
     this.wireOnlineJoinSkinPicker(overlay);
   }
 
@@ -498,6 +511,42 @@ export class OnlineMenu extends Phaser.Scene {
         <div class="d-flex flex-column align-items-center gap-2">
           <img src="/${skin?.preview?.path || ''}" alt="" style="width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated;">
           <span class="text-white-50 small">${this.escapeHtml(skin?.label || '')}</span>
+        </div>
+      `;
+    };
+
+    prevBtn.addEventListener('click', () => {
+      skinIndex = (skinIndex - 1 + snakes.length) % snakes.length;
+      renderSkin();
+    });
+    nextBtn.addEventListener('click', () => {
+      skinIndex = (skinIndex + 1) % snakes.length;
+      renderSkin();
+    });
+
+    renderSkin();
+  }
+
+  wireOnlineRankedSkinPicker(overlay) {
+    const snakes = onlineOptionCatalogs.skins.map((o) => getSnakeAsset(o.id));
+    if (!snakes.length) return;
+
+    let skinIndex = Math.max(0, snakes.findIndex((s) => s.id === this.prefs.rankedSkinId));
+
+    const skinHidden = overlay.querySelector('#online-ranked-skin');
+    const preview = overlay.querySelector('#online-ranked-skin-preview');
+    const prevBtn = overlay.querySelector('#online-ranked-skin-prev');
+    const nextBtn = overlay.querySelector('#online-ranked-skin-next');
+
+    if (!skinHidden || !preview || !prevBtn || !nextBtn) return;
+
+    const renderSkin = () => {
+      const skin = snakes[skinIndex];
+      skinHidden.value = skin.id;
+      preview.innerHTML = `
+        <div class="d-flex flex-column align-items-center gap-1">
+          <img src="/${skin.preview.path}" alt="" style="width: 72px; height: 72px; object-fit: contain; image-rendering: pixelated;">
+          <span class="text-white-50 small">${this.escapeHtml(skin.label)}</span>
         </div>
       `;
     };

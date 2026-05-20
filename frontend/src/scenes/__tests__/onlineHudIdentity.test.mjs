@@ -4,10 +4,16 @@ import test from 'node:test';
 import { syncOnlineHudIdentity } from '../modes/onlineHudIdentity.js';
 
 function createElement() {
+    const style = {
+        setProperty(name, value) {
+            this[name] = value;
+        },
+    };
+
     return {
         textContent: '',
         innerHTML: '',
-        style: {},
+        style,
     };
 }
 
@@ -50,8 +56,8 @@ test('syncOnlineHudIdentity applies player names, scores, lives and theme colors
     assert.equal(rightScore.textContent, '4');
     assert.equal(leftLives.innerHTML, 'vidas:2');
     assert.equal(rightLives.innerHTML, 'vidas:3');
-    assert.equal(leftName.style.color, '#e74c3c');
-    assert.equal(rightScore.style.color, '#3498db');
+    assert.equal(leftPanel.style['--player-accent'], '#e74c3c');
+    assert.equal(rightPanel.style['--player-accent'], '#3498db');
     assert.equal(result.difficultyLabel, 'Difficult');
 });
 

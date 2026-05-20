@@ -1,12 +1,23 @@
 import { Room, Client, matchMaker } from "colyseus";
 import { LeaderboardService, getFirebaseAuth } from "../services/LeaderboardService.js";
+import { onlineOptionCatalogs } from "../../../shared/src/catalogs/onlineOptions.js";
+
+const DEFAULT_RANKED_SKIN_ID = onlineOptionCatalogs.skins[0]?.id ?? "player1";
 
 interface QueueTicket {
     client: Client;
     uid: string;         // UUID de Firebase
     playerName: string;
+    skinId: string;
     winCount: number;    // Usamos victorias en vez de ELO
     joinedAt: number;
+}
+
+function toSkinId(value: unknown): string {
+    if (typeof value !== "string") return DEFAULT_RANKED_SKIN_ID;
+    const normalized = value.trim();
+    const allowedSkinIds = onlineOptionCatalogs.skins.map((skin) => skin.id);
+    return allowedSkinIds.includes(normalized) ? normalized : DEFAULT_RANKED_SKIN_ID;
 }
 
 export class RankedQueueRoom extends Room {
@@ -47,6 +58,7 @@ export class RankedQueueRoom extends Room {
             client,
             uid: auth.uid,
             playerName: auth.playerName,
+            skinId: toSkinId(options?.skinId),
             winCount: auth.winCount,
             joinedAt: Date.now()
         });
@@ -95,9 +107,8 @@ export class RankedQueueRoom extends Room {
             console.log(`⚔️ Match: ${matchRoom.roomId} | ${p1.playerName} vs ${p2.playerName}`);
 
             // Avisamos a los dos clientes
-            const matchData = { roomId: matchRoom.roomId };
-            p1.client.send("matchFound", matchData);
-            p2.client.send("matchFound", matchData);
+            p1.client.send("matchFound", { roomId: matchRoom.roomId, skinId: p1.skinId });
+            p2.client.send("matchFound", { roomId: matchRoom.roomId, skinId: p2.skinId });
 
         } catch (e) {
             console.error("Error creando partida Ranked:", e);

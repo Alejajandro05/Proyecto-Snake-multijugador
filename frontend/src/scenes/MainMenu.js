@@ -253,9 +253,9 @@ export class MainMenu extends Phaser.Scene {
 
                 <aside class="leaderboard-panel" aria-label="Tabla de clasificación">
                     <div class="leaderboard-header">
-                        <h2 id="leaderboard-title" class="leaderboard-title">TOP 10 ONLINE</h2>
+                        <h2 id="leaderboard-title" class="leaderboard-title">TOP 10 COMPETITIVO</h2>
                         <div class="leaderboard-tabs" role="tablist" aria-label="Tipo de clasificación">
-                            <button id="leaderboard-tab-online" class="leaderboard-tab active" type="button">Online</button>
+                            <button id="leaderboard-tab-online" class="leaderboard-tab active" type="button">Competitivo</button>
                             <button id="leaderboard-tab-local" class="leaderboard-tab" type="button">Local / Amigos</button>
                         </div>
                     </div>
@@ -469,7 +469,7 @@ export class MainMenu extends Phaser.Scene {
 
             this.leaderboardData.onlineStatus = userIndex >= 0
                 ? `Tu puesto: #${userIndex + 1}`
-                : 'Aún no tienes puesto. Gana una partida.';
+                : 'Aún no tienes puesto. Gana una partida competitiva.';
             this.renderLeaderboard(menuDiv);
         } catch (error) {
             console.error('Could not load leaderboard.', error);
@@ -506,7 +506,7 @@ export class MainMenu extends Phaser.Scene {
         if (!listElement || !statusElement || !titleElement) return;
 
         const isLocal = this.leaderboardView === 'local';
-        titleElement.textContent = isLocal ? 'RANKING LOCAL / AMIGOS' : 'TOP 10 ONLINE';
+        titleElement.textContent = isLocal ? 'RANKING LOCAL / AMIGOS' : 'TOP 10 COMPETITIVO';
         onlineTab?.classList.toggle('active', !isLocal);
         localTab?.classList.toggle('active', isLocal);
 

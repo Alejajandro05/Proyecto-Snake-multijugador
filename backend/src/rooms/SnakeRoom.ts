@@ -20,6 +20,7 @@ interface SnakeRoomCreateOptions {
   mapId?: string;
   gameMode?: unknown;
   lobbyId?: unknown;
+  isRanked?: unknown;
 }
 
 interface SnakeRoomJoinOptions {
@@ -200,11 +201,13 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
   private chaosEffectRemainingMs = 0;
   private chaosNextEffectMs = 0;
   private chaosFastAccumulator = 0;
+  private isRanked = false;
 
   onCreate(options?: SnakeRoomCreateOptions) {
     this.state = new SnakeRoomState();
     const runtimeConfig = getRoomRuntimeConfig(options);
     this.gameMode = toGameMode(options?.gameMode);
+    this.isRanked = options?.isRanked === true;
     const engineConfig = this.resolveModeEngineConfig(runtimeConfig);
     this.engine = new SnakeEngine(engineConfig);
     this.tickMs = engineConfig.tickMs;
@@ -212,6 +215,7 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
       lobbyId: toOptionId(options?.lobbyId) ?? "",
       gameMode: this.gameMode,
       mapId: toMapId(options?.mapId),
+      isRanked: this.isRanked,
     };
 
     this.state.boardCols = engineConfig.gridCols;
@@ -223,6 +227,7 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
     this.state.difficulty = engineConfig.difficulty;
     this.state.gameMode = this.gameMode;
     this.state.mapId = toMapId(options?.mapId);
+    this.state.isRanked = this.isRanked;
     this.state.hillWinScore = this.gameMode === "kingOfTheHill" ? HILL_WIN_SCORE : 0;
     this.remainingTimeMs = this.gameMode === "territory"
       ? TERRITORY_MATCH_MS
@@ -557,6 +562,7 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
     this.syncHillStateToSchema();
     this.state.remainingTimeMs = this.gameMode === "territory" || this.gameMode === "timeAttack" ? this.remainingTimeMs : 0;
     this.state.chaosEffectId = this.gameMode === "chaos" ? this.chaosEffectId : "";
+    this.state.isRanked = this.isRanked;
     this.state.matchEnded = this.matchEnded;
     this.state.matchEndReason = this.matchEndReason;
 

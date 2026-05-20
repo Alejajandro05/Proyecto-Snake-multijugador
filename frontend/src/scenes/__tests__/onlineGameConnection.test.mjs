@@ -28,3 +28,21 @@ test('online game renders the joined room initial state before waiting for patch
 
     assert.match(source, /this\.renderState\(this\.room\.state\)/);
 });
+
+test('ranked matchmaking sends and reuses the selected competitive skin', () => {
+    const testDir = path.dirname(fileURLToPath(import.meta.url));
+    const onlineMenuPath = path.resolve(testDir, '../OnlineMenu.js');
+    const source = fs.readFileSync(onlineMenuPath, 'utf8');
+
+    assert.match(source, /rankedSkinId/);
+    assert.match(source, /skinId:\s*this\.prefs\.rankedSkinId/);
+    assert.match(source, /skinId:\s*data\.skinId/);
+});
+
+test('online leaderboard wins are recorded only for ranked matches', () => {
+    const testDir = path.dirname(fileURLToPath(import.meta.url));
+    const onlineGamePath = path.resolve(testDir, '../modes/OnlineGame.js');
+    const source = fs.readFileSync(onlineGamePath, 'utf8');
+
+    assert.match(source, /if\s*\(!this\.latestState\?\.isRanked\)\s*return/);
+});

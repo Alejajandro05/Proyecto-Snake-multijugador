@@ -4,7 +4,7 @@ import type { ServiceAccount } from "firebase-admin";
 import type { Auth } from "firebase-admin/auth";
 import type { CollectionReference, Firestore, QueryDocumentSnapshot } from "firebase-admin/firestore";
 
-const COLLECTION_NAME = "leaderboard-wins";
+const COLLECTION_NAME = "leaderboard-ranked-wins";
 const DEFAULT_SERVICE_ACCOUNT_PATH = "/app/secrets/firebase-service-account.json";
 let db: Firestore | null = null;
 let collection: CollectionReference | null = null;

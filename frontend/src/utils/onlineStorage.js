@@ -4,6 +4,7 @@ const DEFAULT_ONLINE_PREFS = Object.freeze({
   playerName: '',
   hostSkinId: 'player1',
   guestSkinId: 'player1',
+  rankedSkinId: 'player1',
   gameMode: 'normal',
   difficulty: 'normal',
   mapId: 'arena01',

@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { firebaseConfig } from '../config/firebaseConfig.js';
 
-const COLLECTION_NAME = 'leaderboard-wins';
+const COLLECTION_NAME = 'leaderboard-ranked-wins';
 
 function getFirebaseApp() {
   return getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
@@ -89,8 +89,9 @@ export class LeaderboardService {
     await deleteDoc(doc(getLeaderboardCollection(), id));
   }
 
-  static async incrementWinCount(userName) {
+  static async incrementWinCount(userName, userUUID = '') {
     const normalizedUserName = String(userName ?? '').trim();
+    const normalizedUserUUID = String(userUUID ?? '').trim();
 
     if (!normalizedUserName) {
       throw new Error('User name is required.');
@@ -105,14 +106,21 @@ export class LeaderboardService {
         : 0;
       const nextWinCount = currentWinCount + 1;
 
-      transaction.set(docRef, {
+      const payload = {
         userName: normalizedUserName,
         winCount: nextWinCount,
-      }, { merge: true });
+      };
+
+      if (normalizedUserUUID) {
+        payload.userUUID = normalizedUserUUID;
+      }
+
+      transaction.set(docRef, payload, { merge: true });
 
       return {
         id: docRef.id,
         userName: normalizedUserName,
+        userUUID: normalizedUserUUID,
         winCount: nextWinCount,
       };
     });
