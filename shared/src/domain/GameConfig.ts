@@ -1,3 +1,5 @@
+import type { FoodType } from './types.js';
+
 export const GRID_COLS = 32;
 export const GRID_ROWS = 24;
 export const GRID_SIZE = 32;
@@ -8,10 +10,9 @@ export const RESPAWN_DELAY_MS = 3000;
 export const SAFE_MARGIN = 3;
 export const WIN_SCORE = 10;
 export const MAX_LIVES = 3;
+export const INITIAL_PLAYER_SPEED = 2;
 
 export const PLAYER_COLORS: number[] = [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71];
-
-import type { FoodType } from './types.js';
 
 export type GameDifficulty = 'easy' | 'normal' | 'hard';
 
@@ -32,6 +33,10 @@ export interface GameRuntimeConfig {
 	poisonFoodTtlMs: number;
 	/** Pesos de aparición por tipo de fruta (sustituyen los de FOOD_CONFIG). */
 	foodWeightOverrides: Partial<Record<FoodType, number>>;
+	/** Si es true, chocar con el borde mata; si no, el tablero se envuelve. */
+	wallCollision: boolean;
+	/** Intervalo base de movimiento (menor = más rápido). */
+	initialPlayerSpeed: number;
 }
 
 type RuntimeConfigInput = Partial<GameRuntimeConfig> & {
@@ -108,5 +113,7 @@ export function resolveGameRuntimeConfig(input?: RuntimeConfigInput): GameRuntim
 		territoryMode: input?.territoryMode === true,
 		poisonFoodTtlMs: clampInt(input?.poisonFoodTtlMs ?? 0, 0, 300_000),
 		foodWeightOverrides: normalizeFoodWeightOverrides(input?.foodWeightOverrides),
+		wallCollision: input?.wallCollision === true,
+		initialPlayerSpeed: clampInt(input?.initialPlayerSpeed ?? INITIAL_PLAYER_SPEED, 1, 8),
 	};
 }

@@ -4,8 +4,17 @@ import { onlineOptionCatalogs } from '../../../shared/src/catalogs/onlineOptions
 import { createLobbyClient } from '../net/lobbyClient.js';
 import { getMapAsset, getSnakeAsset } from '../config/gameAssetRegistry.js';
 import { loadOnlinePrefs, saveOnlinePrefs } from '../utils/onlineStorage.js';
-import { isUserLoggedIn, getCurrentUser } from '../services/firebaseAuthService.js';
+import {
+  extractLeaderboardUserName,
+  getCurrentUser,
+  isUserLoggedIn,
+} from '../services/firebaseAuthService.js';
 import { disableGameKeyboardForOverlayScene } from '../utils/formKeyboardGuard.js';
+import {
+  ACCOUNT_GUEST_LABEL,
+  bindAccountButton,
+  closeAccountDropdown,
+} from '../ui/accountButton.js';
 
 // --- FUNCIONES GLOBALES PARA LA URL DEL SERVIDOR ---
 function normalizeHttpUrlToWebSocket(url) {
@@ -46,6 +55,7 @@ export class OnlineMenu extends Phaser.Scene {
   }
 
   create() {
+    closeAccountDropdown();
     disableGameKeyboardForOverlayScene(this);
 
     const fondo = this.add.image(this.scale.width / 2, this.scale.height / 2, 'fondo_duelo');
@@ -65,12 +75,14 @@ export class OnlineMenu extends Phaser.Scene {
     this.publicLobbies = [];
     this.lobbyRoom = null;
     this.renderOverlay();
+    void this.applyOnlineNameFieldsForAuthUser();
 
     if (this.initialErrorMessage) {
       this.showError(this.initialErrorMessage);
     }
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      closeAccountDropdown();
       this.cleanupLobbyRoom(false);
       this.destroyOverlay();
     });
@@ -99,9 +111,6 @@ export class OnlineMenu extends Phaser.Scene {
     overlay.innerHTML = `
       <div class="w-100 px-2 px-sm-3 d-flex flex-column align-items-center" style="max-width: 960px; min-height: 0;">
         <div class="online-menu-card w-100 rounded-4 text-center p-4 d-flex flex-column align-items-stretch">
-        <h1 class="fw-bold text-white mb-4 online-menu-title">
-            SNAKE CLASH
-        </h1>
           <style>
             #online-menu-overlay .online-skin-arrow { transition: transform 0.2s; cursor: pointer; }
             #online-menu-overlay .online-skin-arrow:hover { transform: scale(1.2); }
@@ -120,13 +129,6 @@ export class OnlineMenu extends Phaser.Scene {
             @media (max-width: 767.98px) {
               #online-menu-overlay .online-create-split-map { border-top: 1px solid rgba(255,255,255,0.18); padding-top: 1rem; margin-top: 0.25rem; }
               #online-menu-overlay .online-split-line { border-bottom: 1px solid rgba(255,255,255,0.18); padding-bottom: 1.5rem; margin-bottom: 1.5rem; }
-            }
-            #online-menu-overlay .online-menu-title {
-              font-family: 'Teko', sans-serif;
-              text-shadow: 0px 4px 20px #F67D31, 0px 0px 10px #F67D31;
-              letter-spacing: 2px;
-              font-size: clamp(2.1rem, 9vw, 4.75rem);
-              line-height: 1.05;
             }
             #online-menu-overlay .online-menu-card {
               flex: 0 1 auto;
@@ -174,7 +176,7 @@ export class OnlineMenu extends Phaser.Scene {
                         </div>
                         <input type="hidden" id="online-ranked-skin" value="${this.escapeHtml(this.prefs.rankedSkinId)}">
                         <button id="btn-online-ranked" class="btn text-white fw-bold shadow menu-btn" style="${btnStyleRanked}">BUSCAR PARTIDA</button>
-                        <button id="btn-join-login" class="btn fw-bold shadow menu-btn" style="${btnStyleLogin}">🔑 MI CUENTA / LOGIN</button>
+                        <button id="btn-join-login" class="btn fw-bold shadow menu-btn" style="${btnStyleLogin}">${ACCOUNT_GUEST_LABEL}</button>
                     </div>
                 </div>
             </div>
@@ -319,7 +321,16 @@ export class OnlineMenu extends Phaser.Scene {
       this.scene.start('MainMenu');
     });    overlay.querySelector('#btn-create-back').addEventListener('click', () => this.showView('home'));
     overlay.querySelector('#btn-join-back').addEventListener('click', () => this.showView('home'));
-    overlay.querySelector('#btn-join-login').addEventListener('click', () => this.scene.start('Login'));
+    const accountButton = overlay.querySelector('#btn-join-login');
+    bindAccountButton({
+      scene: this,
+      buttonEl: accountButton,
+      returnScene: 'OnlineMenu',
+      onBeforeNavigate: () => closeAccountDropdown(),
+      onAfterLogout: () => {
+        void this.applyOnlineNameFieldsForAuthUser();
+      },
+    });
     overlay.querySelector('#btn-waiting-back').addEventListener('click', () => this.leaveLobbyRoom());
     overlay.querySelector('#btn-create-submit').addEventListener('click', () => this.handleCreateSubmit());
     overlay.querySelector('#btn-refresh-public').addEventListener('click', () => this.loadPublicLobbies());
@@ -360,20 +371,21 @@ export class OnlineMenu extends Phaser.Scene {
         if (!user) {
           this.showError('¡Alto ahí! Debes iniciar sesión o crear una cuenta para jugar en el modo Competitivo.');
           btnRanked.textContent = "REDIRIGIENDO...";
-          setTimeout(() => { this.scene.start('Login'); }, 2500);
+          setTimeout(() => { this.scene.start('Login', { returnScene: 'OnlineMenu' }); }, 2500);
           return;
         }
 
         btnRanked.textContent = "CONECTANDO AL SERVIDOR...";
 
         const token = await user.getIdToken(true);
+        const rankedPlayerName = extractLeaderboardUserName(user) || 'Jugador';
 
         const colyseusClient = new Client(getColyseusServerUrl());
 
         this.queueRoom = await colyseusClient.joinOrCreate("ranked_queue", {
           token: token,
-          playerName: user.displayName || "Jugador",
-          skinId: this.prefs.rankedSkinId
+          playerName: rankedPlayerName,
+          skinId: this.prefs.rankedSkinId,
         });
 
         // ¡CONECTADO! Cambiamos el botón a modo "Cancelar"
@@ -390,7 +402,7 @@ export class OnlineMenu extends Phaser.Scene {
 
           this.scene.start('OnlineGame', {
             matchRoomId: data.roomId,
-            playerName: user.displayName || "Jugador",
+            playerName: rankedPlayerName,
             skinId: data.skinId || this.prefs.rankedSkinId,
             gameMode: 'normal',
           });
@@ -417,12 +429,12 @@ export class OnlineMenu extends Phaser.Scene {
   }
 
   wireOnlineCreateVisualPickers(overlay) {
-    const snakes = onlineOptionCatalogs.skins.map((o) => getSnakeAsset(o.id));
-    const maps = onlineOptionCatalogs.maps.map((o) => getMapAsset(o.id));
+    const snakes = onlineOptionCatalogs.skins.map((o) => getSnakeAsset(o.id)).filter(Boolean);
+    const maps = onlineOptionCatalogs.maps.map((o) => getMapAsset(o.id)).filter(Boolean);
     if (!snakes.length || !maps.length) return;
 
-    let skinIndex = Math.max(0, snakes.findIndex((s) => s.id === this.prefs.hostSkinId));
-    let mapIndex = Math.max(0, maps.findIndex((m) => m.id === this.prefs.mapId));
+    let skinIndex = Math.max(0, snakes.findIndex((s) => s && s.id === this.prefs.hostSkinId));
+    let mapIndex = Math.max(0, maps.findIndex((m) => m && m.id === this.prefs.mapId));
 
     const skinHidden = overlay.querySelector('#online-create-skin');
     const mapHidden = overlay.querySelector('#online-create-map');
@@ -434,24 +446,25 @@ export class OnlineMenu extends Phaser.Scene {
     if (!skinHidden || !mapHidden || !preview || !mapRoot || !prevBtn || !nextBtn) return;
 
     const renderSkin = () => {
-      const skin = snakes[skinIndex];
-      skinHidden.value = skin.id;
+      const skin = snakes[skinIndex] || snakes[0];
+      skinHidden.value = skin?.id || '';
       preview.innerHTML = `
         <div class="d-flex flex-column align-items-center gap-2">
-          <img src="/${skin.preview.path}" alt="" style="width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated;">
-          <span class="text-white-50 small">${this.escapeHtml(skin.label)}</span>
+          <img src="/${skin?.preview?.path || ''}" alt="" style="width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated;">
+          <span class="text-white-50 small">${this.escapeHtml(skin?.label || '')}</span>
         </div>
       `;
     };
 
     const renderMaps = () => {
-      mapHidden.value = maps[mapIndex].id;
+      const activeMap = maps[mapIndex] || maps[0];
+      mapHidden.value = activeMap?.id || '';
       mapRoot.innerHTML = maps
           .map(
               (map, index) => `
         <button type="button" class="online-map-option rounded-3 p-2 text-center ${index === mapIndex ? 'active' : ''}" data-online-map-index="${index}" style="width: 112px;">
-          <span class="d-block rounded-2 mb-2" style="height: 42px; background: url('/${map.floor.path}') center/32px 32px repeat; image-rendering: pixelated;"></span>
-          <span class="small fw-semibold">${this.escapeHtml(map.label)}</span>
+          <span class="d-block rounded-2 mb-2" style="height: 42px; background: url('/${map?.floor?.path || ''}') center/32px 32px repeat; image-rendering: pixelated;"></span>
+          <span class="small fw-semibold">${this.escapeHtml(map?.label || '')}</span>
         </button>
       `,
           )
@@ -479,10 +492,10 @@ export class OnlineMenu extends Phaser.Scene {
   }
 
   wireOnlineJoinSkinPicker(overlay) {
-    const snakes = onlineOptionCatalogs.skins.map((o) => getSnakeAsset(o.id));
+    const snakes = onlineOptionCatalogs.skins.map((o) => getSnakeAsset(o.id)).filter(Boolean);
     if (!snakes.length) return;
 
-    let skinIndex = Math.max(0, snakes.findIndex((s) => s.id === this.prefs.guestSkinId));
+    let skinIndex = Math.max(0, snakes.findIndex((s) => s && s.id === this.prefs.guestSkinId));
 
     const skinHidden = overlay.querySelector('#online-join-skin');
     const preview = overlay.querySelector('#online-join-skin-preview');
@@ -492,12 +505,12 @@ export class OnlineMenu extends Phaser.Scene {
     if (!skinHidden || !preview || !prevBtn || !nextBtn) return;
 
     const renderSkin = () => {
-      const skin = snakes[skinIndex];
-      skinHidden.value = skin.id;
+      const skin = snakes[skinIndex] || snakes[0];
+      skinHidden.value = skin?.id || '';
       preview.innerHTML = `
         <div class="d-flex flex-column align-items-center gap-2">
-          <img src="/${skin.preview.path}" alt="" style="width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated;">
-          <span class="text-white-50 small">${this.escapeHtml(skin.label)}</span>
+          <img src="/${skin?.preview?.path || ''}" alt="" style="width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated;">
+          <span class="text-white-50 small">${this.escapeHtml(skin?.label || '')}</span>
         </div>
       `;
     };
@@ -566,8 +579,10 @@ export class OnlineMenu extends Phaser.Scene {
   async handleCreateSubmit() {
     try {
       this.hideError();
+      const createNameInput = this.overlayRoot.querySelector('#online-create-name');
+      const playerName = await this.resolveOnlinePlayerName(createNameInput);
       this.prefs = saveOnlinePrefs({
-        playerName: this.overlayRoot.querySelector('#online-create-name').value.trim() || 'Jugador',
+        playerName,
         gameMode: this.overlayRoot.querySelector('#online-create-mode').value,
         difficulty: this.overlayRoot.querySelector('#online-create-difficulty').value,
         hostSkinId: this.overlayRoot.querySelector('#online-create-skin').value,
@@ -586,6 +601,8 @@ export class OnlineMenu extends Phaser.Scene {
         difficulty: this.prefs.difficulty,
         mapId: this.prefs.mapId,
         visibility: this.prefs.visibility,
+        boardSizeId: this.prefs.boardSizeId,
+        foodCountId: this.prefs.foodCountId,
       });
 
       this.attachLobbyRoom(room);
@@ -636,8 +653,10 @@ export class OnlineMenu extends Phaser.Scene {
 
     try {
       this.hideError();
+      const joinNameInput = this.overlayRoot.querySelector('#online-join-name');
+      const playerName = await this.resolveOnlinePlayerName(joinNameInput);
       this.prefs = saveOnlinePrefs({
-        playerName: this.overlayRoot.querySelector('#online-join-name').value.trim() || 'Jugador',
+        playerName,
         guestSkinId: this.overlayRoot.querySelector('#online-join-skin').value,
       });
 
@@ -655,8 +674,10 @@ export class OnlineMenu extends Phaser.Scene {
   async handlePrivateJoin() {
     try {
       this.hideError();
+      const joinNameInput = this.overlayRoot.querySelector('#online-join-name');
+      const playerName = await this.resolveOnlinePlayerName(joinNameInput);
       this.prefs = saveOnlinePrefs({
-        playerName: this.overlayRoot.querySelector('#online-join-name').value.trim() || 'Jugador',
+        playerName,
         guestSkinId: this.overlayRoot.querySelector('#online-join-skin').value,
       });
 
@@ -797,6 +818,59 @@ export class OnlineMenu extends Phaser.Scene {
       this.overlayRoot.parentNode.removeChild(this.overlayRoot);
     }
     this.overlayRoot = null;
+  }
+
+  async getAuthPlayerName() {
+    const user = await getCurrentUser();
+    if (!user) return null;
+    return extractLeaderboardUserName(user);
+  }
+
+  lockOnlineNameInput(input, userName) {
+    if (!input) return;
+    input.value = userName;
+    input.readOnly = true;
+    input.disabled = true;
+    input.title = 'Nombre vinculado a tu cuenta';
+    input.setAttribute('aria-readonly', 'true');
+    input.style.opacity = '0.85';
+    input.style.cursor = 'not-allowed';
+    input.style.backgroundColor = 'rgba(15, 23, 42, 0.65)';
+  }
+
+  unlockOnlineNameInput(input) {
+    if (!input) return;
+    input.readOnly = false;
+    input.disabled = false;
+    input.removeAttribute('aria-readonly');
+    input.title = '';
+    input.style.opacity = '';
+    input.style.cursor = '';
+    input.style.backgroundColor = '';
+  }
+
+  async applyOnlineNameFieldsForAuthUser() {
+    if (!this.overlayRoot) return;
+
+    const createInput = this.overlayRoot.querySelector('#online-create-name');
+    const joinInput = this.overlayRoot.querySelector('#online-join-name');
+    const authName = await this.getAuthPlayerName();
+
+    if (!authName) {
+      this.unlockOnlineNameInput(createInput);
+      this.unlockOnlineNameInput(joinInput);
+      return;
+    }
+
+    this.lockOnlineNameInput(createInput, authName);
+    this.lockOnlineNameInput(joinInput, authName);
+    this.prefs = saveOnlinePrefs({ ...this.prefs, playerName: authName });
+  }
+
+  async resolveOnlinePlayerName(fallbackInput) {
+    const authName = await this.getAuthPlayerName();
+    if (authName) return authName;
+    return String(fallbackInput?.value ?? '').trim() || 'Jugador';
   }
 
   escapeHtml(value) {

@@ -110,17 +110,17 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
     this.state.visibility = toVisibility(options?.visibility);
     this.state.gameMode = resolveCatalogOption(
       options?.gameMode,
-      onlineOptionCatalogs.modes.map((mode) => mode.id),
+      Array.isArray(onlineOptionCatalogs.modes) ? onlineOptionCatalogs.modes.map((mode) => mode.id) : [],
       this.state.gameMode
     );
     this.state.difficulty = resolveCatalogOption(
       options?.difficulty,
-      onlineOptionCatalogs.difficulties.map((difficulty) => difficulty.id),
+      Array.isArray(onlineOptionCatalogs.difficulties) ? onlineOptionCatalogs.difficulties.map((difficulty) => difficulty.id) : [],
       this.state.difficulty
     );
     this.state.mapId = resolveCatalogOption(
       options?.mapId,
-      onlineOptionCatalogs.maps.map((map) => map.id),
+      Array.isArray(onlineOptionCatalogs.maps) ? onlineOptionCatalogs.maps.map((map) => map.id) : [],
       this.state.mapId
     );
     this.state.maxPlayers = 2;
@@ -133,10 +133,12 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
 
     const boardId = resolveCatalogOption(
       options?.boardSizeId,
-      onlineOptionCatalogs.boardSizes.map(b => b.id),
+      Array.isArray(onlineOptionCatalogs.boardSizes) ? onlineOptionCatalogs.boardSizes.map(b => b.id) : [],
       'medium'
     );
-    const boardOpt = onlineOptionCatalogs.boardSizes.find(b => b.id === boardId);
+    const boardOpt = Array.isArray(onlineOptionCatalogs.boardSizes)
+      ? onlineOptionCatalogs.boardSizes.find(b => b.id === boardId)
+      : undefined;
     if (boardOpt) {
       boardCols = boardOpt.cols;
       boardRows = boardOpt.rows;
@@ -144,10 +146,12 @@ export class LobbyRoom extends Room<{ state: LobbyRoomState }> {
 
     const foodId = resolveCatalogOption(
       options?.foodCountId,
-      onlineOptionCatalogs.foodCounts.map(f => f.id),
+      Array.isArray(onlineOptionCatalogs.foodCounts) ? onlineOptionCatalogs.foodCounts.map(f => f.id) : [],
       'medium'
     );
-    const foodOpt = onlineOptionCatalogs.foodCounts.find(f => f.id === foodId);
+    const foodOpt = Array.isArray(onlineOptionCatalogs.foodCounts)
+      ? onlineOptionCatalogs.foodCounts.find(f => f.id === foodId)
+      : undefined;
     if (foodOpt) foodCount = foodOpt.value;
 
     this.state.boardCols = boardCols;

@@ -134,7 +134,7 @@ export class SnakeEngine {
       score: 0,
       segments,
       lastEatenFood: null,
-      speed: 2,
+      speed: this.config.initialPlayerSpeed,
       moveCounter: 0,
       speedEffectRemaining: 0
     };
@@ -191,7 +191,7 @@ export class SnakeEngine {
         player.speedEffectRemaining--;
 
         if (player.speedEffectRemaining <= 0) {
-        player.speed = 2;
+        player.speed = this.config.initialPlayerSpeed;
         }
       }
 
@@ -232,11 +232,21 @@ export class SnakeEngine {
       case 'down':  newY += this.config.gridSize; break;
     }
 
-    // Wrap around walls (toroidal board)
-    if (newX < 0)                        newX = (this.config.gridCols - 1) * this.config.gridSize;
-    else if (newX >= this.config.gridCols * this.config.gridSize) newX = 0;
-    if (newY < 0)                        newY = (this.config.gridRows - 1) * this.config.gridSize;
-    else if (newY >= this.config.gridRows * this.config.gridSize) newY = 0;
+    const maxX = (this.config.gridCols - 1) * this.config.gridSize;
+    const maxY = (this.config.gridRows - 1) * this.config.gridSize;
+
+    if (this.config.wallCollision) {
+      if (newX < 0 || newX > maxX || newY < 0 || newY > maxY) {
+        this.killPlayer(player);
+        return;
+      }
+    } else {
+      // Wrap around walls (toroidal board)
+      if (newX < 0) newX = maxX;
+      else if (newX > maxX) newX = 0;
+      if (newY < 0) newY = maxY;
+      else if (newY > maxY) newY = 0;
+    }
 
     // Self collision
     for (const seg of player.segments) {
@@ -348,7 +358,7 @@ export class SnakeEngine {
     player.direction = 'right';
     player.nextDirection = 'right';
     this.inputQueues.set(id, []);
-    player.speed = 2;
+    player.speed = this.config.initialPlayerSpeed;
     player.moveCounter = 0;
     player.speedEffectRemaining = 0;
     player.alive = true;

@@ -34,23 +34,30 @@ const DIR_ANGLE = {
     up:    -Math.PI / 2,
 };
 
-const BOARD_WIDTH_PX = GRID_COLS * GRID_SIZE;
-const BOARD_HEIGHT_PX = GRID_ROWS * GRID_SIZE;
-
 export class SnakeBoardRenderer {
     constructor(scene, options = {}) {
         this.scene = scene;
-        this.mapAsset = getMapAsset(options.mapId);
-        this.activeMapId = this.mapAsset.id;
+        // Resolve map asset defensively: ensure we always have an object shape
+        this.mapAsset = getMapAsset(options.mapId) || { id: null, theme: {}, floor: {}, border: {}, obstacle: {} };
+        this.activeMapId = this.mapAsset.id ?? null;
+        
+        // Use dynamic grid dimensions from options, fallback to constants
+        this.gridCols = options.gridCols ?? GRID_COLS;
+        this.gridRows = options.gridRows ?? GRID_ROWS;
+        this.gridSize = GRID_SIZE;
+        
         this.outerPadding = 14;
         this.boardOffsetX = 0;
         this.boardOffsetY = 0;
         this.cellSize = GRID_SIZE;
-        this.boardWidth  = GRID_COLS * GRID_SIZE;
-        this.boardHeight = GRID_ROWS * GRID_SIZE;
+        this.boardWidth  = this.gridCols * GRID_SIZE;
+        this.boardHeight = this.gridRows * GRID_SIZE;
 
         this.scene.cameras.main.roundPixels = true;
-        this.scene.cameras.main.setBackgroundColor(this.mapAsset.theme.backgroundColor);
+        // Only set background color if theme value exists
+        if (this.mapAsset?.theme?.backgroundColor != null) {
+            this.scene.cameras.main.setBackgroundColor(this.mapAsset.theme.backgroundColor);
+        }
 
         this.backgroundImage = this.scene.add.image(
             this.scene.scale.width  * 0.5,
@@ -59,8 +66,9 @@ export class SnakeBoardRenderer {
         ).setAlpha(0.22).setDepth(-50);
 
         this.boardBackgroundGraphics = this.scene.add.graphics().setDepth(-20);
-        this.floorTileSprite = this.scene.textures.exists(this.mapAsset.floor.key)
-            ? this.scene.add.tileSprite(0, 0, 1, 1, this.mapAsset.floor.key)
+        const floorKey = this.mapAsset?.floor?.key;
+        this.floorTileSprite = (floorKey && this.scene.textures.exists(floorKey))
+            ? this.scene.add.tileSprite(0, 0, 1, 1, floorKey)
                 .setOrigin(0).setAlpha(0.96).setDepth(-15)
             : null;
         this.gridGraphics    = this.scene.add.graphics().setDepth(-10);
@@ -153,12 +161,14 @@ export class SnakeBoardRenderer {
     }
 
     setMapId(mapId) {
-        const nextMap = getMapAsset(mapId);
+        const nextMap = getMapAsset(mapId) || { id: null, theme: {}, floor: {}, border: {}, obstacle: {} };
         if (nextMap.id === this.activeMapId) return;
 
         this.mapAsset = nextMap;
-        this.activeMapId = nextMap.id;
-        this.scene.cameras.main.setBackgroundColor(nextMap.theme.backgroundColor);
+        this.activeMapId = nextMap.id ?? null;
+        if (nextMap?.theme?.backgroundColor != null) {
+            this.scene.cameras.main.setBackgroundColor(nextMap.theme.backgroundColor);
+        }
 
         if (this.floorTileSprite && this.scene.textures.exists(nextMap.floor.key)) {
             this.floorTileSprite.setTexture(nextMap.floor.key);
@@ -193,9 +203,9 @@ export class SnakeBoardRenderer {
         const availableWidth  = Math.max(320, viewportWidth  - safePadding * 2 - sidePanelWidthLeft - sidePanelWidthRight - sideGap * 2);
         const availableHeight = Math.max(240, viewportHeight - topGap - safePadding);
 
-        this.cellSize    = Math.max(12, Math.floor(Math.min(availableWidth / GRID_COLS, availableHeight / GRID_ROWS)));
-        this.boardWidth  = this.cellSize * GRID_COLS;
-        this.boardHeight = this.cellSize * GRID_ROWS;
+        this.cellSize    = Math.max(12, Math.floor(Math.min(availableWidth / this.gridCols, availableHeight / this.gridRows)));
+        this.boardWidth  = this.cellSize * this.gridCols;
+        this.boardHeight = this.cellSize * this.gridRows;
 
         this.boardOffsetX = Math.floor((viewportWidth  - this.boardWidth)  * 0.5);
         this.boardOffsetY = Math.floor(topGap + (availableHeight - this.boardHeight) * 0.5);
@@ -228,13 +238,36 @@ export class SnakeBoardRenderer {
     }
 
     updateFloorTileLayer() {
-        if (!this.floorTileSprite) return;
-        const floorKey = this.mapAsset.floor.key;
-        if (!this.scene.textures.exists(floorKey)) return;
-        if (this.floorTileSprite.texture.key !== floorKey) {
+        const floorKey = this.mapAsset?.floor?.key;
+        if (!floorKey) {
+            if (this.floorTileSprite) this.floorTileSprite.setVisible(false);
+            return;
+        }
+
+        if (!this.scene.textures.exists(floorKey)) {
+            if (this.floorTileSprite) this.floorTileSprite.setVisible(false);
+            return;
+        }
+
+        const tex = this.scene.textures.get(floorKey);
+        if (!tex || typeof tex.get !== 'function') {
+            if (this.floorTileSprite) this.floorTileSprite.setVisible(false);
+            return;
+        }
+
+        const textureFrame = tex.get();
+        if (!textureFrame || !textureFrame.realWidth || !textureFrame.realHeight) {
+            if (this.floorTileSprite) this.floorTileSprite.setVisible(false);
+            return;
+        }
+
+        if (!this.floorTileSprite) {
+            this.floorTileSprite = this.scene.add.tileSprite(0, 0, 1, 1, floorKey)
+                .setOrigin(0).setAlpha(0.96).setDepth(-15);
+        } else if (this.floorTileSprite.texture.key !== floorKey) {
             this.floorTileSprite.setTexture(floorKey);
         }
-        const textureFrame = this.scene.textures.get(floorKey).get();
+
         const scaleX = this.cellSize / textureFrame.realWidth;
         const scaleY = this.cellSize / textureFrame.realHeight;
         this.floorTileSprite
@@ -274,14 +307,30 @@ export class SnakeBoardRenderer {
     }
 
     updateBoardBorderSprites() {
-        const borderKey = this.mapAsset.border?.key;
+        const borderKey = this.mapAsset?.border?.key;
         if (!this.ensureBoardBorderSprites()) return;
+
+        if (!borderKey || !this.scene.textures.exists(borderKey)) {
+            this.boardBorderSprites.forEach((s) => s.setVisible(false));
+            return;
+        }
+
+        const tex = this.scene.textures.get(borderKey);
+        if (!tex || typeof tex.get !== 'function') {
+            this.boardBorderSprites.forEach((s) => s.setVisible(false));
+            return;
+        }
+
+        const textureFrame = tex.get();
+        if (!textureFrame || !textureFrame.realWidth || !textureFrame.realHeight) {
+            this.boardBorderSprites.forEach((s) => s.setVisible(false));
+            return;
+        }
 
         const borderThickness = this.outerPadding;
         const frameWidth  = this.boardWidth  + borderThickness * 2;
         const x = this.boardOffsetX - borderThickness;
         const y = this.boardOffsetY - borderThickness;
-        const textureFrame = this.scene.textures.get(borderKey).get();
         const scaleX = borderThickness / textureFrame.realWidth;
         const scaleY = borderThickness / textureFrame.realHeight;
         const [top, bottom, left, right] = this.boardBorderSprites;
@@ -515,14 +564,16 @@ export class SnakeBoardRenderer {
     }
 
     _normalizeDelta(delta, span) {
-        if (delta > GRID_SIZE) return delta - span;
-        if (delta < -GRID_SIZE) return delta + span;
+        if (delta > this.gridSize) return delta - span;
+        if (delta < -this.gridSize) return delta + span;
         return delta;
     }
 
     _directionBetween(fromSeg, toSeg) {
-        const dx = this._normalizeDelta(toSeg.x - fromSeg.x, BOARD_WIDTH_PX);
-        const dy = this._normalizeDelta(toSeg.y - fromSeg.y, BOARD_HEIGHT_PX);
+        const boardWidthPx = this.gridCols * this.gridSize;
+        const boardHeightPx = this.gridRows * this.gridSize;
+        const dx = this._normalizeDelta(toSeg.x - fromSeg.x, boardWidthPx);
+        const dy = this._normalizeDelta(toSeg.y - fromSeg.y, boardHeightPx);
 
         if (Math.abs(dx) >= Math.abs(dy)) {
             return dx >= 0 ? 'right' : 'left';
@@ -762,14 +813,14 @@ export class SnakeBoardRenderer {
     drawGrid() {
         this.gridGraphics.clear();
         this.gridGraphics.lineStyle(1, this.mapAsset.theme.gridColor, 0.1);
-        for (let col = 0; col <= GRID_COLS; col++) {
+        for (let col = 0; col <= this.gridCols; col++) {
             const x = this.boardOffsetX + col * this.cellSize;
             this.gridGraphics.beginPath();
             this.gridGraphics.moveTo(x, this.boardOffsetY);
             this.gridGraphics.lineTo(x, this.boardOffsetY + this.boardHeight);
             this.gridGraphics.strokePath();
         }
-        for (let row = 0; row <= GRID_ROWS; row++) {
+        for (let row = 0; row <= this.gridRows; row++) {
             const y = this.boardOffsetY + row * this.cellSize;
             this.gridGraphics.beginPath();
             this.gridGraphics.moveTo(this.boardOffsetX, y);

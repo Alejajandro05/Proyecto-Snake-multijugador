@@ -1,10 +1,18 @@
 import Phaser from 'phaser';
-import { loginUser, validateUserName } from '../services/firebaseAuthService.js';
+import {
+  loginUser,
+  shouldRememberSession,
+  validateUserName,
+} from '../services/firebaseAuthService.js';
 import { disableGameKeyboardForOverlayScene } from '../utils/formKeyboardGuard.js';
 
 export class Login extends Phaser.Scene {
   constructor() {
     super('Login');
+  }
+
+  init(data) {
+    this.returnScene = data?.returnScene ?? 'OnlineMenu';
   }
 
   create() {
@@ -32,11 +40,7 @@ export class Login extends Phaser.Scene {
     const btnStyleSubmit = `${btnStyleBase} background-color: #0F766E; color: white; border-color: #5EEAD4;`;
 
     overlay.innerHTML = `
-      <div class="text-center" style="margin-top: -40px; width: 100%; max-width: 960px;">
-        <h1 class="display-1 fw-bold text-white mb-4" style="font-family: 'Teko', sans-serif; text-shadow: 0px 4px 20px #F67D31, 0px 0px 10px #F67D31; letter-spacing: 2px;">
-            SNAKE CLASH
-        </h1>
-
+      <div class="text-center" style="width: 100%; max-width: 960px;">
         <div class="mx-auto p-4" style="background: rgba(15, 23, 42, 0.85); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 12px; backdrop-filter: blur(5px); max-width: 520px;">
           <h2 class="text-white text-center fw-bold mb-3" style="font-family: 'Montserrat', sans-serif;">Iniciar Sesión</h2>
 
@@ -50,6 +54,15 @@ export class Login extends Phaser.Scene {
               <label for="password" class="form-label text-white fw-semibold">Contraseña</label>
               <input id="password" type="password" class="form-control" style="width:100%; padding: 0.85rem 3.5rem 0.85rem 1rem; border-radius: 10px; border: 2px solid #94A3B8; background: rgba(15, 23, 42, 0.9); color: white;" autocomplete="current-password" />
               <button id="toggle-password" type="button" style="position: absolute; top: 38px; right: 14px; width: 36px; height: 36px; border: none; background: rgba(148, 163, 184, 0.16); color: white; border-radius: 8px; font-size: 1.1rem; cursor: pointer;">👁️‍🗨️</button>
+            </div>
+
+            <div class="mb-3 text-start">
+              <div class="form-check d-flex align-items-start gap-2">
+                <input class="form-check-input mt-1 flex-shrink-0" type="checkbox" id="remember-session" style="width: 1.1rem; height: 1.1rem; cursor: pointer;" />
+                <label class="form-check-label text-white small" for="remember-session" style="cursor: pointer; line-height: 1.35;">
+                  Mantener la sesión iniciada al recargar la página
+                </label>
+              </div>
             </div>
 
             <div id="validation-message" class="text-danger text-start mb-3" style="min-height: 1.4rem; font-size: 0.95rem;"></div>
@@ -75,7 +88,12 @@ export class Login extends Phaser.Scene {
     const passwordInput = overlay.querySelector('#password');
     const validationMessage = overlay.querySelector('#validation-message');
     const togglePasswordButton = overlay.querySelector('#toggle-password');
+    const rememberSessionInput = overlay.querySelector('#remember-session');
     const backButton = overlay.querySelector('#btn-login-back');
+
+    if (rememberSessionInput) {
+      rememberSessionInput.checked = shouldRememberSession();
+    }
 
     const resetValidation = () => {
       [usernameInput, passwordInput].forEach((input) => {
@@ -85,9 +103,9 @@ export class Login extends Phaser.Scene {
       validationMessage.style.color = '';
     };
 
-    const submit = async (username, password) => {
+    const submit = async (username, password, remember) => {
       try {
-        const user = await loginUser(username, password);
+        const user = await loginUser(username, password, { remember });
         console.log('User UUID:', user.uid);
         return { success: true, user };
       } catch (error) {
@@ -101,12 +119,12 @@ export class Login extends Phaser.Scene {
       togglePasswordButton.style.textDecoration = isVisible ? 'none' : 'line-through';
     });
 
-    backButton.addEventListener('click', () => this.scene.start('OnlineMenu'));
+    backButton.addEventListener('click', () => this.scene.start(this.returnScene));
 
     const registrationLink = overlay.querySelector('#link-to-registration');
     registrationLink.addEventListener('click', (event) => {
       event.preventDefault();
-      this.scene.start('Registration');
+      this.scene.start('Registration', { returnScene: this.returnScene });
     });
 
     form.addEventListener('submit', async (event) => {
@@ -142,7 +160,8 @@ export class Login extends Phaser.Scene {
       submitButton.textContent = 'Iniciando sesión...';
 
       try {
-        const result = await submit(usernameValue, passwordValue);
+        const rememberSession = rememberSessionInput?.checked === true;
+        const result = await submit(usernameValue, passwordValue, rememberSession);
         
         if (result.success) {
           validationMessage.style.color = '#86efac';
@@ -150,7 +169,7 @@ export class Login extends Phaser.Scene {
           
           // Redirect after 2 seconds
           setTimeout(() => {
-            this.scene.start('OnlineMenu');
+            this.scene.start(this.returnScene);
           }, 2000);
         } else {
           usernameInput.style.borderColor = 'red';

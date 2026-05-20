@@ -40,15 +40,15 @@ export const onlineSkins = freezeOptions([
 ]);
 
 export const onlineBoardSizes = freezeOptions([
-  { id: "small",  label: "Pequeño (20x15)", cols: 20, rows: 15 },
-  { id: "medium", label: "Mediano (32x24)", cols: 32, rows: 24 },
-  { id: "large",  label: "Grande (40x30)",  cols: 40, rows: 30 },
+  { id: "small",  label: "Jaula", cols: 8, rows: 6 },
+  { id: "medium", label: "Arena", cols: 16, rows: 12 },
+  { id: "large",  label: "Coliseo",  cols: 48, rows: 36 },
 ]);
 
 export const onlineFoodCounts = freezeOptions([
-  { id: "low",    label: "Bajo (5)",  value: 5 },
-  { id: "medium", label: "Medio (10)", value: 10 },
-  { id: "high",   label: "Alto (15)", value: 15 },
+  { id: "low",    label: "Hambruna",  value: 5 },
+  { id: "medium", label: "Equilibrio", value: 10 },
+  { id: "high",   label: "Festin", value: 15 },
 ]);
 
 export const onlineOptionCatalogs = Object.freeze({

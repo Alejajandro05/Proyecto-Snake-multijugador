@@ -1,9 +1,16 @@
 import { initializeApp } from 'firebase/app';
 import {
+  browserLocalPersistence,
   createUserWithEmailAndPassword,
-  getAuth,
+  EmailAuthProvider,
+  inMemoryPersistence,
+  initializeAuth,
   onAuthStateChanged,
+  reauthenticateWithCredential,
+  setPersistence,
   signInWithEmailAndPassword,
+  signOut,
+  updatePassword,
   updateProfile,
 } from 'firebase/auth';
 import { firebaseConfig } from '../config/firebaseConfig.js';
@@ -12,6 +19,17 @@ let app = null;
 let auth = null;
 
 const USERNAME_REGEX = /^[a-z0-9._-]{3,24}$/;
+export const REMEMBER_SESSION_KEY = 'snakeclash.rememberSession.v1';
+
+export const shouldRememberSession = () => localStorage.getItem(REMEMBER_SESSION_KEY) === 'true';
+
+export const setRememberSessionPreference = (remember) => {
+  if (remember) {
+    localStorage.setItem(REMEMBER_SESSION_KEY, 'true');
+  } else {
+    localStorage.removeItem(REMEMBER_SESSION_KEY);
+  }
+};
 
 export const normalizeUserName = (value) => String(value ?? '').trim().toLowerCase();
 
@@ -45,9 +63,20 @@ export const extractLeaderboardUserName = (user) => {
 export const initializeFirebase = () => {
   if (!app) {
     app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
+    auth = initializeAuth(app, {
+      persistence: shouldRememberSession() ? browserLocalPersistence : inMemoryPersistence,
+    });
   }
   return auth;
+};
+
+export const prepareAuthPersistenceForLogin = async (remember) => {
+  setRememberSessionPreference(remember);
+  const currentAuth = getFirebaseAuth();
+  await setPersistence(
+    currentAuth,
+    remember ? browserLocalPersistence : inMemoryPersistence,
+  );
 };
 
 export const getFirebaseAuth = () => {
@@ -68,6 +97,82 @@ export const getCurrentUser = () => new Promise((resolve) => {
 export const isUserLoggedIn = async () => {
   const user = await getCurrentUser();
   return user !== null;
+};
+
+export const signOutUser = async () => {
+  setRememberSessionPreference(false);
+  const currentAuth = getFirebaseAuth();
+  await signOut(currentAuth);
+  await setPersistence(currentAuth, inMemoryPersistence);
+};
+
+/** Sin sesión al abrir la app salvo que el usuario eligió mantenerla. */
+export const clearAuthSessionOnStartup = async () => {
+  if (shouldRememberSession()) return;
+
+  const currentAuth = getFirebaseAuth();
+
+  await new Promise((resolve) => {
+    const unsubscribe = onAuthStateChanged(currentAuth, async (user) => {
+      unsubscribe();
+      if (user) {
+        try {
+          await signOut(currentAuth);
+        } catch (error) {
+          console.warn('No se pudo cerrar la sesión al iniciar.', error);
+        }
+      }
+      resolve();
+    });
+  });
+};
+
+export const formatUserEmailForDisplay = (user) => String(user?.email ?? '—');
+
+export const updateUserDisplayName = async (username) => {
+  const validation = validateUserName(username);
+  if (!validation.ok) {
+    throw new Error(validation.message);
+  }
+
+  const currentAuth = getFirebaseAuth();
+  const user = currentAuth.currentUser;
+  if (!user) {
+    throw new Error('No hay una sesión activa.');
+  }
+
+  try {
+    await updateProfile(user, { displayName: validation.normalized });
+    return validation.normalized;
+  } catch (error) {
+    throw mapFirebaseAuthError(error);
+  }
+};
+
+export const updateUserPassword = async (currentPassword, newPassword) => {
+  const currentAuth = getFirebaseAuth();
+  const user = currentAuth.currentUser;
+
+  if (!user?.email) {
+    throw new Error('No hay una sesión activa.');
+  }
+
+  if (!currentPassword) {
+    throw new Error('La contraseña actual es obligatoria.');
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error('La nueva contraseña debe tener al menos 6 caracteres.');
+  }
+
+  const credential = EmailAuthProvider.credential(user.email, currentPassword);
+
+  try {
+    await reauthenticateWithCredential(user, credential);
+    await updatePassword(user, newPassword);
+  } catch (error) {
+    throw mapFirebaseAuthError(error);
+  }
 };
 
 export const registerUser = async (username, password) => {
@@ -92,12 +197,14 @@ export const registerUser = async (username, password) => {
   }
 };
 
-export const loginUser = async (username, password) => {
+export const loginUser = async (username, password, { remember = false } = {}) => {
   const currentAuth = getFirebaseAuth();
   const validation = validateUserName(username);
   if (!validation.ok) {
     throw new Error(validation.message);
   }
+
+  await prepareAuthPersistenceForLogin(remember);
 
   try {
     const userCredential = await signInWithEmailAndPassword(
@@ -135,6 +242,9 @@ export const mapFirebaseAuthError = (error) => {
     case 'auth/wrong-password':
     case 'auth/invalid-credential':
       userMessage = 'El usuario no existe o la contrasena es incorrecta.';
+      break;
+    case 'auth/requires-recent-login':
+      userMessage = 'Por seguridad, vuelve a iniciar sesión y prueba otra vez.';
       break;
     default:
       userMessage = error.message || 'Ha ocurrido un error desconocido.';

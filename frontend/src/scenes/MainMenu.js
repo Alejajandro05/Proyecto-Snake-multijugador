@@ -1,5 +1,11 @@
 import Phaser from 'phaser';
 import { extractLeaderboardUserName, getCurrentUser } from '../services/firebaseAuthService.js';
+import {
+    ACCOUNT_GUEST_LABEL,
+    bindAccountButton,
+    closeAccountDropdown,
+    refreshAccountButton,
+} from '../ui/accountButton.js';
 import { LeaderboardService } from '../services/LeaderboardService.js';
 import { getAudioSettings, saveMusicVolume, saveSelectedMusic, saveSfxVolume } from '../utils/audioSettings.js';
 import { getLocalLeaderboardEntries } from '../utils/localProfiles.js';
@@ -14,6 +20,7 @@ export class MainMenu extends Phaser.Scene {
     }
 
     create() {
+        closeAccountDropdown();
         this.leaderboardView = 'online';
         this.leaderboardData = {
             onlineEntries: [],
@@ -49,6 +56,36 @@ export class MainMenu extends Phaser.Scene {
 
         menuDiv.innerHTML = `
             <style>
+                #main-menu-overlay .main-menu-account {
+                    position: absolute;
+                    top: clamp(12px, 2vh, 24px);
+                    right: clamp(12px, 2vw, 28px);
+                    z-index: 20;
+                }
+
+                #main-menu-overlay #btn-account {
+                    padding: 10px 16px;
+                    border: 2px solid #F67D31;
+                    border-radius: 999px;
+                    background: linear-gradient(90deg, rgba(26, 5, 162, 0.95), rgba(15, 118, 110, 0.92));
+                    color: white;
+                    font-family: 'Montserrat', sans-serif;
+                    font-size: 0.9rem;
+                    font-weight: 800;
+                    letter-spacing: 0.02em;
+                    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                    max-width: min(240px, 42vw);
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+
+                #main-menu-overlay #btn-account:hover {
+                    transform: scale(1.04);
+                    box-shadow: 0 10px 28px rgba(246, 125, 49, 0.25);
+                }
+
                 #main-menu-overlay .leaderboard-panel {
                     position: absolute;
                     top: 50%;
@@ -187,6 +224,9 @@ export class MainMenu extends Phaser.Scene {
                 }
             </style>
             <div id="pantalla-principal" class="w-100 h-100 position-relative">
+                <div class="main-menu-account">
+                    <button id="btn-account" type="button" title="Crear cuenta o iniciar sesión">${ACCOUNT_GUEST_LABEL}</button>
+                </div>
                 <div class="position-absolute top-50 start-50 translate-middle d-flex flex-column align-items-center" style="margin-top: -50px; width: 100%; max-width: 400px;">
                     <div class="d-flex flex-column gap-3 w-100 align-items-center">
                         <button id="btn-local" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #DE1A58; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">
@@ -284,6 +324,25 @@ export class MainMenu extends Phaser.Scene {
             }
             this.menuMusic = this.sound.add(musicKey, { loop: true, volume });
         };
+
+        const accountButton = menuDiv.querySelector('#btn-account');
+        bindAccountButton({
+            scene: this,
+            buttonEl: accountButton,
+            returnScene: 'MainMenu',
+            onBeforeNavigate: () => {
+                closeAccountDropdown();
+                detenerAudioPrueba();
+                clearMenu();
+            },
+        });
+
+        accountButton?.addEventListener('mouseenter', (event) => {
+            event.currentTarget.style.transform = 'scale(1.04)';
+        });
+        accountButton?.addEventListener('mouseleave', (event) => {
+            event.currentTarget.style.transform = 'scale(1)';
+        });
 
         document.getElementById('btn-local').addEventListener('click', () => {
             detenerAudioPrueba();
@@ -396,6 +455,8 @@ export class MainMenu extends Phaser.Scene {
                 .filter((entry) => entry && entry.userName)
                 .sort((first, second) => second.winCount - first.winCount || first.userName.localeCompare(second.userName));
             this.leaderboardData.onlineError = false;
+
+            await refreshAccountButton(menuDiv.querySelector('#btn-account'));
 
             if (!currentUser) {
                 this.leaderboardData.onlineStatus = 'Inicia sesión para ver tu puesto.';
