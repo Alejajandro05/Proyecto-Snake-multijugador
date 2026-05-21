@@ -60,8 +60,8 @@ export class LocalGame extends Phaser.Scene {
         });
 
         // Aplicamos los colores y skins del menú
-        this.engine.addPlayer(P1_ID, { color: p1Cfg.color, skinId: p1Cfg.skinId, startCol: 8, startRow: 12 });
-        this.engine.addPlayer(P2_ID, { color: p2Cfg.color, skinId: p2Cfg.skinId, startCol: 24, startRow: 12 });
+        this.engine.addPlayer(P1_ID, { color: p1Cfg.color, skinId: p1Cfg.skinId});
+        this.engine.addPlayer(P2_ID, { color: p2Cfg.color, skinId: p2Cfg.skinId});
 
         // 2. CONTROLES Y PAUSA (Corregido con 'Pause' y 'caller')
         const controls = getControlsConfig(localStorage);
@@ -142,6 +142,13 @@ export class LocalGame extends Phaser.Scene {
         });
 
         this.renderState(this.engine.getState());
+
+        this.time.delayedCall(0, () => {
+            this.scene.pause();
+            this.scene.launch('InitCounter', {
+                caller: this.scene.key
+            });
+        });
     }
 
     cacheHudElements() {
