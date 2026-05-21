@@ -333,6 +333,7 @@ export class SoloGame extends Phaser.Scene {
         this.gameTimer?.remove();
         this.difficultyTimer?.remove();
         this.hudFoodHelp?.classList.add('d-none');
+        this.hudRightPlayer?.classList.remove('d-none');
 
         const player = this.engine.getState().players.get(PLAYER_ID);
         const score = player?.score ?? 0;
