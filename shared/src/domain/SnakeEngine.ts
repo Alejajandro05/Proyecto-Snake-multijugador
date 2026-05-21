@@ -116,12 +116,12 @@ export class SnakeEngine {
     const colorIndex = this.players.size;
     const color = options?.color ?? PLAYER_COLORS[colorIndex % PLAYER_COLORS.length];
     const skinId = options?.skinId?.trim() || `skin-${colorIndex + 1}`;
-    const startCol = options?.startCol ?? (colorIndex * 6 + 5) % this.config.gridCols;
-    const startRow = options?.startRow ?? Math.floor(this.config.gridRows / 2);
+
+    const pos: Position = this.getRandomSafePosition();
 
     const segments: SnakeSegmentState[] = [];
     for (let i = 0; i < this.config.initialSnakeLength; i++) {
-      segments.push({ x: (startCol - i) * this.config.gridSize, y: startRow * this.config.gridSize });
+      segments.push({ x: (pos.x - i) * this.config.gridSize, y: pos.y * this.config.gridSize });
     }
 
     const player: PlayerState = {
@@ -341,22 +341,14 @@ export class SnakeEngine {
     const player = this.players.get(id);
     if (!player) return;
 
-    const margin = this.config.initialSnakeLength + 1;
-    
-    let col: number;
-    let row: number;
-    let attempts = 0;
+    const pos: Position = this.getRandomSafePosition();
 
-    do {
-      col = Math.floor(Math.random() * (this.config.gridCols - margin * 2) + margin);
-      row = Math.floor(Math.random() * (this.config.gridRows - margin * 2) + margin);
-      attempts++;
-    } while (!this.isAreaSafeForSnake(col, row, this.config.safeMargin) && attempts < 50);
-
-    player.segments = [];
+    const segments: SnakeSegmentState[] = [];
     for (let i = 0; i < this.config.initialSnakeLength; i++) {
-      player.segments.push({ x: (col - i) * this.config.gridSize, y: row * this.config.gridSize });
+      segments.push({ x: (pos.x - i) * this.config.gridSize, y: pos.y * this.config.gridSize });
     }
+
+    player.segments = segments;
     player.direction = 'right';
     player.nextDirection = 'right';
     this.inputQueues.set(id, []);
@@ -402,6 +394,37 @@ export class SnakeEngine {
     let playerSegments: SnakeSegmentState[] = [];
     this.players.forEach(p => p.segments.forEach(s => playerSegments.push(s)));
     return playerSegments;
+  }
+
+  private getRandomSafePosition(): Position {
+    const length = this.config.initialSnakeLength;
+
+    // Límites matemáticos para que quepa la serpiente y sus márgenes respecto a las paredes
+    const minCol = length;                  // Permite que la cola (a la izquierda) no toque el muro
+    const maxCol = this.config.gridCols - 3; // Cabeza a 2 bloques del muro derecho
+    const minRow = 2;                       // Cabeza a 2 bloques del muro superior
+    const maxRow = this.config.gridRows - 3; // Cabeza a 2 bloques del muro inferior
+
+    let col = 0;
+    let row = 0;
+    let attempts = 0;
+    let isSafe = false;
+
+    do {
+      col = Math.floor(Math.random() * (maxCol - minCol + 1) + minCol);
+      row = Math.floor(Math.random() * (maxRow - minRow + 1) + minRow);
+    
+      isSafe = this.isAreaSafeForSnake(col, row);
+      attempts++;
+    } while (!isSafe && attempts < 50);
+
+    if (!isSafe) {
+      console.warn(`[Spawn] No se encontró posición segura tras 50 intentos.`);
+    }
+
+    let pos: Position;
+    pos = {x: col, y: row};
+    return pos;
   }
 
   private randomFood(): FoodState {
@@ -541,18 +564,25 @@ export class SnakeEngine {
     return false;
   }
 
-  private isAreaSafeForSnake(col: number, row: number, margin: number): boolean {
-    const startCol = col - margin;
-    const endCol = col + margin;
-    const startRow = row - margin;
-    const endRow = row + margin;
+  private isAreaSafeForSnake(headCol: number, headRow: number): boolean {
+    const HEAD_MARGIN = 2; // Distancia de seguridad para la cabeza
+    const length = this.config.initialSnakeLength;
 
-    for (let c = startCol; c <= endCol; c++) {
-      for (let r = startRow; r <= endRow; r++) {
-        const x = c * this.config.gridSize;
-        const y = r * this.config.gridSize;
+    // 1. COMPROBACIÓN DE LA CABEZA: Escudo protector de 5x5 alrededor de ella
+    for (let c = headCol - HEAD_MARGIN; c <= headCol + HEAD_MARGIN; c++) {
+      for (let r = headRow - HEAD_MARGIN; r <= headRow + HEAD_MARGIN; r++) {
+        if (this.isCellOccupied(c * this.config.gridSize, r * this.config.gridSize)) {
+          return false; // Hay un obstáculo/comida cerca de donde estará la cabeza
+        }
+      }
+    }
 
-        if (this.isCellOccupied(x, y)) return false;
+    // 2. COMPROBACIÓN DEL CUERPO: Solo comprobar la celda exacta de cada segmento restante
+    // Como el bucle de la cabeza ya revisó hasta 'headCol - 2', empezamos desde 'headCol - 3' hacia atrás
+    for (let i = HEAD_MARGIN + 1; i < length; i++) {
+      const bodyCol = headCol - i;
+      if (this.isCellOccupied(bodyCol * this.config.gridSize, headRow * this.config.gridSize)) {
+        return false; // El cuerpo colisionaría directamente con algo
       }
     }
 
