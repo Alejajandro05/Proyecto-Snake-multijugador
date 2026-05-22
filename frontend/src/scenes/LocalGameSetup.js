@@ -3,7 +3,7 @@ import { PLAYER_COLORS } from '@shared/GameConfig';
 import { loadLocalGameSettings, saveLocalGameSettings } from '../utils/localGameSettings.js';
 import { ensureLocalPlayerProfile, loadLocalPlayerProfiles, sanitizeLocalProfileName } from '../utils/localProfiles.js';
 import { DEFAULT_MAP_ID, DEFAULT_SNAKE_SKIN_ID, getMapAsset, getSnakeAsset, mapAssets, snakeAssets } from '../config/gameAssetRegistry.js';
-import { onlineBoardSizes, onlineFoodCounts } from '@shared/catalogs/onlineOptions.js';
+import { onlineBoardSizes, onlineFoodCounts } from '../../../shared/src/catalogs/onlineOptions.js';
 import { normalizeLocalGameMode, resolveLocalSceneKey } from './localModeHelpers.js';
 
 function safeName(value, fallback) {

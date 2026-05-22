@@ -1,5 +1,5 @@
 import { PLAYER_COLORS } from '@shared/GameConfig';
-import { onlineBoardSizes, onlineFoodCounts } from '@shared/catalogs/onlineOptions.js';
+import { onlineBoardSizes, onlineFoodCounts } from '../../../shared/src/catalogs/onlineOptions.js';
 import { DEFAULT_MAP_ID, DEFAULT_SNAKE_SKIN_ID, getMapAsset, getSnakeAsset } from '../config/gameAssetRegistry.js';
 import { normalizeLocalGameMode } from '../scenes/localModeHelpers.js';
 
