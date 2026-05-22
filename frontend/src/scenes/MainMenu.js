@@ -86,6 +86,119 @@ export class MainMenu extends Phaser.Scene {
                     box-shadow: 0 10px 28px rgba(246, 125, 49, 0.25);
                 }
 
+                #main-menu-overlay .main-menu-card {
+                    position: relative;
+                    width: min(420px, 90vw);
+                    background: rgba(8, 12, 29, 0.78);
+                    border: 1px solid rgba(148, 163, 184, 0.18);
+                    border-radius: 28px;
+                    padding: 24px;
+                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.32);
+                    backdrop-filter: blur(14px);
+                    display: grid;
+                    gap: 18px;
+                    text-align: center;
+                }
+
+                #main-menu-overlay .main-menu-buttons {
+                    display: grid;
+                    gap: 12px;
+                }
+
+                #main-menu-overlay .primary-action,
+                #main-menu-overlay .secondary-action,
+                #main-menu-overlay #btn-submenu-toggle {
+                    width: 100%;
+                    padding: 12px 16px;
+                    border-radius: 6px;
+                    font-size: 0.95rem;
+                    font-family: 'Courier New', Courier, monospace;
+                    font-weight: 900;
+                    letter-spacing: 0.12em;
+                    text-transform: uppercase;
+                    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
+                    background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.98));
+                    border: 3px solid rgba(250, 204, 21, 0.9);
+                    color: #F8FAFC;
+                    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 0 rgba(15, 23, 42, 0.95);
+                    transition: transform 0.1s ease, background 0.1s ease, box-shadow 0.1s ease;
+                }
+
+                #main-menu-overlay .primary-action:hover,
+                #main-menu-overlay .secondary-action:hover,
+                #main-menu-overlay #btn-submenu-toggle:hover {
+                    transform: translateY(-2px);
+                    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(99, 102, 241, 0.98));
+                    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 10px 0 rgba(15, 23, 42, 0.98);
+                }
+
+                #main-menu-overlay .secondary-panel {
+                    display: grid;
+                    gap: 12px;
+                }
+
+                #main-menu-overlay #secondary-actions {
+                    display: grid;
+                    gap: 10px;
+                }
+
+                #main-menu-overlay .secondary-action {
+                    background: linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(51, 65, 85, 0.96));
+                    border-color: rgba(148, 163, 184, 0.5);
+                }
+
+                #main-menu-overlay #btn-submenu-toggle {
+                    background: linear-gradient(180deg, rgba(15, 23, 42, 0.85), rgba(72, 85, 99, 0.95));
+                    border-style: dashed;
+                    letter-spacing: 0.18em;
+                }
+
+                #main-menu-overlay #secondary-actions.d-none {
+                    display: none;
+                }
+
+                #main-menu-overlay .primary-action:hover {
+                    transform: translateY(-1px) scale(1.02);
+                    box-shadow: 0 20px 42px rgba(0, 0, 0, 0.32);
+                }
+
+                #main-menu-overlay .secondary-panel {
+                    display: grid;
+                    gap: 12px;
+                }
+
+                #main-menu-overlay #secondary-actions {
+                    display: grid;
+                    gap: 10px;
+                }
+
+                #main-menu-overlay .secondary-action {
+                    width: 100%;
+                    padding: 12px 14px;
+                    border-radius: 12px;
+                    font-size: 0.98rem;
+                    border: 1px solid rgba(255, 255, 255, 0.14);
+                    background: rgba(255, 255, 255, 0.08);
+                    color: #E2E8F0;
+                    transition: background 0.2s ease, transform 0.2s ease;
+                }
+
+                #main-menu-overlay .secondary-action:hover {
+                    background: rgba(255, 255, 255, 0.14);
+                }
+
+                #main-menu-overlay #btn-submenu-toggle {
+                    background: transparent;
+                    border: 1px dashed rgba(255, 255, 255, 0.22);
+                    color: #F8FAFC;
+                    text-transform: uppercase;
+                    letter-spacing: 0.08em;
+                }
+
+                #main-menu-overlay #secondary-actions.d-none {
+                    display: none;
+                }
+
                 #main-menu-overlay .leaderboard-panel {
                     position: absolute;
                     top: 50%;
@@ -223,33 +336,38 @@ export class MainMenu extends Phaser.Scene {
                     }
                 }
             </style>
-            <div id="pantalla-principal" class="w-100 h-100 position-relative">
+            <div id="pantalla-principal" class="d-flex align-items-center justify-content-center w-100 h-100 position-relative">
                 <div class="main-menu-account">
                     <button id="btn-account" type="button" title="Crear cuenta o iniciar sesión">${ACCOUNT_GUEST_LABEL}</button>
                 </div>
-                <div class="position-absolute top-50 start-50 translate-middle d-flex flex-column align-items-center" style="margin-top: -50px; width: 100%; max-width: 400px;">
-                    <div class="d-flex flex-column gap-3 w-100 align-items-center">
-                        <button id="btn-local" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #DE1A58; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">
+                <section class="main-menu-card">
+                    <div class="main-menu-buttons">
+                        <button id="btn-local" class="btn text-white fw-bold shadow menu-btn w-100 primary-action" style="background-color: #DE1A58; border: 3px solid #F59E0B;">
                             JUEGO LOCAL
                         </button>
 
-                        <button id="btn-solo" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #7C3AED; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">
-                            JUEGO SOLITARIO
-                        </button>
-
-                        <button id="btn-online" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #8F0177; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">
+                        <button id="btn-online" class="btn text-white fw-bold shadow menu-btn w-100 primary-action" style="background-color: #9333EA; border: 3px solid #F59E0B;">
                             1 VS 1 ONLINE
                         </button>
-
-                        <button id="btn-tutorial" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #0F766E; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">
-                            TUTORIAL
-                        </button>
-
-                        <button id="btn-opciones" class="btn text-white fw-bold shadow menu-btn w-100" style="padding: 14px; background-color: #1A05A2; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.2rem; transition: all 0.2s ease; max-width: 280px;">
-                            OPCIONES
-                        </button>
                     </div>
-                </div>
+
+                    <div class="secondary-panel">
+                        <button id="btn-submenu-toggle" class="btn text-white fw-semibold w-100 menu-btn secondary-action">
+                            MÁS OPCIONES
+                        </button>
+                        <div id="secondary-actions" class="d-none">
+                            <button id="btn-tutorial" class="btn text-white fw-bold shadow menu-btn w-100 secondary-action" style="background-color: #0F766E; border: 3px solid #22D3EE;">
+                                TUTORIAL
+                            </button>
+                            <button id="btn-solo" class="btn text-white fw-bold shadow menu-btn w-100 secondary-action" style="background-color: rgba(15, 23, 42, 0.82); border: 3px solid rgba(255, 255, 255, 0.27);">
+                                JUEGO SOLITARIO
+                            </button>
+                            <button id="btn-opciones" class="btn text-white fw-bold shadow menu-btn w-100 secondary-action" style="background-color: rgba(31, 41, 55, 0.88); border: 3px solid rgba(34, 211, 238, 0.65);">
+                                AJUSTES
+                            </button>
+                        </div>
+                    </div>
+                </section>
 
                 <aside class="leaderboard-panel" aria-label="Tabla de clasificación">
                     <div class="leaderboard-header">
@@ -371,6 +489,13 @@ export class MainMenu extends Phaser.Scene {
         document.getElementById('btn-opciones').addEventListener('click', () => {
             pantallaPrincipal.classList.add('d-none');
             pantallaOpciones.classList.remove('d-none');
+        });
+
+        const btnSubmenuToggle = document.getElementById('btn-submenu-toggle');
+        const secondaryActions = document.getElementById('secondary-actions');
+        btnSubmenuToggle?.addEventListener('click', () => {
+            const isOpen = !secondaryActions.classList.toggle('d-none');
+            btnSubmenuToggle.textContent = isOpen ? 'MENOS OPCIONES' : 'MÁS OPCIONES';
         });
 
         document.getElementById('btn-controles').addEventListener('click', () => {

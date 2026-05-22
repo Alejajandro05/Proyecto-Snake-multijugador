@@ -99,6 +99,13 @@ export class SoloGame extends Phaser.Scene {
         });
 
         this.renderState(this.engine.getState());
+
+        this.time.delayedCall(0, () => {
+            this.scene.pause();
+            this.scene.launch('InitCounter', {
+                caller: this.scene.key
+            });
+        });
     }
 
     bindControls(controls) {
@@ -333,6 +340,7 @@ export class SoloGame extends Phaser.Scene {
         this.gameTimer?.remove();
         this.difficultyTimer?.remove();
         this.hudFoodHelp?.classList.add('d-none');
+        this.hudRightPlayer?.classList.remove('d-none');
 
         const player = this.engine.getState().players.get(PLAYER_ID);
         const score = player?.score ?? 0;

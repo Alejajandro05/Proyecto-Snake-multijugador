@@ -25,6 +25,7 @@ import { SoloGame } from './scenes/modes/SoloGame.js';
 import { ControlsMenu } from './scenes/ControlsMenu.js';
 import { bindFormKeyboardGuard } from './utils/formKeyboardGuard.js';
 import { clearAuthSessionOnStartup } from './services/firebaseAuthService.js';
+import { InitCounter } from './scenes/InitCounter.js';
 
 const config = {
     type: Phaser.AUTO,
@@ -82,7 +83,8 @@ const config = {
         AgainstAIGame,
         CaptureTheFlagGame,
         GameOver,
-        Pause
+        Pause,
+        InitCounter
     ]
 };
 

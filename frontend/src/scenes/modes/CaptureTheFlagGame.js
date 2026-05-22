@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { SnakeEngine } from '@shared/SnakeEngine';
+import { SnakeEngine } from '@shared/SnakeEngine.ts';
 import { GRID_SIZE, TICK_MS } from '@shared/GameConfig';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
@@ -50,7 +50,11 @@ export class CaptureTheFlagGame extends Phaser.Scene {
     }
 
     create() {
-        this.boardRenderer = new SnakeBoardRenderer(this, { mapId: this.matchSettings?.mapId });
+        this.boardRenderer = new SnakeBoardRenderer(this, {
+            mapId: this.matchSettings?.mapId,
+            gridCols: this.matchSettings?.boardCols,
+            gridRows: this.matchSettings?.boardRows,
+        });
         this.baseGraphics = this.add.graphics().setDepth(3);
         this.flagGraphics = this.add.graphics().setDepth(14);
 
@@ -64,6 +68,8 @@ export class CaptureTheFlagGame extends Phaser.Scene {
 
         this.engine = new SnakeEngine({
             difficulty,
+            gridCols: this.matchSettings?.boardCols,
+            gridRows: this.matchSettings?.boardRows,
             foodCount: 0,
             maxLives: RESPAWN_LIVES,
             obstaclesPerQuadrant: 0,
@@ -148,6 +154,13 @@ export class CaptureTheFlagGame extends Phaser.Scene {
         this.updateClockHud();
         this.updateLayout(this.scale.width, this.scale.height);
         this.renderState(this.engine.getState());
+
+        this.time.delayedCall(0, () => {
+            this.scene.pause();
+            this.scene.launch('InitCounter', {
+                caller: this.scene.key
+            });
+        });
     }
 
     configureBases(cfg) {

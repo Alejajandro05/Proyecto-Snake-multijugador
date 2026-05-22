@@ -41,7 +41,11 @@ export class AgainstAIGame extends Phaser.Scene {
     }
 
     create() {
-        this.boardRenderer = new SnakeBoardRenderer(this, { mapId: this.matchSettings?.mapId });
+        this.boardRenderer = new SnakeBoardRenderer(this, {
+            mapId: this.matchSettings?.mapId,
+            gridCols: this.matchSettings?.boardCols,
+            gridRows: this.matchSettings?.boardRows,
+        });
 
         this.cacheHudElements();
         this.toggleHud(true);
@@ -51,7 +55,12 @@ export class AgainstAIGame extends Phaser.Scene {
         const p1Cfg = this.matchSettings?.players?.p1 ?? {};
         const p2Cfg = this.matchSettings?.players?.p2 ?? {};
 
-        this.engine = new SnakeEngine({ difficulty });
+        this.engine = new SnakeEngine({
+            difficulty,
+            gridCols: this.matchSettings?.boardCols,
+            gridRows: this.matchSettings?.boardRows,
+            foodCount: this.matchSettings?.foodCount,
+        });
         this.effectTimeouts = {};
 
         this.engine.events.on("playerEatFood", ({ playerId, food }) => {
@@ -138,6 +147,13 @@ export class AgainstAIGame extends Phaser.Scene {
         });
 
         this.renderState(this.engine.getState());
+
+        this.time.delayedCall(0, () => {
+            this.scene.pause();
+            this.scene.launch('InitCounter', {
+                caller: this.scene.key
+            });
+        });
     }
 
     cacheHudElements() {

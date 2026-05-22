@@ -44,19 +44,19 @@ export class ControlsMenu extends Phaser.Scene {
     overlay.innerHTML = `
       <style>
         #controls-menu-overlay {
-          background: rgba(0, 0, 0, 0.7);
-          backdrop-filter: blur(5px);
+          background: rgba(3, 7, 24, 0.82);
+          backdrop-filter: blur(10px);
         }
 
         .controls-panel {
-          background: linear-gradient(180deg, rgba(17, 24, 39, 0.95), rgba(49, 12, 53, 0.95));
-          border: 2px solid rgba(246, 125, 49, 0.65);
-          border-radius: 12px;
-          padding: 30px;
-          box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45), 0 0 24px rgba(246, 125, 49, 0.18);
+          background: rgba(8, 12, 29, 0.96);
+          border: 3px solid rgba(246, 125, 49, 0.85);
+          border-radius: 24px;
+          padding: 32px;
+          box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.04);
           color: white;
-          font-family: 'Montserrat', sans-serif;
-          max-width: 600px;
+          font-family: 'Courier New', Courier, monospace;
+          max-width: 700px;
           max-height: 90vh;
           overflow-y: auto;
           width: 100%;
@@ -65,32 +65,33 @@ export class ControlsMenu extends Phaser.Scene {
         .controls-title {
           text-align: center;
           color: #FDE68A;
-          font-size: 1.8rem;
-          font-weight: 800;
-          margin-bottom: 30px;
+          font-size: 2rem;
+          font-weight: 900;
+          margin-bottom: 28px;
           text-transform: uppercase;
-          letter-spacing: 1px;
+          letter-spacing: 0.18em;
+          text-shadow: 0 0 18px rgba(246, 125, 49, 0.22);
         }
 
         .controls-container {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 30px;
-          margin-bottom: 30px;
+          gap: 26px;
+          margin-bottom: 28px;
         }
 
         .player-controls {
           display: flex;
           flex-direction: column;
-          gap: 15px;
+          gap: 16px;
         }
 
         .player-label {
           color: #FDE68A;
-          font-size: 1.1rem;
-          font-weight: 700;
+          font-size: 1.05rem;
+          font-weight: 800;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
+          letter-spacing: 0.12em;
           border-bottom: 2px solid rgba(253, 230, 138, 0.3);
           padding-bottom: 10px;
         }
@@ -99,45 +100,49 @@ export class ControlsMenu extends Phaser.Scene {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 10px;
+          padding: 10px 14px;
           background: rgba(255, 255, 255, 0.05);
-          border-radius: 6px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 14px;
+          border: 1px solid rgba(255, 255, 255, 0.12);
         }
 
         .control-label {
-          color: #B0B0B0;
+          color: #C8D6FF;
           font-size: 0.95rem;
           text-transform: uppercase;
-          letter-spacing: 0.3px;
-          font-weight: 600;
-          min-width: 50px;
+          letter-spacing: 0.14em;
+          font-weight: 700;
+          min-width: 60px;
         }
 
         .control-key {
-          background: rgba(246, 125, 49, 0.2);
-          border: 1px solid rgba(246, 125, 49, 0.5);
-          color: #FDE68A;
-          padding: 8px 12px;
-          border-radius: 4px;
+          background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92));
+          border: 3px solid #DE1A58;
+          color: #F8FAFC;
+          padding: 10px 14px;
+          border-radius: 14px;
           cursor: pointer;
-          font-weight: 700;
-          font-size: 0.9rem;
-          min-width: 60px;
+          font-weight: 800;
+          font-size: 0.95rem;
+          min-width: 70px;
           text-align: center;
-          transition: all 0.2s;
+          font-family: 'Courier New', Courier, monospace;
+          text-transform: uppercase;
+          letter-spacing: 0.18em;
+          transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+          box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06), 0 5px 0 rgba(0, 0, 0, 0.35);
         }
 
         .control-key:hover {
-          background: rgba(246, 125, 49, 0.4);
-          border-color: rgba(246, 125, 49, 0.8);
-          transform: scale(1.05);
+          transform: translateY(-1px);
+          background: rgba(255, 255, 255, 0.12);
+          border-color: #F59E0B;
         }
 
         .control-key.waiting {
-          background: rgba(76, 175, 80, 0.3);
-          border-color: rgba(76, 175, 80, 0.8);
-          color: #9CCC65;
+          background: rgba(76, 175, 80, 0.35);
+          border-color: rgba(76, 175, 80, 0.9);
+          color: #D9F99D;
           animation: pulse 0.5s infinite;
         }
 
@@ -148,92 +153,74 @@ export class ControlsMenu extends Phaser.Scene {
 
         .controls-buttons {
           display: flex;
-          gap: 10px;
+          gap: 12px;
           justify-content: center;
-          margin-top: 30px;
+          margin-top: 20px;
           flex-wrap: wrap;
         }
 
         .btn {
-          padding: 12px 24px;
-          border: none;
-          border-radius: 6px;
-          font-weight: 700;
+          padding: 14px 18px;
+          border-radius: 14px;
+          border: 3px solid #F59E0B;
+          font-weight: 900;
           cursor: pointer;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
-          font-size: 0.9rem;
-          transition: all 0.2s;
-          font-family: 'Montserrat', sans-serif;
+          letter-spacing: 0.16em;
+          font-size: 0.95rem;
+          transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+          font-family: 'Courier New', Courier, monospace;
+          box-shadow: 0 10px 0 rgba(15, 23, 42, 0.85);
+          background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(31, 41, 55, 0.95));
+          color: #F8FAFC;
         }
 
-        .btn-primary {
-          background: linear-gradient(135deg, #F67D31 0%, #F5A623 100%);
-          color: white;
-          border: 2px solid #F67D31;
-        }
-
-        .btn-primary:hover {
+        .btn:hover {
           transform: translateY(-2px);
-          box-shadow: 0 6px 20px rgba(246, 125, 49, 0.4);
+          box-shadow: 0 14px 0 rgba(15, 23, 42, 0.8);
         }
 
-        .btn-secondary {
-          background: transparent;
-          color: #B0B0B0;
-          border: 2px solid #B0B0B0;
-        }
+        .btn-primary { background: linear-gradient(180deg, #F59E0B 0%, #DE1A58 100%); color: #111; border-color: #DE1A58; }
+        .btn-secondary { background: rgba(255, 255, 255, 0.08); color: #F8FAFC; border-color: rgba(255, 255, 255, 0.3); }
+        .btn-danger { background: rgba(244, 67, 54, 0.18); color: #FFCDD2; border-color: #EF4444; }
 
-        .btn-secondary:hover {
-          color: #FDE68A;
-          border-color: #FDE68A;
-        }
+        .btn-primary:hover { background: linear-gradient(180deg, #FDE68A 0%, #F59E0B 100%); }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.16); }
+        .btn-danger:hover { background: rgba(244, 67, 54, 0.28); }
 
-        .btn-danger {
-          background: rgba(244, 67, 54, 0.2);
-          color: #EF5350;
-          border: 2px solid #EF5350;
-        }
-
-        .btn-danger:hover {
-          background: rgba(244, 67, 54, 0.3);
-          transform: translateY(-2px);
+        .info-message, .error-message {
+          text-align: center;
+          font-size: 0.95rem;
+          margin-top: 18px;
+          padding: 12px 14px;
+          border-radius: 12px;
+          font-family: 'Courier New', Courier, monospace;
         }
 
         .info-message {
-          text-align: center;
           color: #9CCC65;
-          font-size: 0.9rem;
-          margin-top: 15px;
-          padding: 10px;
-          background: rgba(76, 175, 80, 0.1);
-          border-radius: 4px;
-          border-left: 3px solid #9CCC65;
+          background: rgba(76, 175, 80, 0.12);
+          border: 1px solid rgba(76, 175, 80, 0.35);
         }
 
         .error-message {
-          text-align: center;
           color: #EF5350;
-          font-size: 0.9rem;
-          margin-top: 15px;
-          padding: 10px;
-          background: rgba(244, 67, 54, 0.1);
-          border-radius: 4px;
-          border-left: 3px solid #EF5350;
+          background: rgba(244, 67, 54, 0.14);
+          border: 1px solid rgba(244, 67, 54, 0.35);
         }
 
         @media (max-width: 768px) {
           .controls-container {
             grid-template-columns: 1fr;
-            gap: 20px;
+            gap: 18px;
           }
 
           .controls-panel {
-            padding: 20px;
+            padding: 24px;
           }
 
           .controls-title {
-            font-size: 1.4rem;
+            font-size: 1.6rem;
           }
         }
       </style>

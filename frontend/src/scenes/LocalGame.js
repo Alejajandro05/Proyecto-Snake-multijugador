@@ -98,6 +98,13 @@ export class LocalGame extends Phaser.Scene {
         this.updateLayout(this.scale.width, this.scale.height);
 
         this.renderState(this.engine.getState());
+
+        this.time.delayedCall(0, () => {
+            this.scene.pause();
+            this.scene.launch('InitCounter', {
+                caller: this.scene.key
+            });
+        });
     }
 
     cacheHudElements() {

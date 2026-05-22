@@ -31,13 +31,57 @@ export class Registration extends Phaser.Scene {
     overlay.className = 'position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center';
     overlay.style.zIndex = '1100';
 
-    const btnStyleBase = `width: 280px; padding: 12px; border: 2px solid #94A3B8; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.1rem; transition: transform 0.2s ease;`;
-    const btnStyleBack = `${btnStyleBase} background-color: #334155; color: white;`;
-    const btnStyleSubmit = `${btnStyleBase} background-color: #0F766E; color: white; border-color: #5EEAD4;`;
+    const btnStyleBase = `width: 280px; padding: 14px 18px; border: 3px solid #F59E0B; border-radius: 14px; font-family: 'Courier New', Courier, monospace; font-size: 1.05rem; font-weight: 900; letter-spacing: 0.12em; text-transform: uppercase; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 10px 0 rgba(15, 23, 42, 0.8); background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(31, 41, 55, 0.98)); color: #F8FAFC;`;
+    const btnStyleBack = `${btnStyleBase} background: rgba(51, 65, 85, 0.94); color: #F8FAFC; border-color: #94A3B8;`;
+    const btnStyleSubmit = `${btnStyleBase} background: linear-gradient(180deg, #0F766E 0%, #14B8A6 100%); color: #111; border-color: #5EEAD4;`;
 
     overlay.innerHTML = `
+      <style>
+        #registration-overlay {
+          background: rgba(2, 6, 22, 0.78);
+          backdrop-filter: blur(12px);
+        }
+
+        #registration-overlay .registration-panel {
+          background: rgba(8, 12, 29, 0.96);
+          border: 3px solid rgba(246, 125, 49, 0.85);
+          border-radius: 22px;
+          box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+          padding: 32px;
+        }
+
+        #registration-overlay .form-control {
+          width: 100%;
+          padding: 0.95rem 1rem;
+          border-radius: 14px;
+          border: 2px solid rgba(148, 163, 184, 0.35);
+          background: rgba(15, 23, 42, 0.95);
+          color: white;
+          font-family: 'Courier New', Courier, monospace;
+        }
+
+        #registration-overlay .form-control:focus {
+          border-color: rgba(56, 189, 248, 0.65);
+          box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+          outline: none;
+        }
+
+        #registration-overlay .form-label,
+        #registration-overlay .form-check-label {
+          font-family: 'Courier New', Courier, monospace;
+          letter-spacing: 0.08em;
+        }
+
+        #registration-overlay #toggle-password,
+        #registration-overlay #toggle-confirmPassword {
+          border: none;
+          background: rgba(148, 163, 184, 0.16);
+          color: white;
+          border-radius: 12px;
+        }
+      </style>
       <div class="text-center" style="width: 100%; max-width: 960px;">
-        <div class="mx-auto p-4" style="background: rgba(15, 23, 42, 0.85); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 12px; backdrop-filter: blur(5px); max-width: 520px;">
+        <div class="mx-auto p-4 registration-panel" style="max-width: 520px;">
           <h2 class="text-white text-center fw-bold mb-3" style="font-family: 'Montserrat', sans-serif;">Registro</h2>
 
           <form id="registration-form" novalidate>

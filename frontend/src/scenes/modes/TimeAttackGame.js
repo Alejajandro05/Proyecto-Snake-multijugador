@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { SnakeEngine } from '@shared/SnakeEngine';
+import { SnakeEngine } from '@shared/SnakeEngine.ts';
 import { TICK_MS } from '@shared/GameConfig';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
@@ -27,13 +27,19 @@ export class TimeAttackGame extends Phaser.Scene {
     create() {
         this.boardRenderer = new SnakeBoardRenderer(this, { 
             gridCols: this.matchSettings?.boardCols,
-            gridRows: this.matchSettings?.boardRows
+            gridRows: this.matchSettings?.boardRows,
+            mapId: this.matchSettings?.mapId
         });
         this.cacheHudElements();
         this.crearRelojDOM();
         this.toggleHud(true);
 
-        this.engine = new SnakeEngine({ foodCount: 15, maxLives: 9999 });
+        this.engine = new SnakeEngine({
+            gridCols: this.matchSettings?.boardCols,
+            gridRows: this.matchSettings?.boardRows,
+            foodCount: this.matchSettings?.foodCount ?? 15,
+            maxLives: 9999,
+        });
 
         const p1Cfg = this.matchSettings?.players?.p1 ?? {};
         const p2Cfg = this.matchSettings?.players?.p2 ?? {};
@@ -85,6 +91,15 @@ export class TimeAttackGame extends Phaser.Scene {
         this.applyHudIdentity();
         this.updateLayout(this.scale.width, this.scale.height);
         this.scale.on('resize', (gameSize) => this.updateLayout(gameSize.width, gameSize.height));
+
+        this.renderState(this.engine.getState());
+
+        this.time.delayedCall(0, () => {
+            this.scene.pause();
+            this.scene.launch('InitCounter', {
+                caller: this.scene.key
+            });
+        });
     }
 
     pushDirection(playerId, direction) {
