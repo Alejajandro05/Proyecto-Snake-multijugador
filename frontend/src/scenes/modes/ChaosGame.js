@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { SnakeEngine } from '@shared/SnakeEngine';
+import { SnakeEngine } from '@shared/SnakeEngine.ts';
 import { TICK_MS } from '@shared/GameConfig';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { colorNumberToCssHex, loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
@@ -41,7 +41,8 @@ export class ChaosGame extends Phaser.Scene {
     create() {
         this.boardRenderer = new SnakeBoardRenderer(this, { 
             gridCols: this.matchSettings?.boardCols,
-            gridRows: this.matchSettings?.boardRows
+            gridRows: this.matchSettings?.boardRows,
+            mapId: this.matchSettings?.mapId
         });
 
         this.cacheHudElements();
@@ -131,6 +132,13 @@ export class ChaosGame extends Phaser.Scene {
         });
 
         this.renderState(this.engine.getState());
+
+        this.time.delayedCall(0, () => {
+            this.scene.pause();
+            this.scene.launch('InitCounter', {
+                caller: this.scene.key
+            });
+        });
     }
 
     ensureChaosHud() {

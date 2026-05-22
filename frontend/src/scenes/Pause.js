@@ -167,6 +167,7 @@ export class Pause extends Phaser.Scene {
         pauseDiv.querySelector('#menu-btn')?.addEventListener('click', () => {
             removePauseOverlay();
             document.getElementById('hud-food-help')?.classList.add('d-none');
+            document.getElementById('hud-right-player')?.classList.remove('d-none');
             this.scene.stop(callerScene);
             this.scene.start('MainMenu');
         });

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { SnakeEngine } from '@shared/SnakeEngine';
+import { SnakeEngine } from '@shared/SnakeEngine.ts';
 import { GRID_SIZE, TICK_MS } from '@shared/GameConfig';
 import { SnakeBoardRenderer } from '../../renderers/SnakeBoardRenderer.js';
 import { loadLocalGameSettings, normalizeLocalGameSettings, saveLocalGameSettings } from '../../utils/localGameSettings.js';
@@ -148,6 +148,13 @@ export class CaptureTheFlagGame extends Phaser.Scene {
         this.updateClockHud();
         this.updateLayout(this.scale.width, this.scale.height);
         this.renderState(this.engine.getState());
+
+        this.time.delayedCall(0, () => {
+            this.scene.pause();
+            this.scene.launch('InitCounter', {
+                caller: this.scene.key
+            });
+        });
     }
 
     configureBases(cfg) {
