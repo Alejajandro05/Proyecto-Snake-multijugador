@@ -29,5 +29,7 @@ export class SnakeRoomState extends Schema {
   @type("boolean")      isRanked: boolean = false;
   @type("boolean")      matchEnded: boolean = false;
   @type("string")       matchEndReason: string = "";
-  @type("boolean")       started: boolean = false;
+  @type("boolean")      started: boolean = false;
+  @type("boolean")      initCounterActive: boolean = false;
+  @type("number")       initCounterDurationMs: number = 3000;
 }

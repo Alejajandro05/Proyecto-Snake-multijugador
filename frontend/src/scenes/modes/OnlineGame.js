@@ -69,6 +69,7 @@ export class OnlineGame extends Phaser.Scene {
         this.playerName = data?.playerName ?? '';
         this.selectedGameMode = data?.gameMode ?? 'normal';
         this.selectedDifficulty = data?.difficulty ?? 'normal';
+        this.initCounterStarted = false;
     }
 
     async create() {
@@ -119,6 +120,7 @@ export class OnlineGame extends Phaser.Scene {
             this.destroyTerritoryTimerDom();
             this.destroyTimeAttackTimerDom();
             this.destroyChaosHud();
+            this.scene.stop('InitCounter');
         });
 
         this.updateLayout(this.scale.width, this.scale.height);
@@ -296,6 +298,19 @@ export class OnlineGame extends Phaser.Scene {
         } else {
             this.destroyChaosHud();
         }
+    }
+
+    syncInitCounter(state = this.latestState) {
+        if (!state?.initCounterActive || state?.started || this.initCounterStarted || this.isLeavingRoom) {
+            return;
+        }
+
+        this.initCounterStarted = true;
+        this.isPaused = true;
+        this.scene.pause();
+        this.scene.launch('InitCounter', {
+            caller: 'OnlineGame',
+        });
     }
 
     createTerritoryTimerDom() {
@@ -561,7 +576,7 @@ export class OnlineGame extends Phaser.Scene {
     }
 
     sendDirection(direction) {
-        if (!this.room || this.exitConfirmOpen) return;
+        if (!this.room || this.exitConfirmOpen || this.latestState?.started === false) return;
         this.room.send('changeDirection', direction);
     }
 
@@ -609,6 +624,7 @@ export class OnlineGame extends Phaser.Scene {
 
         this.latestState = state;
         this.syncModeChrome(state);
+        this.syncInitCounter(state);
         this.boardRenderer.renderState(state);
         this.redrawHillOverlay(state);
         this.updateTerritoryClock(state);

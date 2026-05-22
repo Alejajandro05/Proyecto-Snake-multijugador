@@ -56,3 +56,13 @@ test('online leaderboard wins are recorded only for ranked matches', () => {
 
     assert.match(source, /if\s*\(!this\.latestState\?\.isRanked\)\s*return/);
 });
+
+test('online game launches InitCounter from the authoritative match start gate', () => {
+    const testDir = path.dirname(fileURLToPath(import.meta.url));
+    const onlineGamePath = path.resolve(testDir, '../modes/OnlineGame.js');
+    const source = fs.readFileSync(onlineGamePath, 'utf8');
+
+    assert.match(source, /initCounterActive/);
+    assert.match(source, /initCounterStarted/);
+    assert.match(source, /this\.scene\.launch\('InitCounter'/);
+});
