@@ -117,11 +117,17 @@ export class SnakeEngine {
     const color = options?.color ?? PLAYER_COLORS[colorIndex % PLAYER_COLORS.length];
     const skinId = options?.skinId?.trim() || `skin-${colorIndex + 1}`;
 
-    const pos: Position = this.getRandomSafePosition();
+    const spawnPosition: Position = (
+      options?.startCol === undefined || options?.startRow === undefined
+    )
+      ? this.getRandomSafePosition()
+      : { x: options.startCol, y: options.startRow };
+    const startCol = options?.startCol ?? spawnPosition.x;
+    const startRow = options?.startRow ?? spawnPosition.y;
 
     const segments: SnakeSegmentState[] = [];
     for (let i = 0; i < this.config.initialSnakeLength; i++) {
-      segments.push({ x: (pos.x - i) * this.config.gridSize, y: pos.y * this.config.gridSize });
+      segments.push({ x: (startCol - i) * this.config.gridSize, y: startRow * this.config.gridSize });
     }
 
     const player: PlayerState = {
