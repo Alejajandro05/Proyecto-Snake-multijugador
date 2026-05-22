@@ -3,6 +3,7 @@ import { PLAYER_COLORS } from '@shared/GameConfig';
 import { loadLocalGameSettings, saveLocalGameSettings } from '../utils/localGameSettings.js';
 import { ensureLocalPlayerProfile, loadLocalPlayerProfiles, sanitizeLocalProfileName } from '../utils/localProfiles.js';
 import { DEFAULT_MAP_ID, DEFAULT_SNAKE_SKIN_ID, getMapAsset, getSnakeAsset, mapAssets, snakeAssets } from '../config/gameAssetRegistry.js';
+import { onlineBoardSizes, onlineFoodCounts } from '@shared/catalogs/onlineOptions.js';
 import { normalizeLocalGameMode, resolveLocalSceneKey } from './localModeHelpers.js';
 
 function safeName(value, fallback) {
@@ -44,6 +45,8 @@ export class LocalGameSetup extends Phaser.Scene {
         const saved = loadLocalGameSettings();
         const initialGameMode = normalizeLocalGameMode(this.presetMode ?? saved?.gameMode ?? 'normal');
         const initialDifficulty = String(saved?.difficulty ?? DEFAULT_CONFIG.difficulty);
+        const initialBoardSizeId = String(saved?.boardSizeId ?? onlineBoardSizes[1]?.id ?? 'medium');
+        const initialFoodCountId = String(saved?.foodCountId ?? onlineFoodCounts[1]?.id ?? 'medium');
         const initialP1Name = safeName(saved?.players?.p1?.name, DEFAULT_CONFIG.p1.name);
         const initialP2Name = safeName(saved?.players?.p2?.name, DEFAULT_CONFIG.p2.name);
         let localProfiles = loadLocalPlayerProfiles(localStorage);
@@ -201,6 +204,17 @@ export class LocalGameSetup extends Phaser.Scene {
                         <div id="local-map-options" class="d-flex gap-2 justify-content-center flex-wrap"></div>
                     </div>
 
+                    <div class="row w-75 mb-4 justify-content-center gap-2 gap-md-5">
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label text-white fw-semibold mb-1 small" style="font-family: 'Montserrat', sans-serif;">Tamaño del tablero</label>
+                            <select id="local-create-board-size" class="form-select form-select-sm profile-select"></select>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label text-white fw-semibold mb-1 small" style="font-family: 'Montserrat', sans-serif;">Cantidad de comida</label>
+                            <select id="local-create-food-count" class="form-select form-select-sm profile-select"></select>
+                        </div>
+                    </div>
+
                     <div class="w-100 d-flex justify-content-center mt-3">
                         <button id="btn-create-local-game" class="btn btn-lg fw-bold text-white shadow rounded-pill"
                             style="padding: 14px 18px; background: linear-gradient(90deg, #DE1A58, #8F0177); border: 2px solid rgba(246, 125, 49, 0.85); font-family: 'Montserrat', sans-serif; min-width: 280px; width: 60%;">
@@ -242,6 +256,10 @@ export class LocalGameSetup extends Phaser.Scene {
                 </div>
             `;
         };
+
+        const renderSelectOptions = (options, selectedId) => options
+            .map((option) => `<option value="${this.escapeHtml(option.id)}" ${option.id === selectedId ? 'selected' : ''}>${this.escapeHtml(option.label)}</option>`)
+            .join('');
 
         const buildProfileOptions = (selectedName) => {
             const selectedId = sanitizeLocalProfileName(selectedName).toLowerCase();
@@ -299,12 +317,26 @@ export class LocalGameSetup extends Phaser.Scene {
             });
         };
 
+        const renderBoardSizeOptions = () => {
+            const boardSelect = document.getElementById('local-create-board-size');
+            if (!boardSelect) return;
+            boardSelect.innerHTML = renderSelectOptions(onlineBoardSizes, initialBoardSizeId);
+        };
+
+        const renderFoodCountOptions = () => {
+            const foodSelect = document.getElementById('local-create-food-count');
+            if (!foodSelect) return;
+            foodSelect.innerHTML = renderSelectOptions(onlineFoodCounts, initialFoodCountId);
+        };
+
         const container = document.getElementById('game-container');
         container.appendChild(menuDiv);
         this.overlayEl = menuDiv;
         
         updateSkins();
         renderMapOptions();
+        renderBoardSizeOptions();
+        renderFoodCountOptions();
         renderProfileSelects();
 
         const cleanup = () => {
@@ -338,11 +370,20 @@ export class LocalGameSetup extends Phaser.Scene {
             const p2Skin = snakeAssets[p2SkinIndex]?.id ?? 'player2';
             const selectedMap = mapAssets[mapIndex] ?? getMapAsset(DEFAULT_MAP_ID);
             const mapId = selectedMap?.id ?? DEFAULT_MAP_ID;
+            const boardSizeId = document.getElementById('local-create-board-size')?.value ?? initialBoardSizeId;
+            const foodCountId = document.getElementById('local-create-food-count')?.value ?? initialFoodCountId;
+            const selectedBoardSize = onlineBoardSizes.find((option) => option.id === boardSizeId) ?? onlineBoardSizes[1];
+            const selectedFoodCount = onlineFoodCounts.find((option) => option.id === foodCountId) ?? onlineFoodCounts[1];
 
             const payload = {
                 gameMode,
                 difficulty,
                 mapId,
+                boardSizeId,
+                boardCols: selectedBoardSize.cols,
+                boardRows: selectedBoardSize.rows,
+                foodCountId,
+                foodCount: selectedFoodCount.value,
                 players: {
                     p1: { name: p1Name, color: p1Color, skinId: p1Skin },
                     p2: { name: p2Name, color: p2Color, skinId: p2Skin },

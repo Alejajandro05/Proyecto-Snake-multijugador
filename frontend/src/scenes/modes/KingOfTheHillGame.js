@@ -83,7 +83,11 @@ export class KingOfTheHillGame extends Phaser.Scene {
     }
 
     create() {
-        this.boardRenderer = new SnakeBoardRenderer(this, { mapId: this.matchSettings?.mapId });
+        this.boardRenderer = new SnakeBoardRenderer(this, {
+            mapId: this.matchSettings?.mapId,
+            gridCols: this.matchSettings?.boardCols,
+            gridRows: this.matchSettings?.boardRows,
+        });
 
         this.hillGraphics = this.add.graphics().setDepth(4);
 
@@ -94,7 +98,12 @@ export class KingOfTheHillGame extends Phaser.Scene {
         const p1Cfg = this.matchSettings?.players?.p1 ?? {};
         const p2Cfg = this.matchSettings?.players?.p2 ?? {};
 
-        this.engine = new SnakeEngine({ difficulty });
+        this.engine = new SnakeEngine({
+            difficulty,
+            gridCols: this.matchSettings?.boardCols,
+            gridRows: this.matchSettings?.boardRows,
+            foodCount: this.matchSettings?.foodCount,
+        });
 
         this.engine.addPlayer(P1_ID, { color: p1Cfg.color, skinId: p1Cfg.skinId, startCol: 8, startRow: 12 });
         this.engine.addPlayer(P2_ID, { color: p2Cfg.color, skinId: p2Cfg.skinId, startCol: 24, startRow: 12 });

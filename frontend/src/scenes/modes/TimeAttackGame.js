@@ -34,7 +34,12 @@ export class TimeAttackGame extends Phaser.Scene {
         this.crearRelojDOM();
         this.toggleHud(true);
 
-        this.engine = new SnakeEngine({ foodCount: 15, maxLives: 9999 });
+        this.engine = new SnakeEngine({
+            gridCols: this.matchSettings?.boardCols,
+            gridRows: this.matchSettings?.boardRows,
+            foodCount: this.matchSettings?.foodCount ?? 15,
+            maxLives: 9999,
+        });
 
         const p1Cfg = this.matchSettings?.players?.p1 ?? {};
         const p2Cfg = this.matchSettings?.players?.p2 ?? {};

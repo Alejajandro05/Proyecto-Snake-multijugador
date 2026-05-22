@@ -69,10 +69,16 @@ export class OnlineGame extends Phaser.Scene {
         this.playerName = data?.playerName ?? '';
         this.selectedGameMode = data?.gameMode ?? 'normal';
         this.selectedDifficulty = data?.difficulty ?? 'normal';
+        this.boardCols = Number.isFinite(Number(data?.boardCols)) ? Number(data?.boardCols) : undefined;
+        this.boardRows = Number.isFinite(Number(data?.boardRows)) ? Number(data?.boardRows) : undefined;
     }
 
     async create() {
-        this.boardRenderer = new SnakeBoardRenderer(this, { mapId: this.mapId });
+        this.boardRenderer = new SnakeBoardRenderer(this, {
+            mapId: this.mapId,
+            gridCols: this.boardCols,
+            gridRows: this.boardRows,
+        });
         this.hillGraphics = this.add.graphics().setDepth(4);
         this.territoryTimerDiv = null;
         this.timeAttackTimerDiv = null;
@@ -609,6 +615,15 @@ export class OnlineGame extends Phaser.Scene {
 
         this.latestState = state;
         this.syncModeChrome(state);
+        if (Number.isFinite(Number(state?.boardCols)) || Number.isFinite(Number(state?.boardRows))) {
+            const boardCols = Number.isFinite(Number(state?.boardCols)) ? Number(state.boardCols) : this.boardRenderer.gridCols;
+            const boardRows = Number.isFinite(Number(state?.boardRows)) ? Number(state.boardRows) : this.boardRenderer.gridRows;
+            if (boardCols !== this.boardRenderer.gridCols || boardRows !== this.boardRenderer.gridRows) {
+                this.boardRenderer.gridCols = boardCols;
+                this.boardRenderer.gridRows = boardRows;
+                this.updateLayout(this.scale.width, this.scale.height);
+            }
+        }
         this.boardRenderer.renderState(state);
         this.redrawHillOverlay(state);
         this.updateTerritoryClock(state);
