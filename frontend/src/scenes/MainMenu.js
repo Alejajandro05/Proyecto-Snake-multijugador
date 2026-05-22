@@ -100,50 +100,61 @@ export class MainMenu extends Phaser.Scene {
                     text-align: center;
                 }
 
-                #main-menu-overlay .menu-heading {
-                    display: grid;
-                    gap: 6px;
-                }
-
-                #main-menu-overlay .menu-title {
-                    margin: 0;
-                    font-size: clamp(2rem, 4vw, 2.6rem);
-                    letter-spacing: 0.14em;
-                    color: #FDE68A;
-                    text-transform: uppercase;
-                    text-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
-                }
-
-                #main-menu-overlay .menu-subtitle {
-                    margin: 0;
-                    color: #A5F3FC;
-                    font-size: 0.78rem;
-                    font-weight: 700;
-                    letter-spacing: 0.18em;
-                    text-transform: uppercase;
-                }
-
-                #main-menu-overlay .menu-description {
-                    margin: 0;
-                    color: #CBD5E1;
-                    font-size: 0.95rem;
-                    line-height: 1.4;
-                }
-
                 #main-menu-overlay .main-menu-buttons {
                     display: grid;
                     gap: 12px;
                 }
 
-                #main-menu-overlay .primary-action {
+                #main-menu-overlay .primary-action,
+                #main-menu-overlay .secondary-action,
+                #main-menu-overlay #btn-submenu-toggle {
                     width: 100%;
-                    padding: 14px 16px;
-                    border-radius: 14px;
-                    font-size: 1rem;
-                    font-family: 'Montserrat', sans-serif;
-                    font-weight: 800;
-                    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-                    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.24);
+                    padding: 12px 16px;
+                    border-radius: 6px;
+                    font-size: 0.95rem;
+                    font-family: 'Courier New', Courier, monospace;
+                    font-weight: 900;
+                    letter-spacing: 0.12em;
+                    text-transform: uppercase;
+                    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
+                    background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.98));
+                    border: 3px solid rgba(250, 204, 21, 0.9);
+                    color: #F8FAFC;
+                    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 8px 0 rgba(15, 23, 42, 0.95);
+                    transition: transform 0.1s ease, background 0.1s ease, box-shadow 0.1s ease;
+                }
+
+                #main-menu-overlay .primary-action:hover,
+                #main-menu-overlay .secondary-action:hover,
+                #main-menu-overlay #btn-submenu-toggle:hover {
+                    transform: translateY(-2px);
+                    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(99, 102, 241, 0.98));
+                    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 10px 0 rgba(15, 23, 42, 0.98);
+                }
+
+                #main-menu-overlay .secondary-panel {
+                    display: grid;
+                    gap: 12px;
+                }
+
+                #main-menu-overlay #secondary-actions {
+                    display: grid;
+                    gap: 10px;
+                }
+
+                #main-menu-overlay .secondary-action {
+                    background: linear-gradient(180deg, rgba(15, 23, 42, 0.88), rgba(51, 65, 85, 0.96));
+                    border-color: rgba(148, 163, 184, 0.5);
+                }
+
+                #main-menu-overlay #btn-submenu-toggle {
+                    background: linear-gradient(180deg, rgba(15, 23, 42, 0.85), rgba(72, 85, 99, 0.95));
+                    border-style: dashed;
+                    letter-spacing: 0.18em;
+                }
+
+                #main-menu-overlay #secondary-actions.d-none {
+                    display: none;
                 }
 
                 #main-menu-overlay .primary-action:hover {
@@ -330,23 +341,13 @@ export class MainMenu extends Phaser.Scene {
                     <button id="btn-account" type="button" title="Crear cuenta o iniciar sesión">${ACCOUNT_GUEST_LABEL}</button>
                 </div>
                 <section class="main-menu-card">
-                    <div class="menu-heading">
-                        <p class="menu-subtitle">Snake Multijugador</p>
-                        <h1 class="menu-title">Menú Principal</h1>
-                        <p class="menu-description">Elige tu modo de juego o abre el submenú para opciones extra.</p>
-                    </div>
-
                     <div class="main-menu-buttons">
-                        <button id="btn-local" class="btn text-white fw-bold shadow menu-btn w-100 primary-action" style="background-color: #DE1A58; border: 2px solid #F67D31;">
+                        <button id="btn-local" class="btn text-white fw-bold shadow menu-btn w-100 primary-action" style="background-color: #DE1A58; border: 3px solid #F59E0B;">
                             JUEGO LOCAL
                         </button>
 
-                        <button id="btn-online" class="btn text-white fw-bold shadow menu-btn w-100 primary-action" style="background-color: #8F0177; border: 2px solid #F67D31;">
+                        <button id="btn-online" class="btn text-white fw-bold shadow menu-btn w-100 primary-action" style="background-color: #9333EA; border: 3px solid #F59E0B;">
                             1 VS 1 ONLINE
-                        </button>
-
-                        <button id="btn-tutorial" class="btn text-white fw-bold shadow menu-btn w-100 primary-action" style="background-color: #0F766E; border: 2px solid #22D3EE;">
-                            TUTORIAL
                         </button>
                     </div>
 
@@ -355,10 +356,13 @@ export class MainMenu extends Phaser.Scene {
                             MÁS OPCIONES
                         </button>
                         <div id="secondary-actions" class="d-none">
-                            <button id="btn-solo" class="btn text-white fw-bold shadow menu-btn w-100 secondary-action" style="background-color: rgba(15, 23, 42, 0.82); border: 1px solid rgba(255, 255, 255, 0.14);">
+                            <button id="btn-tutorial" class="btn text-white fw-bold shadow menu-btn w-100 secondary-action" style="background-color: #0F766E; border: 3px solid #22D3EE;">
+                                TUTORIAL
+                            </button>
+                            <button id="btn-solo" class="btn text-white fw-bold shadow menu-btn w-100 secondary-action" style="background-color: rgba(15, 23, 42, 0.82); border: 3px solid rgba(255, 255, 255, 0.27);">
                                 JUEGO SOLITARIO
                             </button>
-                            <button id="btn-opciones" class="btn text-white fw-bold shadow menu-btn w-100 secondary-action" style="background-color: rgba(31, 41, 55, 0.88); border: 1px solid rgba(34, 211, 238, 0.45);">
+                            <button id="btn-opciones" class="btn text-white fw-bold shadow menu-btn w-100 secondary-action" style="background-color: rgba(31, 41, 55, 0.88); border: 3px solid rgba(34, 211, 238, 0.65);">
                                 AJUSTES
                             </button>
                         </div>
