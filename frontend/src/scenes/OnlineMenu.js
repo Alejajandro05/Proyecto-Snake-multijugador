@@ -208,10 +208,8 @@ export class OnlineMenu extends Phaser.Scene {
               <div class="col-12 col-md-6 col-lg-4">
                 ${this.renderSelectBlock('Dificultad', 'online-create-difficulty', onlineOptionCatalogs.difficulties, this.prefs.difficulty)}
               </div>
-              <div class="col-12 col-md-6">
-                ${this.renderSelectBlock('Tamaño del tablero', 'online-create-board', onlineOptionCatalogs.boardSizes, this.prefs.boardSizeId)}
-              </div>
-              <div class="col-12 col-md-6">
+              <input type="hidden" id="online-create-board" value="${this.escapeHtml(this.prefs.boardSizeId)}">
+              <div class="col-12 col-md-6 col-lg-4">
                 ${this.renderSelectBlock('Cantidad de objetos', 'online-create-food', onlineOptionCatalogs.foodCounts, this.prefs.foodCountId)}
               </div>
               <div class="col-12">
