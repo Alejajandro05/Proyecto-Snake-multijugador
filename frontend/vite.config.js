@@ -22,8 +22,15 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      '@shared': path.resolve(__dirname, '../shared/src/domain'),
-    },
+    alias: [
+      {
+        find: '@shared/catalogs',
+        replacement: path.resolve(__dirname, '../shared/src/catalogs'),
+      },
+      {
+        find: '@shared',
+        replacement: path.resolve(__dirname, '../shared/src/domain'),
+      },
+    ],
   },
 });
