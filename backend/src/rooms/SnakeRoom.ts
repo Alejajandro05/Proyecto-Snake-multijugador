@@ -47,6 +47,8 @@ const CHAOS_DURATION_MS = 6000;
 const CHAOS_MIN_GAP_MS = 7000;
 const CHAOS_MAX_GAP_MS = 14000;
 const CHAOS_FIRST_MS = 5000;
+const ONLINE_INIT_COUNTER_MS = 3000;
+const ONLINE_INIT_COUNTER_PLAYERS = 2;
 
 const OPPOSITE_DIRECTION = {
   up: "down",
@@ -202,6 +204,8 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
   private chaosNextEffectMs = 0;
   private chaosFastAccumulator = 0;
   private isRanked = false;
+  private initCounterArmed = false;
+  private initCounterGeneration = 0;
 
   onCreate(options?: SnakeRoomCreateOptions) {
     this.state = new SnakeRoomState();
@@ -237,6 +241,9 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
     this.state.remainingTimeMs = this.remainingTimeMs;
     this.state.matchEnded = false;
     this.state.matchEndReason = "";
+    this.state.started = false;
+    this.state.initCounterActive = false;
+    this.state.initCounterDurationMs = ONLINE_INIT_COUNTER_MS;
 
     if (this.gameMode === "kingOfTheHill") {
       this.initializeHillState(engineConfig.gridCols, engineConfig.gridRows);
@@ -246,12 +253,18 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
       this.chaosNextEffectMs = CHAOS_FIRST_MS;
     }
 
+    this.syncToSchema(this.engine.getState());
+
     this.onMessage("changeDirection", (client, direction: string) => {
+      if (!this.state.started) {
+        return;
+      }
+
       this.engine.setNextDirection(client.sessionId, this.mapModeDirection(direction) as any);
     });
 
     this.setSimulationInterval(() => {
-      if (this.matchEnded) {
+      if (this.matchEnded || !this.state.started) {
         return;
       }
 
@@ -293,6 +306,7 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
     this.state.players.set(client.sessionId, player);
     this.previousTimeAttackScores.set(client.sessionId, playerState.score);
     this.previousTimeAttackLives.set(client.sessionId, playerState.lives);
+    this.armInitCounterIfReady();
     console.log(client.sessionId, "joined. Players:", this.state.players.size);
   }
 
@@ -302,6 +316,7 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
     this.timeAttackEatCounts.delete(client.sessionId);
     this.previousTimeAttackScores.delete(client.sessionId);
     this.previousTimeAttackLives.delete(client.sessionId);
+    this.resetInitCounterIfWaitingForPlayers();
     console.log(client.sessionId, "left. Players:", this.state.players.size);
   }
 
@@ -322,6 +337,42 @@ export class SnakeRoom extends Room<{ state: SnakeRoomState }> {
     this.hillBounds = randomHillCellBounds(gridCols, gridRows, zoneW, zoneH);
     this.hillElapsedMs = 0;
     this.syncHillStateToSchema();
+  }
+
+  private armInitCounterIfReady() {
+    if (this.state.started || this.initCounterArmed || this.state.players.size < ONLINE_INIT_COUNTER_PLAYERS) {
+      return;
+    }
+
+    this.initCounterArmed = true;
+    this.state.initCounterActive = true;
+    const generation = ++this.initCounterGeneration;
+
+    this.clock.setTimeout(() => {
+      if (generation !== this.initCounterGeneration || this.state.started) {
+        return;
+      }
+
+      if (this.state.players.size < ONLINE_INIT_COUNTER_PLAYERS) {
+        this.initCounterArmed = false;
+        this.state.initCounterActive = false;
+        return;
+      }
+
+      this.state.started = true;
+      this.state.initCounterActive = false;
+      this.initCounterArmed = false;
+    }, ONLINE_INIT_COUNTER_MS);
+  }
+
+  private resetInitCounterIfWaitingForPlayers() {
+    if (this.state.started || this.state.players.size >= ONLINE_INIT_COUNTER_PLAYERS) {
+      return;
+    }
+
+    this.initCounterGeneration += 1;
+    this.initCounterArmed = false;
+    this.state.initCounterActive = false;
   }
 
   private resolveModeEngineConfig(runtimeConfig: ReturnType<typeof getRoomRuntimeConfig>) {

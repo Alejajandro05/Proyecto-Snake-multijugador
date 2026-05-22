@@ -438,4 +438,41 @@ describe("LobbyRoom", () => {
 
     await hostClient.leave();
   });
+
+  it("arms the init counter before starting every online game mode", async () => {
+    for (const mode of onlineOptionCatalogs.modes) {
+      const room = await colyseus.createRoom<LobbyRoomState>("lobby_room", {
+        visibility: "public",
+        gameMode: mode.id,
+        difficulty: "normal",
+        mapId: "arena01",
+      });
+
+      const hostLobbyClient = await colyseus.connectTo(room);
+      await room.waitForNextPatch();
+      const guestLobbyClient = await colyseus.connectTo(room);
+      await room.waitForNextPatch();
+
+      hostLobbyClient.send("startMatch");
+      await room.waitForNextPatch();
+
+      const snakeRoom = colyseus.getRoomById(room.state.matchRoomId);
+      const hostMatchClient = await colyseus.connectTo(snakeRoom);
+      await snakeRoom.waitForNextPatch();
+      const guestMatchClient = await colyseus.connectTo(snakeRoom);
+      await snakeRoom.waitForNextPatch();
+
+      assert.equal(snakeRoom.state.gameMode, mode.id);
+      assert.equal(snakeRoom.state.started, false);
+      assert.equal((snakeRoom.state as any).initCounterActive, true);
+      assert.equal((snakeRoom.state as any).initCounterDurationMs, 3000);
+      assert.equal(snakeRoom.state.food.length > 0, true);
+      assert.equal(snakeRoom.state.obstacles.length > 0, true);
+
+      await guestMatchClient.leave();
+      await hostMatchClient.leave();
+      await guestLobbyClient.leave();
+      await hostLobbyClient.leave();
+    }
+  });
 });
