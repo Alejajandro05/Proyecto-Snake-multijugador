@@ -72,58 +72,62 @@ export class LocalGameSetup extends Phaser.Scene {
 
         menuDiv.innerHTML = `
             <style>
-                .diff-btn { border: 1px solid rgba(255,255,255,0.3); color: white; background: transparent; transition: all 0.2s; }
-                .diff-btn:hover { background: rgba(255,255,255,0.1); }
-                .diff-btn.active { background: white !important; color: black !important; border-color: white !important; }
-                .skin-arrow { transition: transform 0.2s; cursor: pointer; }
-                .skin-arrow:hover { transform: scale(1.2); }
-                #btn-create-local-game { transition: transform 0.2s; }
-                #btn-create-local-game:hover { transform: scale(1.02); }
+                .diff-btn { border: 3px solid rgba(255,255,255,0.35); color: white; background: rgba(15, 23, 42, 0.85); border-radius: 14px; padding: 12px 18px; font-family: 'Courier New', Courier, monospace; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 8px 0 rgba(0,0,0,0.35); }
+                .diff-btn:hover { transform: translateY(-1px); background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.55); }
+                .diff-btn.active { background: linear-gradient(180deg, #F59E0B 0%, #DE1A58 100%) !important; color: #111 !important; border-color: #F59E0B !important; box-shadow: 0 8px 0 rgba(0,0,0,0.35) !important; }
+                .skin-arrow { transition: transform 0.2s; cursor: pointer; border: 2px solid rgba(255,255,255,0.18); border-radius: 14px; background: rgba(255,255,255,0.05); width: 54px; height: 54px; display: grid; place-items: center; }
+                .skin-arrow:hover { transform: scale(1.04); background: rgba(255,255,255,0.12); }
+                #btn-create-local-game { transition: transform 0.2s, box-shadow 0.2s; border: 3px solid #F59E0B; border-radius: 14px; background: linear-gradient(180deg, #DE1A58 0%, #8F0177 100%); box-shadow: 0 10px 0 rgba(0,0,0,0.35); }
+                #btn-create-local-game:hover { transform: translateY(-2px); }
                 input.custom-input:focus { border-bottom: 2px solid rgba(255,255,255,0.5) !important; outline: none; box-shadow: none; }
                 input.custom-input { border-bottom: 2px solid transparent !important; border-radius: 0; }
 
-                .mode-select-btn { border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.06); color: white; transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease; }
+                .mode-select-btn { border: 3px solid rgba(255,255,255,0.35); background: rgba(15, 23, 42, 0.92); color: white; border-radius: 14px; padding: 14px 18px; font-family: 'Courier New', Courier, monospace; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 10px 0 rgba(0,0,0,0.35); }
                 .mode-select-btn:hover {
                     transform: translateY(-1px);
-                    background: linear-gradient(180deg, #F67D31 0%, #e56a1f 100%);
+                    background: linear-gradient(180deg, #F59E0B 0%, #E56A1F 100%);
                     border-color: rgba(255, 200, 140, 0.95);
                     color: #0B081A;
-                    box-shadow: 0 8px 28px rgba(246, 125, 49, 0.45);
+                    box-shadow: 0 10px 0 rgba(0,0,0,0.35);
                 }
 
                 .local-setup-card {
                     max-height: min(88vh, calc(100vh - 7.25rem));
                     overflow-y: auto;
+                    border: 3px solid rgba(246, 125, 49, 0.85);
+                    border-radius: 24px;
+                    background: rgba(8, 12, 29, 0.96);
+                    box-shadow: 0 24px 70px rgba(0,0,0,0.45);
                 }
                 .local-setup-card::-webkit-scrollbar { width: 8px; }
                 .local-setup-card::-webkit-scrollbar-thumb { background: rgba(246, 125, 49, 0.45); border-radius: 999px; }
                 .local-setup-card::-webkit-scrollbar-track { background: rgba(255,255,255,0.06); border-radius: 999px; }
 
-                .mode-modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; padding: 22px; z-index: 2000; background: rgba(0,0,0,0.55); backdrop-filter: blur(6px); }
+                .mode-modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; padding: 22px; z-index: 2000; background: rgba(0,0,0,0.65); backdrop-filter: blur(6px); }
                 .mode-modal.open { display: flex; }
-                .mode-modal-panel { width: min(860px, 96vw); border-radius: 18px; background: rgba(12, 18, 42, 0.96); border: 2px solid rgba(246, 125, 49, 0.55); box-shadow: 0 30px 120px rgba(0,0,0,0.55); overflow: hidden; }
+                .mode-modal-panel { width: min(860px, 96vw); border-radius: 22px; background: rgba(12, 18, 42, 0.96); border: 3px solid rgba(246, 125, 49, 0.75); box-shadow: 0 30px 120px rgba(0,0,0,0.55); overflow: hidden; }
                 .mode-modal-header { padding: 18px 18px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.12); }
-                .mode-modal-title { margin: 0; color: white; font-weight: 800; letter-spacing: 1px; font-family: 'Montserrat', sans-serif; }
-                .mode-modal-subtitle { margin: 6px 0 0; color: rgba(255,255,255,0.75); font-size: 0.9rem; }
-                .mode-close { border: 1px solid rgba(255,255,255,0.22); background: transparent; color: white; border-radius: 999px; padding: 8px 12px; }
-                .mode-close:hover { background: rgba(255,255,255,0.08); }
+                .mode-modal-title { margin: 0; color: white; font-weight: 800; letter-spacing: 1px; font-family: 'Courier New', Courier, monospace; }
+                .mode-modal-subtitle { margin: 6px 0 0; color: rgba(255,255,255,0.75); font-size: 0.95rem; }
+                .mode-close { border: 2px solid rgba(255,255,255,0.24); background: rgba(255,255,255,0.06); color: white; border-radius: 16px; padding: 10px 14px; }
+                .mode-close:hover { background: rgba(255,255,255,0.12); }
 
                 .mode-carousel { display: grid; grid-template-columns: 64px 1fr 64px; align-items: center; gap: 10px; padding: 18px; }
-                .mode-arrow { width: 54px; height: 54px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); color: white; font-size: 28px; line-height: 1; display: grid; place-items: center; cursor: pointer; transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease; user-select: none; }
-                .mode-arrow:hover { transform: scale(1.04); background: rgba(255,255,255,0.1); border-color: rgba(246, 125, 49, 0.55); }
+                .mode-arrow { width: 54px; height: 54px; border-radius: 16px; border: 2px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); color: white; font-size: 28px; line-height: 1; display: grid; place-items: center; cursor: pointer; transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease; user-select: none; }
+                .mode-arrow:hover { transform: scale(1.04); background: rgba(255,255,255,0.12); border-color: rgba(246, 125, 49, 0.55); }
 
-                .mode-card { border-radius: 16px; overflow: hidden; border: 3px solid #F67D31; box-shadow: 0 18px 60px rgba(0,0,0,0.35); background: rgba(11, 8, 26, 1); }
+                .mode-card { border-radius: 18px; overflow: hidden; border: 3px solid #F67D31; box-shadow: 0 18px 60px rgba(0,0,0,0.35); background: rgba(11, 8, 26, 1); }
                 .mode-card-img { aspect-ratio: 16 / 9; min-height: 220px; background: radial-gradient(circle at center, rgba(29, 43, 88, 0.5), #0B081A 70%); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
                 .mode-card-img img { width: 100%; height: 100%; object-fit: contain; object-position: center; opacity: 0.96; }
                 .mode-card-img::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(12,18,42,1), rgba(12,18,42,0.15)); }
                 .mode-card-body { padding: 16px 16px 18px; background: rgba(12, 18, 42, 0.98); }
-                .mode-card-title { margin: 0 0 6px; color: white; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; font-family: 'Montserrat', sans-serif; }
+                .mode-card-title { margin: 0 0 6px; color: white; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; font-family: 'Courier New', Courier, monospace; }
                 .mode-card-desc { margin: 0; color: rgba(255,255,255,0.8); font-size: 0.95rem; line-height: 1.3; }
 
                 .mode-modal-footer { padding: 14px 18px 18px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255,255,255,0.12); }
-                .mode-choose { padding: 12px 16px; border-radius: 999px; border: 2px solid rgba(246, 125, 49, 0.85); background: linear-gradient(90deg, #DE1A58, #8F0177); color: white; font-weight: 800; }
+                .mode-choose { padding: 12px 16px; border-radius: 999px; border: 3px solid rgba(246, 125, 49, 0.85); background: linear-gradient(90deg, #DE1A58, #8F0177); color: white; font-weight: 800; }
                 .mode-choose:hover { filter: brightness(1.03); }
-                .mode-cancel { padding: 12px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); color: white; font-weight: 700; }
+                .mode-cancel { padding: 12px 16px; border-radius: 999px; border: 2px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); color: white; font-weight: 700; }
                 .mode-cancel:hover { background: rgba(255,255,255,0.1); }
                 .map-option { border: 2px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.06); color: white; transition: all 0.2s; }
                 .map-option:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.4); }

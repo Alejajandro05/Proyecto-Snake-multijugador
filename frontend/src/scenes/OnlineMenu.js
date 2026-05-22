@@ -109,27 +109,53 @@ export class OnlineMenu extends Phaser.Scene {
     overlay.style.paddingLeft = 'max(12px, env(safe-area-inset-left, 0px))';
     overlay.style.paddingRight = 'max(12px, env(safe-area-inset-right, 0px))';
 
-    const btnStyleCrear = `width: 100%; padding: 14px; background-color: #DE1A58; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.15rem; transition: transform 0.2s ease;`;
-    const btnStyleUnirse = `width: 100%; padding: 14px; background-color: #8F0177; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.15rem; transition: transform 0.2s ease;`;
-    const btnStyleRanked = `width: 100%; padding: 14px; background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%); border: 2px solid #FEF3C7; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.15rem; text-shadow: 1px 1px 4px rgba(0,0,0,0.5); transition: transform 0.2s ease; box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);`;
-    const btnStyleLogin = `width: 100%; padding: 14px; background-color: #1ad1de; border: 2px solid #0d8b94; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.15rem; color: #111; transition: transform 0.2s ease;`;
-    const btnStyleVolverMainMenu = `width: 320px; padding: 14px; background-color: #1A05A2; border: 2px solid #F67D31; border-radius: 12px; font-family: 'Montserrat', sans-serif; font-size: 1.15rem; transition: transform 0.2s ease;`;
-    const btnStyleAction = `padding: 10px; background-color: #DE1A58; border: 2px solid #F67D31; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.1rem; transition: transform 0.2s ease;`;
-    const btnStyleVolver = `padding: 10px; background-color: #334155; border: 2px solid #94A3B8; border-radius: 8px; font-family: 'Montserrat', sans-serif; font-size: 1.1rem; transition: transform 0.2s ease;`;
+    const btnBaseStyle = `width: 100%; padding: 14px 18px; font-family: 'Courier New', Courier, monospace; font-size: 1.08rem; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; border-radius: 14px; box-shadow: 0 10px 0 rgba(0, 0, 0, 0.45);`;
+    const btnStyleCrear = `${btnBaseStyle} background: linear-gradient(180deg, #DE1A58 0%, #BE185D 100%); border: 3px solid #F59E0B; color: #F8FAFC;`;
+    const btnStyleUnirse = `${btnBaseStyle} background: linear-gradient(180deg, #8F0177 0%, #C026D3 100%); border: 3px solid #F59E0B; color: #F8FAFC;`;
+    const btnStyleRanked = `${btnBaseStyle} background: linear-gradient(180deg, #F59E0B 0%, #D97706 100%); border: 3px solid #FEF3C7; color: #111; box-shadow: 0 10px 0 rgba(0, 0, 0, 0.35);`;
+    const btnStyleLogin = `${btnBaseStyle} background: linear-gradient(180deg, #22D3EE 0%, #0F766E 100%); border: 3px solid #14B8A6; color: #111;`;
+    const btnStyleVolverMainMenu = `width: 100%; max-width: 320px; padding: 14px 18px; font-family: 'Courier New', Courier, monospace; font-size: 1.08rem; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; border-radius: 14px; box-shadow: 0 10px 0 rgba(0, 0, 0, 0.45); background: linear-gradient(180deg, #1A05A2 0%, #4338CA 100%); border: 3px solid #F59E0B; color: #F8FAFC;`;
+    const btnStyleAction = `padding: 12px 16px; font-family: 'Courier New', Courier, monospace; font-size: 1.05rem; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; border-radius: 14px; box-shadow: 0 10px 0 rgba(0, 0, 0, 0.45); background: linear-gradient(180deg, #DE1A58 0%, #BE185D 100%); border: 3px solid #F59E0B; color: #F8FAFC;`;
+    const btnStyleVolver = `padding: 12px 16px; font-family: 'Courier New', Courier, monospace; font-size: 1.05rem; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease; border-radius: 14px; box-shadow: 0 10px 0 rgba(0, 0, 0, 0.45); background: rgba(51, 65, 85, 0.92); border: 3px solid #94A3B8; color: #F8FAFC;`;
 
     overlay.innerHTML = `
       <div class="w-100 px-2 px-sm-3 d-flex flex-column align-items-center" style="max-width: 960px; min-height: 0;">
         <div class="online-menu-card w-100 rounded-4 text-center p-4 d-flex flex-column align-items-stretch">
           <style>
-            #online-menu-overlay .online-skin-arrow { transition: transform 0.2s; cursor: pointer; }
-            #online-menu-overlay .online-skin-arrow:hover { transform: scale(1.2); }
+            #online-menu-overlay .online-skin-arrow { transition: transform 0.2s; cursor: pointer; border: 2px solid rgba(255,255,255,0.18); border-radius: 14px; padding: 4px 6px; }
+            #online-menu-overlay .online-skin-arrow:hover { transform: scale(1.2); background: rgba(255,255,255,0.08); }
             #online-menu-overlay .online-map-option { border: 2px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.06); color: white; transition: all 0.2s; }
             #online-menu-overlay .online-map-option:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.4); }
             #online-menu-overlay .online-map-option.active { border-color: #F67D31; box-shadow: 0 0 0 2px rgba(246,125,49,0.2), 0 12px 28px rgba(0,0,0,0.25); }
             #online-menu-overlay .online-create-appearance-block {
               background: rgba(255,255,255,0.05);
               border: 1px solid rgba(255,255,255,0.12);
+              border-radius: 14px;
+            }
+            #online-menu-overlay .menu-btn {
+              font-family: 'Courier New', Courier, monospace;
+              text-transform: uppercase;
+              letter-spacing: 0.14em;
+              border-radius: 14px;
+              box-shadow: 0 10px 0 rgba(0, 0, 0, 0.35);
+              transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+            }
+            #online-menu-overlay .menu-btn:hover {
+              transform: translateY(-2px);
+            }
+            #online-menu-overlay .menu-btn:active {
+              transform: translateY(0);
+              box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3);
+            }
+            #online-menu-overlay .form-control {
+              background: rgba(15, 23, 42, 0.95);
+              border: 2px solid rgba(148, 163, 184, 0.28);
               border-radius: 12px;
+              color: white;
+            }
+            #online-menu-overlay .form-control:focus {
+              border-color: rgba(56, 189, 248, 0.65);
+              box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
             }
             @media (min-width: 768px) {
               #online-menu-overlay .online-create-split-map { border-left: 1px solid rgba(255,255,255,0.18); padding-left: 1.25rem; }
@@ -147,10 +173,11 @@ export class OnlineMenu extends Phaser.Scene {
               overflow-y: auto;
               overflow-x: hidden;
               -webkit-overflow-scrolling: touch;
-              background: rgba(15, 23, 42, 0.86);
-              border: 1px solid rgba(255,255,255,0.14);
+              background: rgba(12, 18, 34, 0.94);
+              border: 3px solid rgba(246, 125, 49, 0.75);
+              border-radius: 24px;
               backdrop-filter: blur(6px);
-              box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+              box-shadow: 0 24px 70px rgba(0,0,0,0.45);
             }
             #online-menu-overlay .online-menu-card::-webkit-scrollbar { width: 8px; }
             #online-menu-overlay .online-menu-card::-webkit-scrollbar-thumb { background: rgba(246, 125, 49, 0.45); border-radius: 999px; }
