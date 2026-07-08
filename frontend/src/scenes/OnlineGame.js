@@ -1,5 +1,6 @@
 import { Client } from '@colyseus/sdk';
 import { GRID_COLS, GRID_ROWS, GRID_SIZE, MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
+import { FoodFxMixin } from './FoodFxMixin.js';
 
 const SERVER_URL = 'ws://localhost:2567';
 
@@ -63,11 +64,24 @@ export class OnlineGame extends Phaser.Scene {
             this.toggleHud(false);
             this.removeInputListeners();
             this.cleanupRoom();
+            // HU-034: limpiar efectos visuales al destruir la escena
+            FoodFxMixin.destroy(this);
         });
 
         this.updateLayout(this.scale.width, this.scale.height);
 
         this.latestState = null;
+
+        /**
+         * HU-034: mapa playerId -> tipo del último alimento conocido.
+         * Permite detectar un cambio en lastEatenFood entre dos renders.
+         * @type {Map<string, string|null>}
+         */
+        this._lastKnownFoodType = new Map();
+
+        // HU-034: inicializar sistema de efectos visuales
+        FoodFxMixin.init(this);
+
         this.renderState({ players: new Map(), food: [], obstacles: [] });
 
         await this.connectToServer();
@@ -291,6 +305,30 @@ o(x, this.boardOffsetY);
         this.scene.start('MainMenu');
     }
 
+    /**
+     * HU-034: Detecta si algún jugador acaba de comer un alimento especial
+     * comparando lastEatenFood con el último valor conocido.
+     * Si el tipo cambió, lanza el efecto visual en la posición de la cabeza.
+     *
+     * @param {Map<string, object>} players
+     */
+    _checkAndFireFoodFx(players) {
+        players.forEach((player, playerId) => {
+            const currentType = player.lastEatenFood?.type ?? null;
+            const previousType = this._lastKnownFoodType.get(playerId) ?? null;
+
+            if (currentType !== null && currentType !== previousType) {
+                // Nuevo alimento detectado — disparar efecto visual
+                const head = player.segments?.[0];
+                if (head) {
+                    FoodFxMixin.spawn(this, head.x, head.y, currentType);
+                }
+            }
+
+            this._lastKnownFoodType.set(playerId, currentType);
+        });
+    }
+
     renderState(state) {
         if (!state) return;
 
@@ -316,6 +354,9 @@ o(x, this.boardOffsetY);
         state.obstacles.forEach((obstacle) => {
             this.drawBoardCell(this.obstacleGraphics, obstacle.x, obstacle.y, 0x888888);
         });
+
+        // HU-034: disparar efectos visuales si alguno comió un alimento especial
+        this._checkAndFireFoodFx(state.players);
 
         if (firstPlayer && secondPlayer) {
             if (firstPlayer.score >= WIN_SCORE || secondPlayer.score >= WIN_SCORE) {
