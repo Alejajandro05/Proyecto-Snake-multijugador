@@ -1,5 +1,6 @@
 import { SnakeEngine } from '@shared/SnakeEngine';
 import { GRID_COLS, GRID_ROWS, GRID_SIZE, MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig';
+import { FoodFxMixin } from './FoodFxMixin.js';
 
 const P1_ID = 'player1';
 const P2_ID = 'player2';
@@ -93,9 +94,26 @@ export class LocalGame extends Phaser.Scene {
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
             this.scale.off('resize', this.resizeHandler);
             this.toggleHud(false);
+            // HU-034: limpiar efectos visuales al destruir la escena
+            FoodFxMixin.destroy(this);
         });
 
         this.updateLayout(this.scale.width, this.scale.height);
+
+        // HU-034: inicializar sistema de efectos visuales
+        FoodFxMixin.init(this);
+
+        // HU-034: suscribirse al evento del motor de dominio
+        this.engine.events.on('playerEatFood', ({ playerId, food, foodX, foodY }) => {
+            // La posición la extraemos del jugador en el momento del evento.
+            // El motor emite el evento desde movePlayer() cuando la cabeza ya está
+            // en la nueva celda, así que la posición de la cabeza es la de la comida.
+            const state = this.engine.getState();
+            const player = state.players.get(playerId);
+            if (!player) return;
+            const head = player.segments[0];
+            FoodFxMixin.spawn(this, head.x, head.y, food.type ?? 'apple');
+        });
 
         this.renderState(this.engine.getState());
 
