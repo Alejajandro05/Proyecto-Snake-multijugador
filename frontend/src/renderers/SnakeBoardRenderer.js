@@ -3,6 +3,7 @@ import { GRID_COLS, GRID_ROWS, GRID_SIZE } from '@shared/GameConfig';
 import { ASSET_KEYS } from '../config/assetManifest.js';
 import { getMapAsset, getSnakeAsset } from '../config/gameAssetRegistry.js';
 import { getSnakeIdentityStyle } from './snakeIdentityStyle.js';
+import { FoodEffectsLayer } from './FoodEffectsLayer.js';
 
 const FOOD_COLOR     = 0xffff00;
 const OBSTACLE_COLOR = 0x888888;
@@ -91,6 +92,25 @@ export class SnakeBoardRenderer {
 
         // Pool de sprites por jugador: snakeSpritePools[playerIndex] = []
         this.snakeSpritePools = [[], []];
+
+        // HU-034: capa de efectos visuales al consumir alimentos especiales
+        this.foodEffectsLayer = new FoodEffectsLayer(scene);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    //  HU-034: API pública de efectos visuales
+    // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Dispara el efecto visual (partículas + texto flotante) para un alimento
+     * consumido. La manzana (apple) y los tipos desconocidos no generan efecto.
+     *
+     * @param {string} foodType - Tipo del alimento: 'grape' | 'speed' | 'poison' | 'apple' | …
+     * @param {number} gridX    - Coordenada X en píxeles del grid (múltiplo de GRID_SIZE)
+     * @param {number} gridY    - Coordenada Y en píxeles del grid (múltiplo de GRID_SIZE)
+     */
+    triggerFoodEffect(foodType, gridX, gridY) {
+        this.foodEffectsLayer.trigger(foodType, gridX, gridY);
     }
 
     setTutorialHighlight(highlight) {
@@ -223,6 +243,9 @@ export class SnakeBoardRenderer {
 
         this.drawBoardFrame();
         this.drawGrid();
+
+        // HU-034: sincronizar métricas del tablero con el layer de efectos
+        this.foodEffectsLayer.updateLayout(this.boardOffsetX, this.boardOffsetY, this.cellSize);
 
         return this.getMetrics();
     }
@@ -840,5 +863,12 @@ export class SnakeBoardRenderer {
             Math.max(1, this.cellSize - padding * 2),
             Math.max(1, this.cellSize - padding * 2)
         );
+    }
+
+    /**
+     * Limpia el layer de efectos. Llamar al destruir la escena.
+     */
+    destroyEffects() {
+        this.foodEffectsLayer?.destroy();
     }
 }
