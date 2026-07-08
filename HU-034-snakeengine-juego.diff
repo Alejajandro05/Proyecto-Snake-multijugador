@@ -1,0 +1,243 @@
+diff --git a/shared/src/domain/SnakeEngine.js b/shared/src/domain/SnakeEngine.js
+index 6171f5c..a1b2c3d 100644
+--- a/shared/src/domain/SnakeEngine.js
++++ b/shared/src/domain/SnakeEngine.js
+@@ -203,14 +203,24 @@ export class SnakeEngine {
+         const foodIdx = this.food.findIndex(f => f.x === newX && f.y === newY);
+         if (foodIdx !== -1) {
+             const eatenFood = this.food[foodIdx];
+             this.food.splice(foodIdx, 1);
+             this.food.push(this.randomFood());
+             const config = FOOD_CONFIG[eatenFood.type ?? 'apple'] ?? FOOD_CONFIG.apple;
+-            player.lastEatenFood = config;
++            const eatenFoodEvent = {
++                type: eatenFood.type ?? 'apple',
++                x: eatenFood.x,
++                y: eatenFood.y,
++                score: config.score,
++                hudEffect: config.hudEffect ?? null,
++            };
++
++            player.lastEatenFood = eatenFoodEvent;
+             this.events.emit("playerEatFood", {
+                 playerId: player.id,
+-                food: config
++                food: eatenFoodEvent
+             });
+             player.score = Math.max(0, player.score + config.score);
+             config.effect?.(player);
+             shouldGrow = config.score > 0;
+         }
+diff --git a/frontend/src/scenes/FoodFxMixin.js b/frontend/src/scenes/FoodFxMixin.js
+new file mode 100644
+index 0000000..d4e5f6a
+--- /dev/null
++++ b/frontend/src/scenes/FoodFxMixin.js
+@@ -0,0 +1,137 @@
++import { GRID_SIZE } from '@shared/GameConfig';
++
++const FOOD_FX_CONFIG = {
++    grape: {
++        color: 0x9b59b6,
++        text: '+3',
++    },
++    speed: {
++        color: 0xf1c40f,
++        text: 'SPEED',
++    },
++    poison: {
++        color: 0x2ecc71,
++        text: '-2',
++    },
++};
++
++function getFoodFxConfig(foodType) {
++    return FOOD_FX_CONFIG[foodType] ?? null;
++}
++
++export const FoodFxMixin = {
++    initFoodFx() {
++        this.foodFxLayer = this.add.container(0, 0).setDepth(30);
++        this.foodFxParticles = this.add.particles(0, 0, '__WHITE', {
++            speed: { min: 40, max: 130 },
++            scale: { start: 0.18, end: 0 },
++            alpha: { start: 1, end: 0 },
++            lifespan: 320,
++            quantity: 14,
++            gravityY: 0,
++            emitting: false,
++            blendMode: 'ADD',
++        });
++
++        this.foodFxLayer.add(this.foodFxParticles);
++        this.lastRenderedFoodFxKeys = new Map();
++    },
++
++    destroyFoodFx() {
++        this.lastRenderedFoodFxKeys?.clear?.();
++        this.foodFxLayer?.destroy(true);
++        this.foodFxLayer = null;
++        this.foodFxParticles = null;
++        this.handleLocalFoodFx = null;
++    },
++
++    getBoardCellCenter(boardX, boardY) {
++        const col = Math.floor(boardX / GRID_SIZE);
++        const row = Math.floor(boardY / GRID_SIZE);
++
++        return {
++            x: this.boardOffsetX + col * this.cellSize + this.cellSize * 0.5,
++            y: this.boardOffsetY + row * this.cellSize + this.cellSize * 0.5,
++        };
++    },
++
++    spawnFoodFx(food) {
++        const config = getFoodFxConfig(food?.type);
++        if (!config) return;
++
++        const { x, y } = this.getBoardCellCenter(food.x, food.y);
++
++        this.foodFxParticles.setTint(config.color);
++        this.foodFxParticles.explode(14, x, y);
++
++        const floatingText = this.add.text(x, y - this.cellSize * 0.15, config.text, {
++            fontFamily: 'Arial',
++            fontSize: `${Math.max(14, Math.floor(this.cellSize * 0.65))}px`,
++            color: `#${config.color.toString(16).padStart(6, '0')}`,
++            stroke: '#0b1020',
++            strokeThickness: 3,
++            fontStyle: 'bold',
++        })
++            .setOrigin(0.5)
++            .setDepth(31);
++
++        this.foodFxLayer.add(floatingText);
++
++        this.tweens.add({
++            targets: floatingText,
++            y: y - this.cellSize * 0.9,
++            alpha: 0,
++            duration: 500,
++            ease: 'Cubic.easeOut',
++            onComplete: () => floatingText.destroy(),
++        });
++    },
++
++    bindLocalFoodFx(engine) {
++        if (!engine?.events?.on) return;
++
++        this.handleLocalFoodFx = ({ food }) => {
++            if (!food || food.type === 'apple') return;
++            this.spawnFoodFx(food);
++        };
++
++        engine.events.on('playerEatFood', this.handleLocalFoodFx);
++    },
++
++    unbindLocalFoodFx(engine) {
++        if (!engine?.events?.off || !this.handleLocalFoodFx) return;
++        engine.events.off('playerEatFood', this.handleLocalFoodFx);
++        this.handleLocalFoodFx = null;
++    },
++
++    syncRemoteFoodFx(state) {
++        const players = Array.from(state?.players?.values?.() ?? []);
++
++        players.forEach((player) => {
++            const food = player?.lastEatenFood;
++            const currentKey = food ? `${player.id}:${food.type}:${food.x}:${food.y}:${food.score}` : null;
++            const previousKey = this.lastRenderedFoodFxKeys.get(player.id) ?? null;
++
++            if (currentKey && currentKey !== previousKey && food.type !== 'apple') {
++                this.spawnFoodFx(food);
++            }
++
++            if (currentKey) {
++                this.lastRenderedFoodFxKeys.set(player.id, currentKey);
++            } else {
++                this.lastRenderedFoodFxKeys.delete(player.id);
++            }
++        });
++    },
++};
+diff --git a/frontend/src/scenes/LocalGame.js b/frontend/src/scenes/LocalGame.js
+index 7cf1309..b7c8d9e 100644
+--- a/frontend/src/scenes/LocalGame.js
++++ b/frontend/src/scenes/LocalGame.js
+@@ -1,5 +1,6 @@
+ import { SnakeEngine } from '@shared/SnakeEngine';
+ import { GRID_COLS, GRID_ROWS, GRID_SIZE, MAX_LIVES, TICK_MS, WIN_SCORE } from '@shared/GameConfig';
++import { FoodFxMixin } from './FoodFxMixin';
+ 
+ const P1_ID = 'player1';
+ const P2_ID = 'player2';
+@@ -31,6 +32,7 @@ export class LocalGame extends Phaser.Scene {
+         this.snakeGraphics = this.add.graphics();
+         this.foodGraphics  = this.add.graphics();
+         this.obstacleGraphics = this.add.graphics();
++        this.initFoodFx();
+ 
+         // Input
+         this.cursors = this.input.keyboard.createCursorKeys();
+@@ -82,6 +84,8 @@ export class LocalGame extends Phaser.Scene {
+         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+             this.scale.off('resize', this.resizeHandler);
+             this.toggleHud(false);
++            this.unbindLocalFoodFx(this.engine);
++            this.destroyFoodFx();
+         });
+ 
+         this.updateLayout(this.scale.width, this.scale.height);
+@@ -89,6 +93,7 @@ export class LocalGame extends Phaser.Scene {
+         this.renderState(this.engine.getState());
++        this.bindLocalFoodFx(this.engine);
+ 
+         this.time.delayedCall(0, () => {
+             this.scene.pause();
+@@ -352,3 +357,5 @@ export class LocalGame extends Phaser.Scene {
+         }
+     }
+ }
++
++Object.assign(LocalGame.prototype, FoodFxMixin);
+diff --git a/frontend/src/scenes/OnlineGame.js b/frontend/src/scenes/OnlineGame.js
+index 0f7edc5..c1d2e3f 100644
+--- a/frontend/src/scenes/OnlineGame.js
++++ b/frontend/src/scenes/OnlineGame.js
+@@ -1,5 +1,6 @@
+ import { Client } from '@colyseus/sdk';
+ import { GRID_COLS, GRID_ROWS, GRID_SIZE, MAX_LIVES, WIN_SCORE } from '@shared/GameConfig';
++import { FoodFxMixin } from './FoodFxMixin';
+ 
+ const SERVER_URL = 'ws://localhost:2567';
+ 
+@@ -27,6 +28,7 @@ export class OnlineGame extends Phaser.Scene {
+         this.snakeGraphics = this.add.graphics();
+         this.foodGraphics = this.add.graphics();
+         this.obstacleGraphics = this.add.graphics();
++        this.initFoodFx();
+ 
+         this.cursors = this.input.keyboard.createCursorKeys();
+         this.wasd = this.input.keyboard.addKeys({ up: 'W', left: 'A', down: 'S', right: 'D' });
+@@ -52,6 +54,7 @@ export class OnlineGame extends Phaser.Scene {
+             this.toggleHud(false);
+             this.removeInputListeners();
+             this.cleanupRoom();
++            this.destroyFoodFx();
+         });
+ 
+         this.updateLayout(this.scale.width, this.scale.height);
+@@ -277,6 +280,7 @@ export class OnlineGame extends Phaser.Scene {
+         this.obstacleGraphics.clear();
+ 
+         const { firstPlayer, secondPlayer } = this.syncHudFromPlayers(state);
++        this.syncRemoteFoodFx(state);
+ 
+         state.players.forEach((player) => {
+             if (!player.alive) return;
+@@ -346,3 +350,5 @@ export class OnlineGame extends Phaser.Scene {
+         this.cleanupRoom();
+     }
+ }
++
++Object.assign(OnlineGame.prototype, FoodFxMixin);

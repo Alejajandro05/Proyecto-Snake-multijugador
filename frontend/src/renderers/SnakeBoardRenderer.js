@@ -16,6 +16,15 @@ const FOOD_TYPE_TO_FRAME = {
     speed: 10
 };
 
+const SPECIAL_FOOD_EFFECTS = {
+    grape: { color: 0xC084FC, label: '+3' },
+    speed: { color: 0xF472B6, label: 'speed' },
+    poison: { color: 0xA3E635, label: '-2' },
+};
+
+const FOOD_EFFECT_DURATION_MS = 500;
+const FOOD_EFFECT_PARTICLE_COUNT = 14;
+
 const TUTORIAL_FRUIT_HIGHLIGHT_COLORS = {
     apple: 0xF87171,
     grape: 0xC084FC,
@@ -88,6 +97,8 @@ export class SnakeBoardRenderer {
         this.highlightPulse = 0.5;
         this.highlightTween = null;
         this.lastRenderedState = null;
+        this.lastFoodByKey = new Map();
+        this.handledFoodEffectKeys = new Set();
 
         // Pool de sprites por jugador: snakeSpritePools[playerIndex] = []
         this.snakeSpritePools = [[], []];
@@ -367,6 +378,7 @@ export class SnakeBoardRenderer {
 
     renderState(state) {
         if (state?.mapId) this.setMapId(state.mapId);
+        this.emitEffectsForRemovedFood(state?.food);
         this.lastRenderedState = state;
         this.clearDynamicLayers();
         this.renderTerritory(state?.territory);
@@ -374,6 +386,82 @@ export class SnakeBoardRenderer {
         this.renderFood(state?.food);
         this.renderObstacles(state?.obstacles);
         this.renderTutorialHighlightOverlay(state);
+    }
+
+    emitEffectsForRemovedFood(foodItems) {
+        const currentFoodByKey = new Map();
+        foodItems?.forEach?.((food) => {
+            currentFoodByKey.set(this.getFoodEffectKey(food), food);
+        });
+
+        this.lastFoodByKey.forEach((food, key) => {
+            if (currentFoodByKey.has(key)) return;
+            if (this.handledFoodEffectKeys.has(key)) {
+                this.handledFoodEffectKeys.delete(key);
+                return;
+            }
+            this.playFoodConsumeEffect(food);
+        });
+
+        this.lastFoodByKey = currentFoodByKey;
+    }
+
+    playFoodConsumeEffect(food) {
+        const effect = this.getSpecialFoodEffect(food);
+        if (!effect) return;
+
+        this.handledFoodEffectKeys.add(this.getFoodEffectKey(food));
+
+        const { centerX, centerY } = this.getCellCenter(food.x, food.y);
+        const particleLayer = this.scene.add.container(centerX, centerY).setDepth(30);
+        const text = this.scene.add.text(centerX, centerY - this.cellSize * 0.24, food.hudEffect ?? effect.label, {
+            fontFamily: 'Arial, sans-serif',
+            fontSize: `${Math.max(14, Math.floor(this.cellSize * 0.58))}px`,
+            fontStyle: '700',
+            color: this.colorNumberToHex(effect.color),
+            stroke: '#101522',
+            strokeThickness: Math.max(2, Math.floor(this.cellSize * 0.08)),
+        }).setOrigin(0.5).setDepth(31);
+
+        for (let i = 0; i < FOOD_EFFECT_PARTICLE_COUNT; i++) {
+            const radius = Math.max(2, this.cellSize * (0.055 + Math.random() * 0.045));
+            const particle = this.scene.add.circle(0, 0, radius, effect.color, 0.92);
+            const angle = Math.random() * Math.PI * 2;
+            const distance = this.cellSize * (0.36 + Math.random() * 0.36);
+
+            particleLayer.add(particle);
+            this.scene.tweens.add({
+                targets: particle,
+                x: Math.cos(angle) * distance,
+                y: Math.sin(angle) * distance,
+                alpha: 0,
+                scale: 0.25,
+                duration: FOOD_EFFECT_DURATION_MS,
+                ease: 'Cubic.easeOut',
+            });
+        }
+
+        this.scene.tweens.add({
+            targets: text,
+            y: centerY - this.cellSize * 1.05,
+            alpha: 0,
+            duration: FOOD_EFFECT_DURATION_MS,
+            ease: 'Cubic.easeOut',
+            onComplete: () => text.destroy(),
+        });
+
+        this.scene.time.delayedCall(FOOD_EFFECT_DURATION_MS, () => {
+            particleLayer.destroy(true);
+        });
+    }
+
+    getSpecialFoodEffect(food) {
+        if (!food || food.type === 'apple') return null;
+        return SPECIAL_FOOD_EFFECTS[food.type] ?? null;
+    }
+
+    getFoodEffectKey(food) {
+        return `${food?.x ?? ''}:${food?.y ?? ''}:${food?.type ?? ''}`;
     }
 
     renderTutorialHighlightOverlay(state) {
@@ -840,5 +928,18 @@ export class SnakeBoardRenderer {
             Math.max(1, this.cellSize - padding * 2),
             Math.max(1, this.cellSize - padding * 2)
         );
+    }
+
+    getCellCenter(x, y) {
+        const col = Math.floor(x / GRID_SIZE);
+        const row = Math.floor(y / GRID_SIZE);
+        return {
+            centerX: this.boardOffsetX + col * this.cellSize + this.cellSize * 0.5,
+            centerY: this.boardOffsetY + row * this.cellSize + this.cellSize * 0.5,
+        };
+    }
+
+    colorNumberToHex(color) {
+        return `#${Number(color).toString(16).padStart(6, '0').slice(-6)}`;
     }
 }
