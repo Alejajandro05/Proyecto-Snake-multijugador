@@ -10,6 +10,7 @@ export function normalizeLocalGameMode(value) {
         case 'territory':
         case 'contraIA':
         case 'captureTheFlag':
+        case 'ctf2v2':
             return String(value).trim();
         default:
             return 'normal';
@@ -18,23 +19,16 @@ export function normalizeLocalGameMode(value) {
 
 export function resolveLocalSceneKey(gameMode) {
     switch (normalizeLocalGameMode(gameMode)) {
-        case 'infinite':
-            return 'LocalGame';
-        case 'timeAttack':
-            return 'TimeAttackGame';
-        case 'chaos':
-            return 'ChaosGame';
-        case 'kingOfTheHill':
-            return 'KingOfTheHillGame';
-        case 'territory':
-            return 'TerritoryGame';
-        case 'contraIA':
-            return 'AgainstAIGame';
-        case 'captureTheFlag':
-            return 'CaptureTheFlagGame';
+        case 'infinite':       return 'LocalGame';
+        case 'timeAttack':     return 'TimeAttackGame';
+        case 'chaos':          return 'ChaosGame';
+        case 'kingOfTheHill':  return 'KingOfTheHillGame';
+        case 'territory':      return 'TerritoryGame';
+        case 'contraIA':       return 'AgainstAIGame';
+        case 'captureTheFlag': return 'CaptureTheFlagGame';
+        case 'ctf2v2':         return 'CaptureTheFlagGame2v2';
         case 'normal':
-        default:
-            return 'NormalLocalGame';
+        default:               return 'NormalLocalGame';
     }
 }
 
@@ -43,17 +37,15 @@ export function getNextHeadPosition(head, direction, board) {
     let x = Number(head?.x) || 0;
     let y = Number(head?.y) || 0;
 
-    if (direction === 'left') x -= gridSize;
+    if (direction === 'left')  x -= gridSize;
     if (direction === 'right') x += gridSize;
-    if (direction === 'up') y -= gridSize;
-    if (direction === 'down') y += gridSize;
+    if (direction === 'up')    y -= gridSize;
+    if (direction === 'down')  y += gridSize;
 
     return {
-        x,
-        y,
+        x, y,
         isOutOfBounds:
-            x < 0 ||
-            y < 0 ||
+            x < 0 || y < 0 ||
             x >= gridCols * gridSize ||
             y >= gridRows * gridSize,
     };

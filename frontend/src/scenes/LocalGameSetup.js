@@ -12,10 +12,12 @@ function safeName(value, fallback) {
 }
 
 const DEFAULT_CONFIG = {
-    difficulty: 'normal', // easy | normal | hard
+    difficulty: 'normal',
     mapId: DEFAULT_MAP_ID,
     p1: { name: 'Jugador 1', color: PLAYER_COLORS?.[0] ?? 0xe74c3c, skinId: DEFAULT_SNAKE_SKIN_ID },
     p2: { name: 'Jugador 2', color: PLAYER_COLORS?.[1] ?? 0x3498db, skinId: 'player2' },
+    p3: { name: 'Jugador 3', color: PLAYER_COLORS?.[0] ?? 0xe74c3c, skinId: DEFAULT_SNAKE_SKIN_ID },
+    p4: { name: 'Jugador 4', color: PLAYER_COLORS?.[1] ?? 0x3498db, skinId: 'player2' },
 };
 
 export class LocalGameSetup extends Phaser.Scene {
@@ -30,7 +32,6 @@ export class LocalGameSetup extends Phaser.Scene {
     }
 
     create() {
-        // Fondo igual al MainMenu (asset: frontend/assets/fondo_duelo.png → key: 'fondo_duelo')
         const fondo = this.add.image(this.scale.width / 2, this.scale.height / 2, 'fondo_duelo');
         const ajustarFondo = (width, height) => {
             fondo.setPosition(width / 2, height / 2);
@@ -42,10 +43,12 @@ export class LocalGameSetup extends Phaser.Scene {
         this.scale.on('resize', (gameSize) => ajustarFondo(gameSize.width, gameSize.height));
 
         const saved = loadLocalGameSettings();
-        const initialGameMode = normalizeLocalGameMode(this.presetMode ?? saved?.gameMode ?? 'normal');
+        const initialGameMode  = normalizeLocalGameMode(this.presetMode ?? saved?.gameMode ?? 'normal');
         const initialDifficulty = String(saved?.difficulty ?? DEFAULT_CONFIG.difficulty);
         const initialP1Name = safeName(saved?.players?.p1?.name, DEFAULT_CONFIG.p1.name);
         const initialP2Name = safeName(saved?.players?.p2?.name, DEFAULT_CONFIG.p2.name);
+        const initialP3Name = safeName(saved?.players?.p3?.name, DEFAULT_CONFIG.p3.name);
+        const initialP4Name = safeName(saved?.players?.p4?.name, DEFAULT_CONFIG.p4.name);
         let localProfiles = loadLocalPlayerProfiles(localStorage);
 
         const menuDiv = document.createElement('div');
@@ -56,16 +59,19 @@ export class LocalGameSetup extends Phaser.Scene {
         menuDiv.style.paddingBottom = '5.75rem';
         menuDiv.style.boxSizing = 'border-box';
 
-        let p1SkinIndex = 0;
-        let p2SkinIndex = 1;
+        let p1SkinIndex = 0, p2SkinIndex = 1, p3SkinIndex = 0, p4SkinIndex = 1;
         let mapIndex = 0;
 
         const prevP1Skin = getSnakeAsset(saved?.players?.p1?.skinId).id;
         const prevP2Skin = getSnakeAsset(saved?.players?.p2?.skinId).id;
-        const prevMap = getMapAsset(saved?.mapId).id;
-        p1SkinIndex = Math.max(0, snakeAssets.findIndex((skin) => skin.id === prevP1Skin));
-        p2SkinIndex = Math.max(0, snakeAssets.findIndex((skin) => skin.id === prevP2Skin));
-        mapIndex = Math.max(0, mapAssets.findIndex((map) => map.id === prevMap));
+        const prevP3Skin = getSnakeAsset(saved?.players?.p3?.skinId).id;
+        const prevP4Skin = getSnakeAsset(saved?.players?.p4?.skinId).id;
+        const prevMap    = getMapAsset(saved?.mapId).id;
+        p1SkinIndex = Math.max(0, snakeAssets.findIndex((s) => s.id === prevP1Skin));
+        p2SkinIndex = Math.max(0, snakeAssets.findIndex((s) => s.id === prevP2Skin));
+        p3SkinIndex = Math.max(0, snakeAssets.findIndex((s) => s.id === prevP3Skin));
+        p4SkinIndex = Math.max(0, snakeAssets.findIndex((s) => s.id === prevP4Skin));
+        mapIndex    = Math.max(0, mapAssets.findIndex((m) => m.id === prevMap));
 
         menuDiv.innerHTML = `
             <style>
@@ -78,69 +84,48 @@ export class LocalGameSetup extends Phaser.Scene {
                 #btn-create-local-game:hover { transform: scale(1.02); }
                 input.custom-input:focus { border-bottom: 2px solid rgba(255,255,255,0.5) !important; outline: none; box-shadow: none; }
                 input.custom-input { border-bottom: 2px solid transparent !important; border-radius: 0; }
-
                 .mode-select-btn { border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.06); color: white; transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease; }
-                .mode-select-btn:hover {
-                    transform: translateY(-1px);
-                    background: linear-gradient(180deg, #F67D31 0%, #e56a1f 100%);
-                    border-color: rgba(255, 200, 140, 0.95);
-                    color: #0B081A;
-                    box-shadow: 0 8px 28px rgba(246, 125, 49, 0.45);
-                }
-
-                .local-setup-card {
-                    max-height: min(88vh, calc(100vh - 7.25rem));
-                    overflow-y: auto;
-                }
+                .mode-select-btn:hover { transform: translateY(-1px); background: linear-gradient(180deg, #F67D31 0%, #e56a1f 100%); border-color: rgba(255,200,140,0.95); color: #0B081A; box-shadow: 0 8px 28px rgba(246,125,49,0.45); }
+                .local-setup-card { max-height: min(88vh, calc(100vh - 7.25rem)); overflow-y: auto; }
                 .local-setup-card::-webkit-scrollbar { width: 8px; }
-                .local-setup-card::-webkit-scrollbar-thumb { background: rgba(246, 125, 49, 0.45); border-radius: 999px; }
+                .local-setup-card::-webkit-scrollbar-thumb { background: rgba(246,125,49,0.45); border-radius: 999px; }
                 .local-setup-card::-webkit-scrollbar-track { background: rgba(255,255,255,0.06); border-radius: 999px; }
-
                 .mode-modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; padding: 22px; z-index: 2000; background: rgba(0,0,0,0.55); backdrop-filter: blur(6px); }
                 .mode-modal.open { display: flex; }
-                .mode-modal-panel { width: min(860px, 96vw); border-radius: 18px; background: rgba(12, 18, 42, 0.96); border: 2px solid rgba(246, 125, 49, 0.55); box-shadow: 0 30px 120px rgba(0,0,0,0.55); overflow: hidden; }
+                .mode-modal-panel { width: min(860px,96vw); border-radius: 18px; background: rgba(12,18,42,0.96); border: 2px solid rgba(246,125,49,0.55); box-shadow: 0 30px 120px rgba(0,0,0,0.55); overflow: hidden; }
                 .mode-modal-header { padding: 18px 18px 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border-bottom: 1px solid rgba(255,255,255,0.12); }
                 .mode-modal-title { margin: 0; color: white; font-weight: 800; letter-spacing: 1px; font-family: 'Montserrat', sans-serif; }
                 .mode-modal-subtitle { margin: 6px 0 0; color: rgba(255,255,255,0.75); font-size: 0.9rem; }
                 .mode-close { border: 1px solid rgba(255,255,255,0.22); background: transparent; color: white; border-radius: 999px; padding: 8px 12px; }
                 .mode-close:hover { background: rgba(255,255,255,0.08); }
-
                 .mode-carousel { display: grid; grid-template-columns: 64px 1fr 64px; align-items: center; gap: 10px; padding: 18px; }
                 .mode-arrow { width: 54px; height: 54px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); color: white; font-size: 28px; line-height: 1; display: grid; place-items: center; cursor: pointer; transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease; user-select: none; }
-                .mode-arrow:hover { transform: scale(1.04); background: rgba(255,255,255,0.1); border-color: rgba(246, 125, 49, 0.55); }
-
-                .mode-card { border-radius: 16px; overflow: hidden; border: 3px solid #F67D31; box-shadow: 0 18px 60px rgba(0,0,0,0.35); background: rgba(11, 8, 26, 1); }
-                .mode-card-img { aspect-ratio: 16 / 9; min-height: 220px; background: radial-gradient(circle at center, rgba(29, 43, 88, 0.5), #0B081A 70%); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+                .mode-arrow:hover { transform: scale(1.04); background: rgba(255,255,255,0.1); border-color: rgba(246,125,49,0.55); }
+                .mode-card { border-radius: 16px; overflow: hidden; border: 3px solid #F67D31; box-shadow: 0 18px 60px rgba(0,0,0,0.35); background: rgba(11,8,26,1); }
+                .mode-card-img { aspect-ratio: 16/9; min-height: 220px; background: radial-gradient(circle at center, rgba(29,43,88,0.5), #0B081A 70%); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
                 .mode-card-img img { width: 100%; height: 100%; object-fit: contain; object-position: center; opacity: 0.96; }
                 .mode-card-img::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(12,18,42,1), rgba(12,18,42,0.15)); }
-                .mode-card-body { padding: 16px 16px 18px; background: rgba(12, 18, 42, 0.98); }
+                .mode-card-body { padding: 16px 16px 18px; background: rgba(12,18,42,0.98); }
                 .mode-card-title { margin: 0 0 6px; color: white; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; font-family: 'Montserrat', sans-serif; }
                 .mode-card-desc { margin: 0; color: rgba(255,255,255,0.8); font-size: 0.95rem; line-height: 1.3; }
-
                 .mode-modal-footer { padding: 14px 18px 18px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid rgba(255,255,255,0.12); }
-                .mode-choose { padding: 12px 16px; border-radius: 999px; border: 2px solid rgba(246, 125, 49, 0.85); background: linear-gradient(90deg, #DE1A58, #8F0177); color: white; font-weight: 800; }
+                .mode-choose { padding: 12px 16px; border-radius: 999px; border: 2px solid rgba(246,125,49,0.85); background: linear-gradient(90deg, #DE1A58, #8F0177); color: white; font-weight: 800; }
                 .mode-choose:hover { filter: brightness(1.03); }
                 .mode-cancel { padding: 12px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.22); background: rgba(255,255,255,0.06); color: white; font-weight: 700; }
                 .mode-cancel:hover { background: rgba(255,255,255,0.1); }
                 .map-option { border: 2px solid rgba(255,255,255,0.16); background: rgba(255,255,255,0.06); color: white; transition: all 0.2s; }
                 .map-option:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.4); }
                 .map-option.active { border-color: #F67D31; box-shadow: 0 0 0 2px rgba(246,125,49,0.2), 0 12px 28px rgba(0,0,0,0.25); }
-                .profile-select {
-                    max-width: 200px;
-                    background: rgba(255,255,255,0.08);
-                    border: 1px solid rgba(255,255,255,0.18);
-                    color: white;
-                }
-                .profile-select option {
-                    color: black;
-                }
+                .profile-select { max-width: 200px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: white; }
+                .profile-select option { color: black; }
+                /* 2v2 extra players panel */
+                #extra-players-panel { display: none; }
+                #extra-players-panel.visible { display: flex; }
             </style>
             <div class="w-100 px-3 d-flex flex-column align-items-center" style="max-width: 900px;">
-                <button id="btn-setup-back" class="btn btn-sm btn-outline-light fw-semibold align-self-start mb-3" type="button" style="border-radius: 999px; padding: 8px 14px;">
-                    ← Volver
-                </button>
-                <div class="local-setup-card rounded-4 shadow-lg p-4 p-md-4 d-flex flex-column align-items-center w-100" style="background: rgba(15, 23, 42, 0.86); border: 1px solid rgba(255,255,255,0.14); backdrop-filter: blur(6px);">
-                    
+                <button id="btn-setup-back" class="btn btn-sm btn-outline-light fw-semibold align-self-start mb-3" type="button" style="border-radius: 999px; padding: 8px 14px;">← Volver</button>
+                <div class="local-setup-card rounded-4 shadow-lg p-4 p-md-4 d-flex flex-column align-items-center w-100" style="background: rgba(15,23,42,0.86); border: 1px solid rgba(255,255,255,0.14); backdrop-filter: blur(6px);">
+
                     <div class="rounded-pill px-5 py-2 mb-4 text-center" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); min-width: 50%;">
                         <h1 class="h3 text-white fw-bold mb-0" style="font-family: 'Teko', sans-serif; letter-spacing: 1px;">CONFIGURACIÓN LOCAL</h1>
                     </div>
@@ -148,68 +133,90 @@ export class LocalGameSetup extends Phaser.Scene {
                     <div class="w-75 border-bottom border-secondary opacity-50 mb-4"></div>
 
                     <div class="d-flex gap-3 mb-4 w-100 justify-content-center flex-wrap">
-                        <button id="btn-diff-easy" type="button" class="btn rounded-pill px-4 py-2 fw-bold diff-btn" data-difficulty="easy" style="min-width: 120px;">Easy</button>
-                        <button id="btn-diff-normal" type="button" class="btn rounded-pill px-4 py-2 fw-bold diff-btn" data-difficulty="normal" style="min-width: 120px;">Medium</button>
-                        <button id="btn-diff-hard" type="button" class="btn rounded-pill px-4 py-2 fw-bold diff-btn" data-difficulty="hard" style="min-width: 120px;">Hard</button>
+                        <button id="btn-diff-easy"   type="button" class="btn rounded-pill px-4 py-2 fw-bold diff-btn" data-difficulty="easy"   style="min-width:120px;">Easy</button>
+                        <button id="btn-diff-normal" type="button" class="btn rounded-pill px-4 py-2 fw-bold diff-btn" data-difficulty="normal" style="min-width:120px;">Medium</button>
+                        <button id="btn-diff-hard"   type="button" class="btn rounded-pill px-4 py-2 fw-bold diff-btn" data-difficulty="hard"   style="min-width:120px;">Hard</button>
                         <input id="difficulty" type="hidden" value="${initialDifficulty}" />
                     </div>
 
                     <div class="w-75 border-bottom border-secondary opacity-50 mb-4"></div>
 
                     <div class="d-flex flex-column align-items-center mb-4 w-100">
-                        <button id="btn-open-mode" type="button" class="btn rounded-pill px-4 py-2 fw-bold mode-select-btn" style="min-width: 280px;">
-                            Seleccionar modo de juego
-                        </button>
-                        <div id="mode-selected-label" class="mt-2 small" style="color: rgba(255,255,255,0.75);">
-                            -
-                        </div>
+                        <button id="btn-open-mode" type="button" class="btn rounded-pill px-4 py-2 fw-bold mode-select-btn" style="min-width:280px;">Seleccionar modo de juego</button>
+                        <div id="mode-selected-label" class="mt-2 small" style="color: rgba(255,255,255,0.75);">-</div>
                         <input id="gameMode" type="hidden" value="${initialGameMode}" />
                     </div>
 
                     <div class="w-75 border-bottom border-secondary opacity-50 mb-4"></div>
 
-                    <div class="row w-100 mb-4 justify-content-center gap-2 gap-md-5">
+                    <!-- Players 1 & 2 (always visible) -->
+                    <div class="row w-100 mb-4 justify-content-center gap-2 gap-md-5" id="players-1v1">
                         <div class="col-12 col-sm-auto text-center d-flex flex-column align-items-center mb-4 mb-sm-0">
                             <select id="p1-profile-select" class="form-select form-select-sm profile-select mb-2"></select>
-                            <input id="p1-name" class="form-control bg-transparent text-white text-center fs-5 fw-bold mb-3 custom-input" placeholder="Jugador 1" maxlength="16" value="${initialP1Name}" style="max-width: 200px;" />
+                            <input id="p1-name" class="form-control bg-transparent text-white text-center fs-5 fw-bold mb-3 custom-input" placeholder="Jugador 1" maxlength="16" value="${initialP1Name}" style="max-width:200px;" />
                             <div class="d-flex align-items-center gap-3">
-                                <button id="p1-prev" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height: 1;">&lsaquo;</button>
-                                <div id="p1-skin-container" class="rounded-4 d-flex align-items-center justify-content-center shadow-sm" style="width: 160px; height: 160px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); transition: border-color 0.3s; padding: 10px;">
-                                </div>
-                                <button id="p1-next" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height: 1;">&rsaquo;</button>
+                                <button id="p1-prev" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height:1;">&lsaquo;</button>
+                                <div id="p1-skin-container" class="rounded-4 d-flex align-items-center justify-content-center shadow-sm" style="width:160px;height:160px;background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.2);padding:10px;"></div>
+                                <button id="p1-next" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height:1;">&rsaquo;</button>
                             </div>
-                            <div id="p1-control-label" class="badge rounded-pill mt-3 px-3 py-2" style="background: rgba(222, 26, 88, 0.22); color: #fff; border: 1px solid rgba(222, 26, 88, 0.4); letter-spacing: 1px;">WASD</div>
+                            <div id="p1-control-label" class="badge rounded-pill mt-3 px-3 py-2" style="background:rgba(222,26,88,0.22);color:#fff;border:1px solid rgba(222,26,88,0.4);letter-spacing:1px;">WASD</div>
                         </div>
-
                         <div class="col-12 col-sm-auto text-center d-flex flex-column align-items-center">
                             <select id="p2-profile-select" class="form-select form-select-sm profile-select mb-2"></select>
-                            <input id="p2-name" class="form-control bg-transparent text-white text-center fs-5 fw-bold mb-3 custom-input" placeholder="Jugador 2" maxlength="16" value="${initialP2Name}" style="max-width: 200px;" />
+                            <input id="p2-name" class="form-control bg-transparent text-white text-center fs-5 fw-bold mb-3 custom-input" placeholder="Jugador 2" maxlength="16" value="${initialP2Name}" style="max-width:200px;" />
                             <div class="d-flex align-items-center gap-3">
-                                <button id="p2-prev" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height: 1;">&lsaquo;</button>
-                                <div id="p2-skin-container" class="rounded-4 d-flex align-items-center justify-content-center shadow-sm" style="width: 160px; height: 160px; background: rgba(255,255,255,0.05); border: 2px solid rgba(255,255,255,0.2); transition: border-color 0.3s; padding: 10px;">
-                                </div>
-                                <button id="p2-next" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height: 1;">&rsaquo;</button>
+                                <button id="p2-prev" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height:1;">&lsaquo;</button>
+                                <div id="p2-skin-container" class="rounded-4 d-flex align-items-center justify-content-center shadow-sm" style="width:160px;height:160px;background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.2);padding:10px;"></div>
+                                <button id="p2-next" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height:1;">&rsaquo;</button>
                             </div>
-                            <div id="p2-control-label" class="badge rounded-pill mt-3 px-3 py-2" style="background: rgba(56, 189, 248, 0.18); color: #fff; border: 1px solid rgba(56, 189, 248, 0.35); letter-spacing: 1px;">FLECHAS</div>
+                            <div id="p2-control-label" class="badge rounded-pill mt-3 px-3 py-2" style="background:rgba(56,189,248,0.18);color:#fff;border:1px solid rgba(56,189,248,0.35);letter-spacing:1px;">FLECHAS</div>
+                        </div>
+                    </div>
+
+                    <!-- Players 3 & 4 (only visible in ctf2v2) -->
+                    <div id="extra-players-panel" class="row w-100 mb-4 justify-content-center gap-2 gap-md-5 flex-wrap">
+                        <div class="w-100 text-center mb-2">
+                            <span class="badge rounded-pill px-4 py-2" style="background:rgba(246,125,49,0.18);border:1px solid rgba(246,125,49,0.4);color:#F67D31;font-size:0.85rem;letter-spacing:1px;">2v2 — EQUIPO ROJO: J1(WASD) J2(TFGH) &nbsp;|&nbsp; EQUIPO AZUL: J3(IJKL) J4(Flechas)</span>
+                        </div>
+                        <div class="col-12 col-sm-auto text-center d-flex flex-column align-items-center mb-4 mb-sm-0">
+                            <select id="p3-profile-select" class="form-select form-select-sm profile-select mb-2"></select>
+                            <input id="p3-name" class="form-control bg-transparent text-white text-center fs-5 fw-bold mb-3 custom-input" placeholder="Jugador 3" maxlength="16" value="${initialP3Name}" style="max-width:200px;" />
+                            <div class="d-flex align-items-center gap-3">
+                                <button id="p3-prev" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height:1;">&lsaquo;</button>
+                                <div id="p3-skin-container" class="rounded-4 d-flex align-items-center justify-content-center shadow-sm" style="width:160px;height:160px;background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.2);padding:10px;"></div>
+                                <button id="p3-next" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height:1;">&rsaquo;</button>
+                            </div>
+                            <div class="badge rounded-pill mt-3 px-3 py-2" style="background:rgba(56,189,248,0.18);color:#fff;border:1px solid rgba(56,189,248,0.35);letter-spacing:1px;">IJKL</div>
+                        </div>
+                        <div class="col-12 col-sm-auto text-center d-flex flex-column align-items-center">
+                            <select id="p4-profile-select" class="form-select form-select-sm profile-select mb-2"></select>
+                            <input id="p4-name" class="form-control bg-transparent text-white text-center fs-5 fw-bold mb-3 custom-input" placeholder="Jugador 4" maxlength="16" value="${initialP4Name}" style="max-width:200px;" />
+                            <div class="d-flex align-items-center gap-3">
+                                <button id="p4-prev" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height:1;">&lsaquo;</button>
+                                <div id="p4-skin-container" class="rounded-4 d-flex align-items-center justify-content-center shadow-sm" style="width:160px;height:160px;background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.2);padding:10px;"></div>
+                                <button id="p4-next" class="btn btn-link text-white fs-1 text-decoration-none px-2 py-0 skin-arrow" style="line-height:1;">&rsaquo;</button>
+                            </div>
+                            <div class="badge rounded-pill mt-3 px-3 py-2" style="background:rgba(56,189,248,0.18);color:#fff;border:1px solid rgba(56,189,248,0.35);letter-spacing:1px;">FLECHAS</div>
                         </div>
                     </div>
 
                     <div class="w-75 border-bottom border-secondary opacity-50 mb-4"></div>
 
                     <div class="w-100 mb-4">
-                        <h2 class="h6 text-white text-center fw-bold mb-3" style="font-family: 'Montserrat', sans-serif; letter-spacing: 1px;">MAPA / ARENA</h2>
+                        <h2 class="h6 text-white text-center fw-bold mb-3" style="font-family:'Montserrat',sans-serif;letter-spacing:1px;">MAPA / ARENA</h2>
                         <div id="local-map-options" class="d-flex gap-2 justify-content-center flex-wrap"></div>
                     </div>
 
                     <div class="w-100 d-flex justify-content-center mt-3">
                         <button id="btn-create-local-game" class="btn btn-lg fw-bold text-white shadow rounded-pill"
-                            style="padding: 14px 18px; background: linear-gradient(90deg, #DE1A58, #8F0177); border: 2px solid rgba(246, 125, 49, 0.85); font-family: 'Montserrat', sans-serif; min-width: 280px; width: 60%;">
+                            style="padding:14px 18px;background:linear-gradient(90deg,#DE1A58,#8F0177);border:2px solid rgba(246,125,49,0.85);font-family:'Montserrat',sans-serif;min-width:280px;width:60%;">
                             Crear Partida
                         </button>
                     </div>
                 </div>
             </div>
 
+            <!-- Mode modal -->
             <div id="mode-modal" class="mode-modal" role="dialog" aria-modal="true" aria-labelledby="mode-modal-title">
                 <div class="mode-modal-panel">
                     <div class="mode-modal-header">
@@ -219,13 +226,11 @@ export class LocalGameSetup extends Phaser.Scene {
                         </div>
                         <button id="mode-close" class="mode-close" type="button">Cerrar</button>
                     </div>
-
                     <div class="mode-carousel">
                         <button id="mode-prev" class="mode-arrow" type="button" aria-label="Anterior">‹</button>
                         <div id="mode-card-slot"></div>
                         <button id="mode-next" class="mode-arrow" type="button" aria-label="Siguiente">›</button>
                     </div>
-
                     <div class="mode-modal-footer">
                         <button id="mode-cancel" class="mode-cancel" type="button">Cancelar</button>
                         <button id="mode-choose" class="mode-choose" type="button">Elegir este modo</button>
@@ -234,14 +239,11 @@ export class LocalGameSetup extends Phaser.Scene {
             </div>
         `;
 
-        const getSkinImg = (skin) => {
-            return `
-                <div class="d-flex flex-column align-items-center gap-2">
-                    <img src="/${skin.preview.path}" style="width: 96px; height: 96px; object-fit: contain; image-rendering: pixelated;" alt="${skin.label}">
-                    <span class="text-white-50 small">${skin.label}</span>
-                </div>
-            `;
-        };
+        const getSkinImg = (skin) => `
+            <div class="d-flex flex-column align-items-center gap-2">
+                <img src="/${skin.preview.path}" style="width:96px;height:96px;object-fit:contain;image-rendering:pixelated;" alt="${skin.label}">
+                <span class="text-white-50 small">${skin.label}</span>
+            </div>`;
 
         const buildProfileOptions = (selectedName) => {
             const selectedId = sanitizeLocalProfileName(selectedName).toLowerCase();
@@ -257,52 +259,47 @@ export class LocalGameSetup extends Phaser.Scene {
 
         const syncProfileSelect = (selectId, inputId) => {
             const select = document.getElementById(selectId);
-            const input = document.getElementById(inputId);
+            const input  = document.getElementById(inputId);
             if (!select || !input) return;
             const currentName = sanitizeLocalProfileName(input.value);
-            const matching = localProfiles.find((profile) => sanitizeLocalProfileName(profile.name).toLowerCase() === currentName.toLowerCase());
+            const matching = localProfiles.find((p) => sanitizeLocalProfileName(p.name).toLowerCase() === currentName.toLowerCase());
             select.value = matching ? sanitizeLocalProfileName(matching.name) : '';
         };
 
         const renderProfileSelects = () => {
-            const p1Select = document.getElementById('p1-profile-select');
-            const p2Select = document.getElementById('p2-profile-select');
-            if (p1Select) p1Select.innerHTML = buildProfileOptions(document.getElementById('p1-name')?.value ?? initialP1Name);
-            if (p2Select) p2Select.innerHTML = buildProfileOptions(document.getElementById('p2-name')?.value ?? initialP2Name);
-            syncProfileSelect('p1-profile-select', 'p1-name');
-            syncProfileSelect('p2-profile-select', 'p2-name');
+            ['p1','p2','p3','p4'].forEach((p) => {
+                const sel = document.getElementById(`${p}-profile-select`);
+                const inp = document.getElementById(`${p}-name`);
+                if (sel) sel.innerHTML = buildProfileOptions(inp?.value ?? '');
+                syncProfileSelect(`${p}-profile-select`, `${p}-name`);
+            });
         };
 
+        const skinIndexes = { p1: p1SkinIndex, p2: p2SkinIndex, p3: p3SkinIndex, p4: p4SkinIndex };
         const updateSkins = () => {
-            const p1Container = document.getElementById('p1-skin-container');
-            if (p1Container) p1Container.innerHTML = getSkinImg(snakeAssets[p1SkinIndex]);
-            const p2Container = document.getElementById('p2-skin-container');
-            if (p2Container) p2Container.innerHTML = getSkinImg(snakeAssets[p2SkinIndex]);
+            ['p1','p2','p3','p4'].forEach((p) => {
+                const el = document.getElementById(`${p}-skin-container`);
+                if (el) el.innerHTML = getSkinImg(snakeAssets[skinIndexes[p]]);
+            });
         };
 
         const renderMapOptions = () => {
             const root = document.getElementById('local-map-options');
             if (!root) return;
-
             root.innerHTML = mapAssets.map((map, index) => `
-                <button type="button" class="map-option rounded-3 p-2 text-center ${index === mapIndex ? 'active' : ''}" data-map-index="${index}" style="width: 112px;">
-                    <span class="d-block rounded-2 mb-2" style="height: 42px; background: url('/${map.floor.path}') center/32px 32px repeat; image-rendering: pixelated;"></span>
+                <button type="button" class="map-option rounded-3 p-2 text-center ${index === mapIndex ? 'active' : ''}" data-map-index="${index}" style="width:112px;">
+                    <span class="d-block rounded-2 mb-2" style="height:42px;background:url('/${map.floor.path}') center/32px 32px repeat;image-rendering:pixelated;"></span>
                     <span class="small fw-semibold">${map.label}</span>
-                </button>
-            `).join('');
-
-            root.querySelectorAll('[data-map-index]').forEach((button) => {
-                button.addEventListener('click', () => {
-                    mapIndex = Number(button.getAttribute('data-map-index')) || 0;
-                    renderMapOptions();
-                });
+                </button>`).join('');
+            root.querySelectorAll('[data-map-index]').forEach((btn) => {
+                btn.addEventListener('click', () => { mapIndex = Number(btn.getAttribute('data-map-index')) || 0; renderMapOptions(); });
             });
         };
 
         const container = document.getElementById('game-container');
         container.appendChild(menuDiv);
         this.overlayEl = menuDiv;
-        
+
         updateSkins();
         renderMapOptions();
         renderProfileSelects();
@@ -314,43 +311,34 @@ export class LocalGameSetup extends Phaser.Scene {
             this.overlayEl = null;
         };
 
-        const goBack = () => {
-            cleanup();
-            this.scene.start('MainMenu');
-        };
+        const goBack = () => { cleanup(); this.scene.start('MainMenu'); };
 
         const startGame = () => {
-            const gameMode = normalizeLocalGameMode(document.getElementById('gameMode')?.value ?? 'normal');
+            const gameMode   = normalizeLocalGameMode(document.getElementById('gameMode')?.value ?? 'normal');
             const difficulty = String(document.getElementById('difficulty')?.value ?? DEFAULT_CONFIG.difficulty);
             const p1Name = safeName(document.getElementById('p1-name')?.value, DEFAULT_CONFIG.p1.name);
             const p2Name = safeName(document.getElementById('p2-name')?.value, DEFAULT_CONFIG.p2.name);
+            const p3Name = safeName(document.getElementById('p3-name')?.value, DEFAULT_CONFIG.p3.name);
+            const p4Name = safeName(document.getElementById('p4-name')?.value, DEFAULT_CONFIG.p4.name);
 
-            ensureLocalPlayerProfile(localStorage, p1Name);
-            ensureLocalPlayerProfile(localStorage, p2Name);
+            [p1Name, p2Name, p3Name, p4Name].forEach((n) => ensureLocalPlayerProfile(localStorage, n));
             localProfiles = loadLocalPlayerProfiles(localStorage);
-            
-            // Keep local player identity colors stable even if both choose the same skin.
-            const defaultColors = Array.isArray(PLAYER_COLORS) && PLAYER_COLORS.length ? PLAYER_COLORS : [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71];
-            const p1Color = defaultColors[0] ?? 0xe74c3c;
-            const p2Color = defaultColors[1] ?? 0x3498db;
 
-            const p1Skin = snakeAssets[p1SkinIndex]?.id ?? DEFAULT_SNAKE_SKIN_ID;
-            const p2Skin = snakeAssets[p2SkinIndex]?.id ?? 'player2';
+            const defaultColors = Array.isArray(PLAYER_COLORS) && PLAYER_COLORS.length ? PLAYER_COLORS : [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71];
             const selectedMap = mapAssets[mapIndex] ?? getMapAsset(DEFAULT_MAP_ID);
             const mapId = selectedMap?.id ?? DEFAULT_MAP_ID;
 
             const payload = {
-                gameMode,
-                difficulty,
-                mapId,
+                gameMode, difficulty, mapId,
                 players: {
-                    p1: { name: p1Name, color: p1Color, skinId: p1Skin },
-                    p2: { name: p2Name, color: p2Color, skinId: p2Skin },
+                    p1: { name: p1Name, color: defaultColors[0] ?? 0xe74c3c, skinId: snakeAssets[skinIndexes.p1]?.id ?? DEFAULT_SNAKE_SKIN_ID },
+                    p2: { name: p2Name, color: defaultColors[0] ?? 0xe74c3c, skinId: snakeAssets[skinIndexes.p2]?.id ?? 'player2' },
+                    p3: { name: p3Name, color: defaultColors[1] ?? 0x3498db, skinId: snakeAssets[skinIndexes.p3]?.id ?? DEFAULT_SNAKE_SKIN_ID },
+                    p4: { name: p4Name, color: defaultColors[1] ?? 0x3498db, skinId: snakeAssets[skinIndexes.p4]?.id ?? 'player2' },
                 },
             };
 
             saveLocalGameSettings(payload);
-
             cleanup();
             this.scene.start(resolveLocalSceneKey(gameMode), payload);
         };
@@ -358,144 +346,66 @@ export class LocalGameSetup extends Phaser.Scene {
         document.getElementById('btn-setup-back')?.addEventListener('click', goBack);
         document.getElementById('btn-create-local-game')?.addEventListener('click', startGame);
 
-        document.getElementById('p1-prev')?.addEventListener('click', () => {
-            p1SkinIndex = (p1SkinIndex - 1 + snakeAssets.length) % snakeAssets.length;
-            updateSkins();
-        });
-        document.getElementById('p1-next')?.addEventListener('click', () => {
-            p1SkinIndex = (p1SkinIndex + 1) % snakeAssets.length;
-            updateSkins();
-        });
-        document.getElementById('p2-prev')?.addEventListener('click', () => {
-            p2SkinIndex = (p2SkinIndex - 1 + snakeAssets.length) % snakeAssets.length;
-            updateSkins();
-        });
-        document.getElementById('p2-next')?.addEventListener('click', () => {
-            p2SkinIndex = (p2SkinIndex + 1) % snakeAssets.length;
-            updateSkins();
+        ['p1','p2','p3','p4'].forEach((p) => {
+            document.getElementById(`${p}-prev`)?.addEventListener('click', () => {
+                skinIndexes[p] = (skinIndexes[p] - 1 + snakeAssets.length) % snakeAssets.length;
+                updateSkins();
+            });
+            document.getElementById(`${p}-next`)?.addEventListener('click', () => {
+                skinIndexes[p] = (skinIndexes[p] + 1) % snakeAssets.length;
+                updateSkins();
+            });
         });
 
         const bindProfilePicker = (selectId, inputId) => {
             const select = document.getElementById(selectId);
-            const input = document.getElementById(inputId);
+            const input  = document.getElementById(inputId);
             if (!select || !input) return;
-
-            select.addEventListener('change', () => {
-                if (!select.value) {
-                    input.focus();
-                    return;
-                }
-                input.value = sanitizeLocalProfileName(select.value);
-            });
-
-            const syncInput = () => {
-                input.value = sanitizeLocalProfileName(input.value);
-                syncProfileSelect(selectId, inputId);
-            };
-
+            select.addEventListener('change', () => { if (!select.value) { input.focus(); return; } input.value = sanitizeLocalProfileName(select.value); });
+            const syncInput = () => { input.value = sanitizeLocalProfileName(input.value); syncProfileSelect(selectId, inputId); };
             input.addEventListener('input', syncInput);
             input.addEventListener('blur', syncInput);
         };
+        ['p1','p2','p3','p4'].forEach((p) => bindProfilePicker(`${p}-profile-select`, `${p}-name`));
 
-        bindProfilePicker('p1-profile-select', 'p1-name');
-        bindProfilePicker('p2-profile-select', 'p2-name');
-
-        const difficultyInput = document.getElementById('difficulty');
+        const difficultyInput   = document.getElementById('difficulty');
         const difficultyButtons = Array.from(menuDiv.querySelectorAll('[data-difficulty]'));
         const setDifficultyUi = (value) => {
             const v = String(value ?? DEFAULT_CONFIG.difficulty);
             if (difficultyInput) difficultyInput.value = v;
-
-            difficultyButtons.forEach((btn) => {
-                const isActive = btn.getAttribute('data-difficulty') === v;
-                if (isActive) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
+            difficultyButtons.forEach((btn) => btn.classList.toggle('active', btn.getAttribute('data-difficulty') === v));
         };
-
-        difficultyButtons.forEach((btn) => {
-            btn.addEventListener('click', () => setDifficultyUi(btn.getAttribute('data-difficulty')));
-        });
+        difficultyButtons.forEach((btn) => btn.addEventListener('click', () => setDifficultyUi(btn.getAttribute('data-difficulty'))));
         setDifficultyUi(initialDifficulty);
 
-        const gameModeInput = document.getElementById('gameMode');
+        const gameModeInput    = document.getElementById('gameMode');
         const modeSelectedLabel = document.getElementById('mode-selected-label');
-        const modeOpenBtn = document.getElementById('btn-open-mode');
-        const p1ControlLabel = document.getElementById('p1-control-label');
-        const p2ControlLabel = document.getElementById('p2-control-label');
+        const modeOpenBtn      = document.getElementById('btn-open-mode');
+        const p1ControlLabel   = document.getElementById('p1-control-label');
+        const p2ControlLabel   = document.getElementById('p2-control-label');
+        const extraPanel       = document.getElementById('extra-players-panel');
 
-        const modeModal = document.getElementById('mode-modal');
-        const modeClose = document.getElementById('mode-close');
-        const modeCancel = document.getElementById('mode-cancel');
-        const modeChoose = document.getElementById('mode-choose');
-        const modePrev = document.getElementById('mode-prev');
-        const modeNext = document.getElementById('mode-next');
+        const modeModal    = document.getElementById('mode-modal');
+        const modeClose    = document.getElementById('mode-close');
+        const modeCancel   = document.getElementById('mode-cancel');
+        const modeChoose   = document.getElementById('mode-choose');
+        const modePrev     = document.getElementById('mode-prev');
+        const modeNext     = document.getElementById('mode-next');
         const modeCardSlot = document.getElementById('mode-card-slot');
 
         const MODES = [
-            {
-                id: 'normal',
-                title: 'NORMAL GAME',
-                desc: 'El modo clasico local: si chocas contra una pared, pierdes una vida.',
-                img: '/normal_game.png',
-                label: 'Normal Game',
-            },
-            {
-                id: 'infinite',
-                title: 'INFINITE MODE',
-                desc: 'Tablero infinito: al salir por un borde reapareces por el lado opuesto.',
-                img: '/infinite_mode.png',
-                label: 'Infinite Mode',
-            },
-            {
-                id: 'timeAttack',
-                title: 'CONTRARRELOJ',
-                desc: '1 minuto, vidas infinitas y Muerte súbita en empate.',
-                img: '/time_attack.png',
-                label: 'Contrarreloj',
-            },
-            {
-                id: 'chaos',
-                title: 'MODO CAOS',
-                desc: '5 vidas, sin victoria por puntuación: gana quien aguante. Efectos aleatorios en el tablero y los controles.',
-                img: '/ModoCaos2.png',
-                label: 'Modo Caos',
-            },
-            {
-                id: 'kingOfTheHill',
-                title: 'REY DE LA COLINA',
-                desc: 'La zona (naranja) cambia cada 6 s. Gana quien llegue antes a 100 puntos o quien conserve vidas cuando el rival se quede sin ellas.',
-                img: '/ModoReyColina.png',
-                label: 'Rey de la colina',
-            },
-            {
-                id: 'territory',
-                title: 'CONTROL DE TERRITORIO',
-                desc: 'Cada serpiente deja un rastro de su color. Si invades una casilla rival, la conquistas. Gana quien tenga mas casillas al terminar el tiempo.',
-                img: '/territorygame.png',
-                label: 'Control de territorio',
-            },
-            {
-                id: 'captureTheFlag',
-                title: 'CAPTURE THE FLAG',
-                desc: 'Roba la bandera rival y vuelve a tu base. Solo puntuas si tu propia bandera sigue en casa.',
-                img: '/modoCTF.png',
-                label: 'Capture the Flag',
-            },
-            {
-                id: 'contraIA',
-                title: 'Contra IA',
-                desc: 'Juega contra una serpiente controlada por la IA',
-                img: '/contraIA.png',
-                label: 'Contra IA',
-            },
+            { id: 'normal',         title: 'NORMAL GAME',             desc: 'El modo clasico local: si chocas contra una pared, pierdes una vida.',                                                                                               img: '/normal_game.png',    label: 'Normal Game' },
+            { id: 'infinite',       title: 'INFINITE MODE',           desc: 'Tablero infinito: al salir por un borde reapareces por el lado opuesto.',                                                                                            img: '/infinite_mode.png',  label: 'Infinite Mode' },
+            { id: 'timeAttack',     title: 'CONTRARRELOJ',            desc: '1 minuto, vidas infinitas y Muerte súbita en empate.',                                                                                                             img: '/time_attack.png',    label: 'Contrarreloj' },
+            { id: 'chaos',          title: 'MODO CAOS',               desc: '5 vidas, sin victoria por puntuación: gana quien aguante. Efectos aleatorios en el tablero y los controles.',                                                    img: '/ModoCaos2.png',      label: 'Modo Caos' },
+            { id: 'kingOfTheHill',  title: 'REY DE LA COLINA',        desc: 'La zona (naranja) cambia cada 6 s. Gana quien llegue antes a 100 puntos o quien conserve vidas cuando el rival se quede sin ellas.',                          img: '/ModoReyColina.png',  label: 'Rey de la colina' },
+            { id: 'territory',      title: 'CONTROL DE TERRITORIO',   desc: 'Cada serpiente deja un rastro de su color. Si invades una casilla rival, la conquistas. Gana quien tenga mas casillas al terminar el tiempo.',             img: '/territorygame.png',  label: 'Control de territorio' },
+            { id: 'captureTheFlag', title: 'CAPTURE THE FLAG (1v1)',  desc: 'Roba la bandera rival y vuelve a tu base. Solo puntuas si tu propia bandera sigue en casa. 2 jugadores.',                                                   img: '/modoCTF.png',        label: 'Capture the Flag (1v1)' },
+            { id: 'ctf2v2',         title: 'CTF 2v2',                 desc: 'Captura la Bandera en equipos: Rojo (J1 WASD + J2 TFGH) vs Azul (J3 IJKL + J4 Flechas). 3 capturas o más en 3 min gana. 4 jugadores en el mismo teclado.', img: '/modoCTF.png',        label: 'CTF 2v2' },
+            { id: 'contraIA',       title: 'Contra IA',               desc: 'Juega contra una serpiente controlada por la IA',                                                                                                              img: '/contraIA.png',       label: 'Contra IA' },
         ];
 
-        let modeIndex = Math.max(0, MODES.findIndex((m) => m.id === initialGameMode));
-        if (modeIndex === -1) modeIndex = 0;
+        let modeIndex    = Math.max(0, MODES.findIndex((m) => m.id === initialGameMode));
         let pendingModeId = MODES[modeIndex]?.id ?? 'normal';
 
         const setGameModeValue = (modeId) => {
@@ -503,8 +413,11 @@ export class LocalGameSetup extends Phaser.Scene {
             if (gameModeInput) gameModeInput.value = safe;
             const current = MODES.find((m) => m.id === safe);
             if (modeSelectedLabel) modeSelectedLabel.textContent = current ? `Seleccionado: ${current.label}` : 'Seleccionado: -';
-            if (p1ControlLabel) p1ControlLabel.textContent = safe === 'contraIA' ? 'WASD / FLECHAS' : 'WASD';
-            if (p2ControlLabel) p2ControlLabel.textContent = safe === 'contraIA' ? 'Controlado por IA' : 'FLECHAS';
+
+            const is2v2 = safe === 'ctf2v2';
+            if (extraPanel) extraPanel.classList.toggle('visible', is2v2);
+            if (p1ControlLabel) p1ControlLabel.textContent = safe === 'contraIA' ? 'WASD / FLECHAS' : safe === 'ctf2v2' ? 'WASD' : 'WASD';
+            if (p2ControlLabel) p2ControlLabel.textContent = safe === 'contraIA' ? 'Controlado por IA' : safe === 'ctf2v2' ? 'TFGH' : 'FLECHAS';
         };
 
         const renderModeCard = () => {
@@ -513,54 +426,31 @@ export class LocalGameSetup extends Phaser.Scene {
             pendingModeId = m.id;
             modeCardSlot.innerHTML = `
                 <div class="mode-card" role="group" aria-label="Modo de juego">
-                    <div class="mode-card-img">
-                        <img src="${m.img}" alt="${m.title}">
-                    </div>
+                    <div class="mode-card-img"><img src="${m.img}" alt="${m.title}"></div>
                     <div class="mode-card-body">
                         <h3 class="mode-card-title">${m.title}</h3>
                         <p class="mode-card-desc">${m.desc}</p>
                     </div>
-                </div>
-            `;
+                </div>`;
         };
 
-        const openModeModal = () => {
-            if (!modeModal) return;
-            renderModeCard();
-            modeModal.classList.add('open');
-        };
-
-        const closeModeModal = () => {
-            if (!modeModal) return;
-            modeModal.classList.remove('open');
-        };
-
-        const rotateMode = (delta) => {
-            const len = MODES.length || 1;
-            modeIndex = (modeIndex + delta + len) % len;
-            renderModeCard();
-        };
+        const openModeModal  = () => { if (!modeModal) return; renderModeCard(); modeModal.classList.add('open'); };
+        const closeModeModal = () => { if (!modeModal) return; modeModal.classList.remove('open'); };
+        const rotateMode     = (delta) => { modeIndex = (modeIndex + delta + MODES.length) % MODES.length; renderModeCard(); };
 
         modeOpenBtn?.addEventListener('click', openModeModal);
         modeClose?.addEventListener('click', closeModeModal);
         modeCancel?.addEventListener('click', closeModeModal);
         modePrev?.addEventListener('click', () => rotateMode(-1));
         modeNext?.addEventListener('click', () => rotateMode(1));
-        modeChoose?.addEventListener('click', () => {
-            setGameModeValue(pendingModeId);
-            closeModeModal();
-        });
-
-        modeModal?.addEventListener('click', (e) => {
-            if (e.target === modeModal) closeModeModal();
-        });
+        modeChoose?.addEventListener('click', () => { setGameModeValue(pendingModeId); closeModeModal(); });
+        modeModal?.addEventListener('click', (e) => { if (e.target === modeModal) closeModeModal(); });
 
         setGameModeValue(initialGameMode);
 
         this.input.keyboard?.on('keydown-ESC', () => {
             const isOpen = Boolean(document.getElementById('mode-modal')?.classList.contains('open'));
-            if (isOpen) closeModeModal();
-            else goBack();
+            if (isOpen) closeModeModal(); else goBack();
         });
 
         this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -571,10 +461,7 @@ export class LocalGameSetup extends Phaser.Scene {
 
     escapeHtml(value) {
         return String(value)
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;')
-            .replaceAll('"', '&quot;')
-            .replaceAll("'", '&#039;');
+            .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
     }
 }
