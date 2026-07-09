@@ -25,18 +25,19 @@ function freezeFoodCountOptions(options: OnlineFoodCountOption[]): ReadonlyArray
 }
 
 export const onlineModes = freezeOptions([
-  { id: "normal", label: "Normal" },
-  { id: "infinite", label: "Infinito" },
-  { id: "timeAttack", label: "Contrarreloj" },
-  { id: "chaos", label: "Caos" },
-  { id: "kingOfTheHill", label: "Rey de la colina" },
-  { id: "territory", label: "Territory Game" },
+  { id: "normal",           label: "Normal" },
+  { id: "infinite",         label: "Infinito" },
+  { id: "timeAttack",       label: "Contrarreloj" },
+  { id: "chaos",            label: "Caos" },
+  { id: "kingOfTheHill",    label: "Rey de la colina" },
+  { id: "territory",        label: "Territory Game" },
+  { id: "captureTheFlag",   label: "Captura la Bandera (2v2)" },
 ]);
 
 export const onlineDifficulties = freezeOptions([
-  { id: "easy", label: "Easy" },
+  { id: "easy",   label: "Easy" },
   { id: "normal", label: "Medium" },
-  { id: "hard", label: "Hard" },
+  { id: "hard",   label: "Hard" },
 ]);
 
 export const onlineMaps = freezeOptions([
@@ -49,16 +50,16 @@ export const onlineMaps = freezeOptions([
 ]);
 
 export const onlineSkins = freezeOptions([
-  { id: "player1", label: "Player 1" },
-  { id: "player2", label: "Player 2" },
-  { id: "snake3", label: "Snake 3" },
-  { id: "snake4", label: "Snake 4" },
-  { id: "snake5", label: "Snake 5" },
-  { id: "snake6", label: "Snake 6" },
-  { id: "snake7", label: "Snake 7" },
-  { id: "snake8", label: "Snake 8" },
-  { id: "snake9", label: "Snake 9" },
-  { id: "snake10", label: "Snake 10" },
+  { id: "player1",  label: "Player 1" },
+  { id: "player2",  label: "Player 2" },
+  { id: "snake3",   label: "Snake 3" },
+  { id: "snake4",   label: "Snake 4" },
+  { id: "snake5",   label: "Snake 5" },
+  { id: "snake6",   label: "Snake 6" },
+  { id: "snake7",   label: "Snake 7" },
+  { id: "snake8",   label: "Snake 8" },
+  { id: "snake9",   label: "Snake 9" },
+  { id: "snake10",  label: "Snake 10" },
 ]);
 
 export const onlineBoardSizes = freezeBoardSizeOptions([
@@ -68,16 +69,16 @@ export const onlineBoardSizes = freezeBoardSizeOptions([
 ]);
 
 export const onlineFoodCounts = freezeFoodCountOptions([
-  { id: "low",    label: "Bajo (5)",  value: 5 },
+  { id: "low",    label: "Bajo (5)",   value: 5 },
   { id: "medium", label: "Medio (10)", value: 10 },
-  { id: "high",   label: "Alto (15)", value: 15 },
+  { id: "high",   label: "Alto (15)",  value: 15 },
 ]);
 
 export const onlineOptionCatalogs = Object.freeze({
-  modes: onlineModes,
+  modes:       onlineModes,
   difficulties: onlineDifficulties,
-  maps: onlineMaps,
-  skins: onlineSkins,
-  boardSizes: onlineBoardSizes,
-  foodCounts: onlineFoodCounts,
+  maps:        onlineMaps,
+  skins:       onlineSkins,
+  boardSizes:  onlineBoardSizes,
+  foodCounts:  onlineFoodCounts,
 });

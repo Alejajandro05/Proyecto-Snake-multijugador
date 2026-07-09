@@ -802,15 +802,28 @@ export class OnlineMenu extends Phaser.Scene {
     const isHost = room.sessionId === state.host.sessionId;
     const skinId = isHost ? state.host.skinId : state.guest.skinId;
     const playerName = isHost ? state.host.playerName : state.guest.playerName;
-    this.scene.start('OnlineGame', {
-      matchRoomId,
-      lobbyRoomId: state.lobbyId,
-      skinId,
-      playerName,
-      gameMode: state.gameMode,
-      difficulty: state.difficulty,
-      mapId: state.mapId,
-    });
+    const gameMode = state.gameMode ?? 'normal';
+
+    // Route to OnlineCtfGame for 2v2 CTF mode, otherwise use the standard OnlineGame.
+    if (gameMode === 'captureTheFlag') {
+      this.scene.start('OnlineCtfGame', {
+        matchRoomId,
+        lobbyRoomId: state.lobbyId,
+        skinId,
+        playerName,
+        mapId: state.mapId,
+      });
+    } else {
+      this.scene.start('OnlineGame', {
+        matchRoomId,
+        lobbyRoomId: state.lobbyId,
+        skinId,
+        playerName,
+        gameMode,
+        difficulty: state.difficulty,
+        mapId: state.mapId,
+      });
+    }
   }
 
   updateWaitingState(state) {

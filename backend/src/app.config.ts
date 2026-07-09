@@ -8,6 +8,7 @@ import { SnakeRoom } from "./rooms/SnakeRoom.js";
 import { MyRoom } from "./rooms/MyRoom.js";
 import { LobbyRoom } from "./rooms/LobbyRoom.js";
 import { RankedQueueRoom } from "./rooms/RankedQueueRoom.js";
+import { CtfOnlineRoom } from "./rooms/CtfOnlineRoom.js";
 
 const serverConfig: any = {
     rooms: {
@@ -15,6 +16,7 @@ const serverConfig: any = {
         my_room: defineRoom(MyRoom),
         lobby_room: defineRoom(LobbyRoom),
         ranked_queue: defineRoom(RankedQueueRoom),
+        ctf_room: defineRoom(CtfOnlineRoom),
     },
 };
 

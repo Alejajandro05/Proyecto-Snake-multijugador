@@ -16,6 +16,18 @@ export const INITIAL_PLAYER_SPEED = 2;
 
 export const PLAYER_COLORS: number[] = [0xe74c3c, 0x3498db, 0xf1c40f, 0x2ecc71];
 
+// ── CTF constants ─────────────────────────────────────────────────────────────
+export const CTF_MAX_PLAYERS = 4;
+export const CTF_CAPTURES_TO_WIN = 3;
+/** Blue team color (Equipo A, jugadores 1 y 2). */
+export const CTF_TEAM_A_COLOR = 0x3399ff;
+/** Red team color (Equipo B, jugadores 3 y 4). */
+export const CTF_TEAM_B_COLOR = 0xff4444;
+/** Cells from each lateral edge where the base zone starts. */
+export const CTF_FLAG_BASE_MARGIN = 3;
+/** Half-height in rows of each base zone. */
+export const CTF_BASE_HALF_HEIGHT = 3;
+
 export type GameDifficulty = 'easy' | 'normal' | 'hard';
 
 export interface GameRuntimeConfig {

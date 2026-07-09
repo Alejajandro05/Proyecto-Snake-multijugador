@@ -12,14 +12,16 @@ import { Registration } from './scenes/Registration.js';
 import { Login } from './scenes/Login.js';
 import { Profile } from './scenes/Profile.js';
 import { OnlineGame } from './scenes/modes/OnlineGame.js';
+import { OnlineCtfGame } from './scenes/modes/OnlineCtfGame.js';
 import { TimeAttackGame } from './scenes/modes/TimeAttackGame.js';
 import { ChaosGame } from './scenes/modes/ChaosGame.js';
 import { KingOfTheHillGame } from './scenes/modes/KingOfTheHillGame.js';
 import { TerritoryGame } from './scenes/modes/TerritoryGame.js';
 import { AgainstAIGame } from './scenes/modes/AgainstAIGame.js';
 import { CaptureTheFlagGame } from './scenes/modes/CaptureTheFlagGame.js';
+import { CaptureTheFlagGame2v2 } from './scenes/modes/CaptureTheFlagGame2v2.js';
 import { Pause } from './scenes/Pause.js';
-import {LocalGameSetup} from "./scenes/LocalGameSetup";
+import { LocalGameSetup } from './scenes/LocalGameSetup';
 import { SoloGameSetup } from './scenes/SoloGameSetup.js';
 import { SoloGame } from './scenes/modes/SoloGame.js';
 import { ControlsMenu } from './scenes/ControlsMenu.js';
@@ -29,36 +31,22 @@ import { InitCounter } from './scenes/InitCounter.js';
 
 const config = {
     type: Phaser.AUTO,
-    
-    // 1. VOLVEMOS AL TAMAÑO DINÁMICO (Pantalla completa real)
     width: window.innerWidth,
     height: window.innerHeight,
-    
     parent: 'game-container',
-    
-    // 2. Mantenemos el fondo oscuro elegante que queríamos
-    backgroundColor: '#0B081A', 
-    
-    // 3. Mantenemos las mejoras de nitidez y el estilo retro para el tablero
+    backgroundColor: '#0B081A',
     pixelArt: true,
-    antialias: false, 
+    antialias: false,
     roundPixels: true,
     resolution: window.devicePixelRatio || 1,
-
     physics: {
         default: 'arcade',
-        arcade: {
-            debug: false,
-            gravity: { y: 500 }
-        }
+        arcade: { debug: false, gravity: { y: 500 } }
     },
-    
-    // 4. VOLVEMOS AL MODO RESIZE: Phaser no pelea con tu CSS, simplemente se adapta
     scale: {
         mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.NO_CENTER
     },
-    
     scene: [
         Boot,
         Preloader,
@@ -76,12 +64,14 @@ const config = {
         LocalGame,
         NormalLocalGame,
         OnlineGame,
+        OnlineCtfGame,
         TimeAttackGame,
         ChaosGame,
         KingOfTheHillGame,
         TerritoryGame,
         AgainstAIGame,
         CaptureTheFlagGame,
+        CaptureTheFlagGame2v2,
         GameOver,
         Pause,
         InitCounter
@@ -89,6 +79,6 @@ const config = {
 };
 
 clearAuthSessionOnStartup().finally(() => {
-  const game = new Phaser.Game(config);
-  bindFormKeyboardGuard(game);
+    const game = new Phaser.Game(config);
+    bindFormKeyboardGuard(game);
 });
