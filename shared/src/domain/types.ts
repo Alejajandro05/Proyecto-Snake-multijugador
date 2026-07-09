@@ -6,7 +6,6 @@ export interface Position {
 }
 
 export type SnakeSegmentState = Position;
-// export type FoodState = Position;
 export type ObstacleState = Position;
 
 export type FoodType = "apple" | "grape" | "speed" | "poison";
@@ -28,7 +27,6 @@ export type FoodState = {
   y: number;
   type: FoodType;
   score: number;
-  /** Tick en el que apareció (solo frutas con TTL, p. ej. kiwi). */
   spawnedAtTick?: number;
 }
 
@@ -47,10 +45,7 @@ export interface PlayerState {
   lives: number;
   score: number;
   segments: SnakeSegmentState[];
-
   lastEatenFood: FoodConfigItem | null;
-
-  // velocidad
   speed: number;
   moveCounter: number;
   speedEffectRemaining: number;
@@ -62,4 +57,49 @@ export interface GameState {
   obstacles: ObstacleState[];
   territory: TerritoryCellState[];
   territoryCounts: Map<string, number>;
+}
+
+// ── CTF ──────────────────────────────────��───────────────────────────────────
+
+export type TeamId = 'A' | 'B';
+
+export interface CtfCell {
+  col: number;
+  row: number;
+}
+
+export interface CtfBaseBounds {
+  col0: number;
+  col1: number;
+  row0: number;
+  row1: number;
+}
+
+export interface CtfFlagState {
+  teamId: TeamId;
+  /** col/row of the flag home cell. */
+  home: CtfCell;
+  /** Current position. null when carried. */
+  position: CtfCell | null;
+  /** sessionId of the carrier, empty string when nobody carries it. */
+  carrierId: string;
+  /** true when position equals home and carrierId is empty. */
+  isAtBase: boolean;
+}
+
+export interface CtfTeamState {
+  teamId: TeamId;
+  captures: number;
+  /** sessionIds of team members */
+  memberIds: string[];
+}
+
+export interface CtfGameState {
+  flagA: CtfFlagState;
+  flagB: CtfFlagState;
+  teamA: CtfTeamState;
+  teamB: CtfTeamState;
+  /** 'waiting' | 'playing' | 'finished' */
+  phase: string;
+  winnerTeam: TeamId | '';
 }
