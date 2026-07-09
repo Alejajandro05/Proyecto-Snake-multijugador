@@ -48,6 +48,7 @@ export class LocalGame extends Phaser.Scene {
         this.wasd    = this.input.keyboard.addKeys({ up: 'W', left: 'A', down: 'S', right: 'D' });
 
         this.isPaused = false;
+        this.initCounterActive = false;
         this.input.keyboard.on('keydown-ESC', () => {
             if (this.isPaused) return;
             this.isPaused = true;
@@ -100,6 +101,8 @@ export class LocalGame extends Phaser.Scene {
         this.renderState(this.engine.getState());
 
         this.time.delayedCall(0, () => {
+            // Mark countdown active so input is ignored immediately
+            this.initCounterActive = true;
             this.scene.pause();
             this.scene.launch('InitCounter', {
                 caller: this.scene.key
@@ -243,6 +246,9 @@ o(x, this.boardOffsetY);
 
     // Helper: Push direction to buffer (limit to 3 to prevent spam)
     pushDirection(playerId, direction) {
+        // Ignore inputs while init counter is active
+        if (this.initCounterActive) return;
+
         if (this.inputBuffers[playerId].length < 3) {
             this.inputBuffers[playerId].push(direction);
         }
