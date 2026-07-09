@@ -12,6 +12,7 @@ import { Registration } from './scenes/Registration.js';
 import { Login } from './scenes/Login.js';
 import { Profile } from './scenes/Profile.js';
 import { OnlineGame } from './scenes/modes/OnlineGame.js';
+import { OnlineCtfGame } from './scenes/modes/OnlineCtfGame.js';
 import { TimeAttackGame } from './scenes/modes/TimeAttackGame.js';
 import { ChaosGame } from './scenes/modes/ChaosGame.js';
 import { KingOfTheHillGame } from './scenes/modes/KingOfTheHillGame.js';
@@ -76,6 +77,7 @@ const config = {
         LocalGame,
         NormalLocalGame,
         OnlineGame,
+        OnlineCtfGame,
         TimeAttackGame,
         ChaosGame,
         KingOfTheHillGame,
