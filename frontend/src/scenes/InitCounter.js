@@ -75,7 +75,8 @@ export class InitCounter extends Phaser.Scene {
                     });
                     this._tweens.push(t1, t2);
 
-                    if (this.sound.get(clickKey)) this.sound.play(clickKey);
+                    // Play click sound (no guard so it matches other scenes' usage)
+                    try { this.sound.play(clickKey); } catch (e) {}
 
                 } else {
                     // Final "¡YA!" visible briefly, but the match must start immediately
@@ -87,16 +88,18 @@ export class InitCounter extends Phaser.Scene {
                     }
 
                     // show final text and play final sound
+                    timerText.setAlpha(1);
                     timerText.setText('¡YA!');
                     timerText.setFontSize(120);
                     timerText.setColor(finalColor);
 
-                    if (this.sound.get(finalKey)) this.sound.play(finalKey);
+                    try { this.sound.play(finalKey); } catch (e) {}
 
-                    // Resume the caller (start the match) and stop the overlay immediately
-                    this.scene.resume(callerScene);
-                    // stop this scene immediately to remove overlay
-                    this.scene.stop();
+                    // Give a very short visual frame for the final text, then resume
+                    this.time.delayedCall(150, () => {
+                        this.scene.resume(callerScene);
+                        this.scene.stop();
+                    });
                 }
             }
         });
