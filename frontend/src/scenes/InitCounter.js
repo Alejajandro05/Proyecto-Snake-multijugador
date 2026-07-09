@@ -40,9 +40,29 @@ export class InitCounter extends Phaser.Scene {
 
         // Ensure final visuals fade out
 
-        // Play click sound for numbers and a distinct sound for the final "YA"
-        const clickKey = 'sonido_choque'; // short click-like sound preloaded
-        const finalKey = 'eat_apple'; // sharper distinct sound (reused asset)
+        // We'll synthesize short tones for the counter to avoid reusing other effect files
+        const createTonePlayer = () => {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            const ctx = AudioCtx ? new AudioCtx() : null;
+            return (freq = 880, dur = 0.06, type = 'sine') => {
+                try {
+                    const ac = ctx || (AudioCtx ? new AudioCtx() : null);
+                    if (!ac) return;
+                    const osc = ac.createOscillator();
+                    const gain = ac.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, ac.currentTime);
+                    gain.gain.setValueAtTime(0.0001, ac.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.5, ac.currentTime + 0.01);
+                    osc.connect(gain);
+                    gain.connect(ac.destination);
+                    osc.start();
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime + dur);
+                    osc.stop(ac.currentTime + dur + 0.02);
+                } catch (e) {}
+            };
+        };
+        const playTone = createTonePlayer();
         // Mark caller scene so it can ignore inputs while countdown runs
         const caller = this.scene.get(callerScene);
         if (caller) caller.initCounterActive = true;
@@ -75,8 +95,8 @@ export class InitCounter extends Phaser.Scene {
                     });
                     this._tweens.push(t1, t2);
 
-                    // Play click sound (no guard so it matches other scenes' usage)
-                    try { this.sound.play(clickKey); } catch (e) {}
+                    // Play synthesized click (short, mid pitch)
+                    playTone(900, 0.06, 'square');
 
                 } else {
                     // Final "¡YA!" visible briefly, but the match must start immediately
@@ -93,10 +113,12 @@ export class InitCounter extends Phaser.Scene {
                     timerText.setFontSize(120);
                     timerText.setColor(finalColor);
 
-                    try { this.sound.play(finalKey); } catch (e) {}
+                    // Play a short ascending pair of tones for the final '¡YA!'
+                    playTone(1200, 0.12, 'sine');
+                    this.time.delayedCall(80, () => playTone(1600, 0.08, 'sine'));
 
-                    // Give a very short visual frame for the final text, then resume
-                    this.time.delayedCall(150, () => {
+                    // Give a slightly longer visual frame for the final text, then resume
+                    this.time.delayedCall(700, () => {
                         this.scene.resume(callerScene);
                         this.scene.stop();
                     });
