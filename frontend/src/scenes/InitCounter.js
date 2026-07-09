@@ -67,6 +67,35 @@ export class InitCounter extends Phaser.Scene {
         const caller = this.scene.get(callerScene);
         if (caller) caller.initCounterActive = true;
 
+        // Helper to display a digit with animations and sound
+        const displayDigit = (num) => {
+            timerText.setText(num.toString());
+            timerText.setColor(digitColor);
+            timerText.setAlpha(1);
+            timerText.setScale(2);
+
+            const t1 = this.tweens.add({
+                targets: timerText,
+                scale: 1,
+                duration: 350,
+                ease: 'Back.Out'
+            });
+            const t2 = this.tweens.add({
+                targets: timerText,
+                alpha: { from: 1, to: 0 },
+                duration: 300,
+                delay: 350,
+                ease: 'Quad.Out'
+            });
+            this._tweens.push(t1, t2);
+
+            // Play synthesized click (short, mid pitch)
+            playTone(900, 0.06, 'square');
+        };
+
+        // Display initial '3' immediately with sound
+        displayDigit(count);
+
         this._timerEvent = this.time.addEvent({
             delay: 1000,
             repeat: 2,
@@ -74,29 +103,7 @@ export class InitCounter extends Phaser.Scene {
                 count--;
 
                 if (count > 0) {
-                    timerText.setText(count.toString());
-                    timerText.setColor(digitColor);
-
-                    timerText.setAlpha(1);
-                    timerText.setScale(2);
-
-                    const t1 = this.tweens.add({
-                        targets: timerText,
-                        scale: 1,
-                        duration: 350,
-                        ease: 'Back.Out'
-                    });
-                    const t2 = this.tweens.add({
-                        targets: timerText,
-                        alpha: { from: 1, to: 0 },
-                        duration: 300,
-                        delay: 350,
-                        ease: 'Quad.Out'
-                    });
-                    this._tweens.push(t1, t2);
-
-                    // Play synthesized click (short, mid pitch)
-                    playTone(900, 0.06, 'square');
+                    displayDigit(count);
 
                 } else {
                     // Final "¡YA!" visible briefly, but the match must start immediately
